@@ -1,9 +1,9 @@
-export default async () => {
+export default async (req, context) => {
   return Response.json({
     status: "ok",
-    context: process.env.CONTEXT ?? "unknown",
-    branch: process.env.BRANCH ?? "unknown",
-    commit: (process.env.COMMIT_REF ?? "unknown").slice(0, 7),
+    context: context.deploy?.context ?? "unknown",
+    deployId: context.deploy?.id ?? "unknown",
+    site: context.site?.name ?? "unknown",
     time: new Date().toISOString(),
   }, {
     headers: { "cache-control": "no-store" },
