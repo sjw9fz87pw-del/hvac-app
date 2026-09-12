@@ -1,0 +1,1025 @@
+// Restaurant Equipment Preventive-Maintenance Platform
+// Full domain model. Tables for phases 9-10 exist but are dormant in the UI so
+// that history accrues from day one and later phases are additive.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  SUPER_ADMIN
+  OPERATIONS_ADMIN
+  SERVICE_MANAGER
+  TECHNICIAN
+  CUSTOMER_ORG_OWNER
+  CUSTOMER_LOCATION_MANAGER
+  CUSTOMER_STAFF
+}
+
+enum EquipmentCategory {
+  REFRIGERATION
+  HVAC
+  ICE_MACHINE
+  WATER_FILTRATION
+  COOKING
+  WAREWASHING
+  BEVERAGE
+  OTHER
+}
+
+enum EquipmentStatus {
+  PENDING_SETUP // customer-added, awaiting internal verification
+  ACTIVE
+  NEEDS_ATTENTION
+  OUT_OF_SERVICE
+  ARCHIVED
+}
+
+enum EquipmentCondition {
+  EXCELLENT
+  GOOD
+  FAIR
+  POOR
+  UNKNOWN
+}
+
+enum Criticality {
+  CRITICAL
+  HIGH
+  STANDARD
+  LOW
+}
+
+enum TagState {
+  UNASSIGNED
+  ACTIVE
+  REVOKED
+  LOST
+}
+
+enum TagEventType {
+  MINTED
+  WRITTEN
+  WRITE_FAILED
+  VERIFIED
+  VERIFY_FAILED
+  PAIRED
+  UNPAIRED
+  REASSIGNED
+  REPLACED
+  REVOKED
+  READ
+  READ_DENIED
+  TESTED
+}
+
+enum PlanScope {
+  SYSTEM
+  CUSTOMER
+  LOCATION
+  ASSET
+}
+
+enum ScheduleStatus {
+  UPCOMING
+  SCHEDULE_NEEDED
+  DUE
+  OVERDUE
+  PAUSED
+}
+
+enum VisitStatus {
+  DRAFT
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  MISSED
+  CANCELLED
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+  BLOCKED
+}
+
+enum PhotoKind {
+  IDENTIFICATION
+  DATA_PLATE
+  BEFORE
+  AFTER
+  ISSUE
+  OTHER
+}
+
+enum IssueSource {
+  CUSTOMER
+  TECHNICIAN
+  SYSTEM
+}
+
+enum IssueStatus {
+  OPEN
+  TRIAGED
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  WONT_FIX
+}
+
+enum IssueSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum NotificationType {
+  UPCOMING_SERVICE
+  SERVICE_COMPLETED
+  ISSUE_FOUND
+  ISSUE_RESOLVED
+  CUSTOMER_ADDED_EQUIPMENT
+  OVERDUE_MAINTENANCE
+  INCOMPLETE_PROOF
+  NFC_PROBLEM
+  VISIT_SCHEDULED
+}
+
+enum SubscriptionStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  CANCELLED
+}
+
+// ---------------------------------------------------------------------------
+// Identity & tenancy
+// ---------------------------------------------------------------------------
+
+model ServiceCompany {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  timezone  String   @default("America/New_York")
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organizations CustomerOrganization[]
+  users         User[]
+  serviceTypes  ServiceType[]
+  vendors       Vendor[]
+  servicePlans  ServicePlan[]
+}
+
+model User {
+  id               String    @id @default(cuid())
+  serviceCompanyId String
+  email            String    @unique
+  name             String
+  phone            String?
+  passwordHash     String
+  avatarUrl        String?
+  active           Boolean   @default(true)
+  lastLoginAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  serviceCompany    ServiceCompany           @relation(fields: [serviceCompanyId], references: [id])
+  memberships       Membership[]
+  sessions          Session[]
+  auditEvents       AuditEvent[]
+  serviceRecords    ServiceRecord[]          @relation("TechnicianServices")
+  visits            Visit[]                  @relation("AssignedTechnician")
+  reportedIssues    Issue[]                  @relation("IssueReporter")
+  assignedIssues    Issue[]                  @relation("IssueAssignee")
+  notifications     Notification[]
+  notificationPrefs NotificationPreference[]
+
+  @@index([serviceCompanyId])
+}
+
+/// A user's role plus the scope it applies to. A user may hold several.
+model Membership {
+  id             String   @id @default(cuid())
+  userId         String
+  role           Role
+  organizationId String? // null => service-company-wide (internal roles)
+  locationId     String? // null => all locations within the organization scope
+  createdAt      DateTime @default(now())
+
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization CustomerOrganization? @relation(fields: [organizationId], references: [id])
+  location     RestaurantLocation?   @relation(fields: [locationId], references: [id])
+
+  @@unique([userId, role, organizationId, locationId])
+  @@index([userId])
+  @@index([organizationId])
+  @@index([locationId])
+}
+
+model Session {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  ip        String?
+  userAgent String?
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model CustomerOrganization {
+  id               String   @id @default(cuid())
+  serviceCompanyId String
+  name             String
+  slug             String
+  billingEmail     String?
+  phone            String?
+  notes            String?
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  serviceCompany ServiceCompany       @relation(fields: [serviceCompanyId], references: [id])
+  locations      RestaurantLocation[]
+  memberships    Membership[]
+  equipment      Equipment[]
+  tags           Tag[]
+  issues         Issue[]
+  visits         Visit[]
+  plans          MaintenancePlan[]
+  subscriptions  Subscription[]
+  auditEvents    AuditEvent[]
+  ServiceRecord  ServiceRecord[]
+
+  @@unique([serviceCompanyId, slug])
+  @@index([serviceCompanyId])
+}
+
+model RestaurantLocation {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  addressLine1   String?
+  addressLine2   String?
+  city           String?
+  state          String?
+  postalCode     String?
+  timezone       String   @default("America/New_York")
+  phone          String?
+  accessNotes    String? // internal: door codes, best times, parking
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization  CustomerOrganization @relation(fields: [organizationId], references: [id])
+  areas         Area[]
+  equipment     Equipment[]
+  visits        Visit[]
+  issues        Issue[]
+  memberships   Membership[]
+  plans         MaintenancePlan[]
+  ServiceRecord ServiceRecord[]
+
+  @@index([organizationId])
+}
+
+model Area {
+  id         String   @id @default(cuid())
+  locationId String
+  name       String // "Main Kitchen", "Main Bar", "Walk-In", "Basement"
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  location  RestaurantLocation @relation(fields: [locationId], references: [id])
+  equipment Equipment[]
+
+  @@unique([locationId, name])
+  @@index([locationId])
+}
+
+// ---------------------------------------------------------------------------
+// Equipment — the permanent Equipment Passport
+// ---------------------------------------------------------------------------
+
+model Equipment {
+  id             String  @id @default(cuid())
+  organizationId String
+  locationId     String
+  areaId         String?
+
+  name            String
+  category        EquipmentCategory
+  equipmentType   String // "Back Bar Cooler", "Walk-In Condenser"
+  manufacturer    String?
+  model           String?
+  serialNumber    String?
+  internalAssetId String // human-readable, unique per organization
+  yearInstalled   Int?
+  status          EquipmentStatus    @default(ACTIVE)
+  condition       EquipmentCondition @default(UNKNOWN)
+  criticality     Criticality        @default(STANDARD)
+
+  // filter information
+  filterSize     String?
+  filterType     String?
+  filterQuantity Int?
+
+  // warranty
+  warrantyProvider String?
+  warrantyExpires  DateTime?
+  warrantyNotes    String?
+
+  // vendor
+  vendorId String?
+
+  technicianNotes      String? // INTERNAL ONLY — never serialized to customers
+  customerVisibleNotes String?
+
+  createdById       String?
+  createdBySource   String    @default("INTERNAL") // INTERNAL | CUSTOMER
+  verifiedAt        DateTime?
+  verifiedById      String?
+  archivedAt        DateTime?
+  archivedReason    String?
+  replacedByAssetId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization CustomerOrganization @relation(fields: [organizationId], references: [id])
+  location     RestaurantLocation   @relation(fields: [locationId], references: [id])
+  area         Area?                @relation(fields: [areaId], references: [id])
+  vendor       Vendor?              @relation(fields: [vendorId], references: [id])
+  replacedBy   Equipment?           @relation("EquipmentReplacement", fields: [replacedByAssetId], references: [id])
+  replaces     Equipment[]          @relation("EquipmentReplacement")
+
+  photos             EquipmentPhoto[]
+  documents          EquipmentDocument[]
+  schedules          MaintenanceSchedule[]
+  plans              MaintenancePlan[]
+  serviceRecords     ServiceRecord[]
+  visitTasks         VisitTask[]
+  issues             Issue[]
+  tagAssignments     TagAssignment[]
+  sensorDevices      SensorDevice[]
+  partUsages         PartUsage[]
+  repairCosts        RepairCost[]
+  aiExtractions      AiExtraction[]
+  subscriptionAssets SubscriptionAsset[]
+
+  @@unique([organizationId, internalAssetId])
+  @@index([organizationId, status])
+  @@index([locationId, status])
+  @@index([areaId])
+  @@index([model])
+  @@index([serialNumber])
+}
+
+model EquipmentPhoto {
+  id           String    @id @default(cuid())
+  equipmentId  String
+  kind         PhotoKind @default(IDENTIFICATION)
+  blobKey      String
+  width        Int?
+  height       Int?
+  bytes        Int?
+  capturedAt   DateTime  @default(now())
+  uploadedById String?
+  caption      String?
+  createdAt    DateTime  @default(now())
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id])
+
+  @@index([equipmentId, kind])
+}
+
+model EquipmentDocument {
+  id          String   @id @default(cuid())
+  equipmentId String
+  title       String
+  kind        String   @default("MANUAL") // MANUAL | WARRANTY | SPEC | INVOICE
+  blobKey     String
+  createdAt   DateTime @default(now())
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id])
+
+  @@index([equipmentId])
+}
+
+// ---------------------------------------------------------------------------
+// NFC / identity tags
+// ---------------------------------------------------------------------------
+
+model Tag {
+  id             String    @id @default(cuid())
+  organizationId String? // tenant binding; null while unassigned stock
+  tokenId        String    @unique // opaque 128-bit id written to the tag
+  macPrefix      String // truncated MAC recorded at mint time
+  tenantHint     String // non-reversible tenant shard hint
+  state          TagState  @default(UNASSIGNED)
+  label          String? // physical batch label, e.g. "BATCH-A-014"
+  hardwareUid    String? // NFC chip UID if the reader exposes it
+  writtenAt      DateTime?
+  verifiedAt     DateTime?
+  revokedAt      DateTime?
+  revokedReason  String?
+  lastReadAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization CustomerOrganization? @relation(fields: [organizationId], references: [id])
+  assignments  TagAssignment[]
+  events       TagEvent[]
+
+  @@index([organizationId, state])
+  @@index([state])
+}
+
+/// Open row = current pairing. Closed rows are retained history, never deleted.
+model TagAssignment {
+  id             String    @id @default(cuid())
+  tagId          String
+  equipmentId    String
+  assignedAt     DateTime  @default(now())
+  assignedById   String?
+  unassignedAt   DateTime?
+  unassignedById String?
+  unassignReason String?
+
+  tag       Tag       @relation(fields: [tagId], references: [id])
+  equipment Equipment @relation(fields: [equipmentId], references: [id])
+
+  @@index([tagId])
+  @@index([equipmentId])
+}
+
+model TagEvent {
+  id          String       @id @default(cuid())
+  tagId       String?
+  equipmentId String?
+  actorId     String?
+  type        TagEventType
+  detail      Json         @default("{}")
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime     @default(now())
+
+  tag Tag? @relation(fields: [tagId], references: [id])
+
+  @@index([tagId, createdAt])
+  @@index([type, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Preventive maintenance
+// ---------------------------------------------------------------------------
+
+model ServiceType {
+  id                      String            @id @default(cuid())
+  serviceCompanyId        String
+  key                     String // "CONDENSER_CLEANING", "HVAC_FILTER"
+  name                    String
+  description             String?
+  category                EquipmentCategory
+  defaultIntervalDays     Int
+  estimatedMinutes        Int               @default(20)
+  /// Completion requirements, configurable per service type.
+  requiresNfcVerification Boolean           @default(true)
+  requiresBeforePhoto     Boolean           @default(true)
+  requiresAfterPhoto      Boolean           @default(true)
+  requiresChecklist       Boolean           @default(true)
+  requiresTechnicianNote  Boolean           @default(false)
+  active                  Boolean           @default(true)
+  createdAt               DateTime          @default(now())
+
+  serviceCompany ServiceCompany          @relation(fields: [serviceCompanyId], references: [id])
+  checklistItems ChecklistItemTemplate[]
+  schedules      MaintenanceSchedule[]
+  plans          MaintenancePlan[]
+  visitTasks     VisitTask[]
+  serviceRecords ServiceRecord[]
+  planLineItems  PlanLineItem[]
+
+  @@unique([serviceCompanyId, key])
+}
+
+model ChecklistItemTemplate {
+  id            String  @id @default(cuid())
+  serviceTypeId String
+  label         String
+  sortOrder     Int     @default(0)
+  required      Boolean @default(true)
+  inputType     String  @default("CHECK") // CHECK | PHOTO | NOTE | CHOICE
+  choices       Json    @default("[]")
+
+  serviceType ServiceType @relation(fields: [serviceTypeId], references: [id])
+
+  @@index([serviceTypeId])
+}
+
+/// The override chain. Precedence: ASSET > LOCATION > CUSTOMER > SYSTEM.
+model MaintenancePlan {
+  id             String             @id @default(cuid())
+  scope          PlanScope
+  serviceTypeId  String
+  organizationId String?
+  locationId     String?
+  equipmentId    String?
+  category       EquipmentCategory? // for SYSTEM scope templates
+  intervalDays   Int
+  active         Boolean            @default(true)
+  note           String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  serviceType  ServiceType           @relation(fields: [serviceTypeId], references: [id])
+  organization CustomerOrganization? @relation(fields: [organizationId], references: [id])
+  location     RestaurantLocation?   @relation(fields: [locationId], references: [id])
+  equipment    Equipment?            @relation(fields: [equipmentId], references: [id])
+
+  @@index([scope, serviceTypeId])
+  @@index([organizationId])
+  @@index([locationId])
+  @@index([equipmentId])
+}
+
+model MaintenanceSchedule {
+  id             String         @id @default(cuid())
+  equipmentId    String
+  serviceTypeId  String
+  intervalDays   Int
+  intervalSource PlanScope      @default(SYSTEM)
+  lastServiceAt  DateTime?
+  nextDueAt      DateTime
+  status         ScheduleStatus @default(UPCOMING)
+  paused         Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  equipment   Equipment   @relation(fields: [equipmentId], references: [id])
+  serviceType ServiceType @relation(fields: [serviceTypeId], references: [id])
+  visitTasks  VisitTask[]
+
+  @@unique([equipmentId, serviceTypeId])
+  @@index([nextDueAt, status])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Work: visits, tasks, immutable service records
+// ---------------------------------------------------------------------------
+
+model Visit {
+  id                String      @id @default(cuid())
+  organizationId    String
+  locationId        String
+  technicianId      String?
+  scheduledFor      DateTime
+  status            VisitStatus @default(SCHEDULED)
+  estimatedMinutes  Int         @default(0)
+  startedAt         DateTime?
+  completedAt       DateTime?
+  notes             String?
+  reportGeneratedAt DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  organization   CustomerOrganization @relation(fields: [organizationId], references: [id])
+  location       RestaurantLocation   @relation(fields: [locationId], references: [id])
+  technician     User?                @relation("AssignedTechnician", fields: [technicianId], references: [id])
+  tasks          VisitTask[]
+  serviceRecords ServiceRecord[]
+
+  @@index([locationId, scheduledFor])
+  @@index([technicianId, scheduledFor])
+  @@index([status, scheduledFor])
+}
+
+model VisitTask {
+  id            String     @id @default(cuid())
+  visitId       String
+  equipmentId   String
+  serviceTypeId String
+  scheduleId    String?
+  status        TaskStatus @default(PENDING)
+  sortOrder     Int        @default(0)
+  startedAt     DateTime?
+  completedAt   DateTime?
+  skipReason    String?
+
+  visit         Visit                @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  equipment     Equipment            @relation(fields: [equipmentId], references: [id])
+  serviceType   ServiceType          @relation(fields: [serviceTypeId], references: [id])
+  schedule      MaintenanceSchedule? @relation(fields: [scheduleId], references: [id])
+  serviceRecord ServiceRecord?
+
+  @@unique([visitId, equipmentId, serviceTypeId])
+  @@index([visitId, status])
+  @@index([equipmentId])
+}
+
+/// Immutable proof of service. Never updated or deleted by the application layer.
+/// Corrections create a new record pointing at the one it supersedes.
+model ServiceRecord {
+  id             String  @id @default(cuid())
+  organizationId String
+  locationId     String
+  equipmentId    String
+  serviceTypeId  String
+  visitId        String?
+  visitTaskId    String? @unique
+  technicianId   String
+
+  performedAt          DateTime
+  durationMinutes      Int?
+  technicianNotes      String? // INTERNAL ONLY
+  customerVisibleNotes String?
+  issuesFoundCount     Int       @default(0)
+  nextDueAt            DateTime?
+
+  nfcVerified        Boolean @default(false)
+  nfcTagId           String?
+  verificationMethod String? // NFC | QR | MANUAL
+
+  checklistResults Json    @default("[]")
+  contentHash      String
+  supersedesId     String? @unique
+  supersededReason String?
+
+  createdAt DateTime @default(now())
+
+  organization CustomerOrganization @relation(fields: [organizationId], references: [id])
+  location     RestaurantLocation   @relation(fields: [locationId], references: [id])
+  equipment    Equipment            @relation(fields: [equipmentId], references: [id])
+  serviceType  ServiceType          @relation(fields: [serviceTypeId], references: [id])
+  visit        Visit?               @relation(fields: [visitId], references: [id])
+  visitTask    VisitTask?           @relation(fields: [visitTaskId], references: [id])
+  technician   User                 @relation("TechnicianServices", fields: [technicianId], references: [id])
+  supersedes   ServiceRecord?       @relation("Supersede", fields: [supersedesId], references: [id])
+  supersededBy ServiceRecord?       @relation("Supersede")
+  photos       ServicePhoto[]
+  issues       Issue[]
+
+  @@index([equipmentId, performedAt])
+  @@index([organizationId, performedAt])
+  @@index([locationId, performedAt])
+  @@index([technicianId, performedAt])
+}
+
+model ServicePhoto {
+  id              String    @id @default(cuid())
+  serviceRecordId String
+  kind            PhotoKind
+  blobKey         String
+  capturedAt      DateTime
+  width           Int?
+  height          Int?
+  bytes           Int?
+  createdAt       DateTime  @default(now())
+
+  serviceRecord ServiceRecord @relation(fields: [serviceRecordId], references: [id])
+
+  @@index([serviceRecordId, kind])
+}
+
+// ---------------------------------------------------------------------------
+// Issues & vendor routing
+// ---------------------------------------------------------------------------
+
+model Issue {
+  id              String        @id @default(cuid())
+  organizationId  String
+  locationId      String
+  equipmentId     String
+  serviceRecordId String?
+  source          IssueSource
+  category        String // NOT_COOLING | NOISE | LEAKING | DOOR | ICE_BUILDUP | CLEANING | OTHER
+  severity        IssueSeverity @default(MEDIUM)
+  status          IssueStatus   @default(OPEN)
+  title           String
+  description     String?
+  reportedById    String?
+  assignedToId    String?
+  vendorId        String?
+  resolvedAt      DateTime?
+  resolutionNote  String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  organization  CustomerOrganization @relation(fields: [organizationId], references: [id])
+  location      RestaurantLocation   @relation(fields: [locationId], references: [id])
+  equipment     Equipment            @relation(fields: [equipmentId], references: [id])
+  serviceRecord ServiceRecord?       @relation(fields: [serviceRecordId], references: [id])
+  reportedBy    User?                @relation("IssueReporter", fields: [reportedById], references: [id])
+  assignedTo    User?                @relation("IssueAssignee", fields: [assignedToId], references: [id])
+  vendor        Vendor?              @relation(fields: [vendorId], references: [id])
+  events        IssueEvent[]
+  photos        IssuePhoto[]
+
+  @@index([organizationId, status])
+  @@index([locationId, status])
+  @@index([equipmentId, createdAt])
+}
+
+model IssuePhoto {
+  id         String   @id @default(cuid())
+  issueId    String
+  blobKey    String
+  capturedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  issue Issue @relation(fields: [issueId], references: [id])
+
+  @@index([issueId])
+}
+
+model IssueEvent {
+  id        String   @id @default(cuid())
+  issueId   String
+  actorId   String?
+  type      String // CREATED | TRIAGED | ASSIGNED | COMMENT | STATUS_CHANGE | RESOLVED
+  body      String?
+  detail    Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  issue Issue @relation(fields: [issueId], references: [id])
+
+  @@index([issueId, createdAt])
+}
+
+model Vendor {
+  id               String   @id @default(cuid())
+  serviceCompanyId String
+  name             String
+  trade            String? // REFRIGERATION | HVAC | PLUMBING | ELECTRICAL
+  contactName      String?
+  phone            String?
+  email            String?
+  notes            String?
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+
+  serviceCompany ServiceCompany @relation(fields: [serviceCompanyId], references: [id])
+  issues         Issue[]
+  equipment      Equipment[]
+}
+
+// ---------------------------------------------------------------------------
+// Commercial: service plans & subscriptions (schema only; billing not active)
+// ---------------------------------------------------------------------------
+
+model ServicePlan {
+  id               String   @id @default(cuid())
+  serviceCompanyId String
+  name             String
+  description      String?
+  billingPeriod    String   @default("MONTHLY")
+  basePriceCents   Int      @default(0)
+  perAssetCents    Int      @default(0)
+  perLocationCents Int      @default(0)
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+
+  serviceCompany ServiceCompany @relation(fields: [serviceCompanyId], references: [id])
+  lineItems      PlanLineItem[]
+  subscriptions  Subscription[]
+}
+
+model PlanLineItem {
+  id             String             @id @default(cuid())
+  servicePlanId  String
+  serviceTypeId  String
+  category       EquipmentCategory?
+  intervalDays   Int
+  unitPriceCents Int                @default(0)
+
+  servicePlan ServicePlan @relation(fields: [servicePlanId], references: [id])
+  serviceType ServiceType @relation(fields: [serviceTypeId], references: [id])
+
+  @@index([servicePlanId])
+}
+
+model Subscription {
+  id             String             @id @default(cuid())
+  organizationId String
+  servicePlanId  String
+  status         SubscriptionStatus @default(DRAFT)
+  startedAt      DateTime?
+  endedAt        DateTime?
+  createdAt      DateTime           @default(now())
+
+  organization CustomerOrganization @relation(fields: [organizationId], references: [id])
+  servicePlan  ServicePlan          @relation(fields: [servicePlanId], references: [id])
+  assets       SubscriptionAsset[]
+
+  @@index([organizationId, status])
+}
+
+model SubscriptionAsset {
+  id             String    @id @default(cuid())
+  subscriptionId String
+  equipmentId    String
+  addedAt        DateTime  @default(now())
+  removedAt      DateTime?
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+  equipment    Equipment    @relation(fields: [equipmentId], references: [id])
+
+  @@index([subscriptionId])
+}
+
+// ---------------------------------------------------------------------------
+// Platform: audit, notifications, idempotency, sync
+// ---------------------------------------------------------------------------
+
+model AuditEvent {
+  id             String   @id @default(cuid())
+  organizationId String?
+  actorId        String?
+  action         String // "equipment.created", "tag.replaced", "service.completed"
+  entityType     String
+  entityId       String
+  before         Json?
+  after          Json?
+  detail         Json     @default("{}")
+  ip             String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+
+  organization CustomerOrganization? @relation(fields: [organizationId], references: [id])
+  actor        User?                 @relation(fields: [actorId], references: [id])
+
+  @@index([entityType, entityId, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([action, createdAt])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String?
+  link      String?
+  /// Prevents spam: the same (user, type, dedupeKey) is only created once per window.
+  dedupeKey String
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, dedupeKey])
+  @@index([userId, readAt])
+}
+
+model NotificationPreference {
+  id     String           @id @default(cuid())
+  userId String
+  type   NotificationType
+  inApp  Boolean          @default(true)
+  email  Boolean          @default(false)
+  push   Boolean          @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+}
+
+/// Makes every field write safe to replay from the offline queue.
+model IdempotencyKey {
+  id           String    @id @default(cuid())
+  key          String
+  actorId      String
+  endpoint     String
+  requestHash  String
+  responseBody Json?
+  statusCode   Int       @default(200)
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@unique([actorId, key])
+  @@index([createdAt])
+}
+
+model SyncBatch {
+  id             String   @id @default(cuid())
+  actorId        String
+  clientId       String
+  eventCount     Int
+  appliedCount   Int      @default(0)
+  duplicateCount Int      @default(0)
+  failedCount    Int      @default(0)
+  detail         Json     @default("{}")
+  createdAt      DateTime @default(now())
+
+  @@index([actorId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Future equipment intelligence (dormant — no UI, no AI writes)
+// ---------------------------------------------------------------------------
+
+model SensorDevice {
+  id          String   @id @default(cuid())
+  equipmentId String
+  kind        String // TEMPERATURE | DOOR | COMPRESSOR | ENERGY
+  externalId  String   @unique
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  equipment Equipment       @relation(fields: [equipmentId], references: [id])
+  readings  SensorReading[]
+
+  @@index([equipmentId])
+}
+
+model SensorReading {
+  id         String   @id @default(cuid())
+  deviceId   String
+  metric     String
+  value      Float
+  unit       String
+  recordedAt DateTime
+
+  device SensorDevice @relation(fields: [deviceId], references: [id])
+
+  @@index([deviceId, recordedAt])
+}
+
+model Part {
+  id            String   @id @default(cuid())
+  sku           String   @unique
+  name          String
+  category      String?
+  unitCostCents Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  usages PartUsage[]
+}
+
+model PartUsage {
+  id          String   @id @default(cuid())
+  partId      String
+  equipmentId String
+  quantity    Int      @default(1)
+  usedAt      DateTime @default(now())
+
+  part      Part      @relation(fields: [partId], references: [id])
+  equipment Equipment @relation(fields: [equipmentId], references: [id])
+
+  @@index([equipmentId, usedAt])
+}
+
+model RepairCost {
+  id          String   @id @default(cuid())
+  equipmentId String
+  amountCents Int
+  description String?
+  incurredAt  DateTime
+  vendorName  String?
+  createdAt   DateTime @default(now())
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id])
+
+  @@index([equipmentId, incurredAt])
+}
+
+/// AI-extracted data-plate values. Never promoted to the asset without a human
+/// confirming them: `confirmedById` gates the write.
+model AiExtraction {
+  id            String    @id @default(cuid())
+  equipmentId   String?
+  photoBlobKey  String
+  kind          String    @default("DATA_PLATE")
+  extracted     Json      @default("{}")
+  confidence    Float?
+  model         String?
+  confirmedById String?
+  confirmedAt   DateTime?
+  rejectedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  equipment Equipment? @relation(fields: [equipmentId], references: [id])
+
+  @@index([equipmentId])
+}
