@@ -1,4 +1,9 @@
 [build]
+  # `base` and `publish` are both explicit because framework detection picks the
+  # wrong directory here: packages/nfc-core has its own package.json, so Netlify
+  # treats that workspace package as the app and looks for the build output at
+  # packages/nfc-core/.next, which never exists.
+  base = "."
   command = "npm run build"
   publish = ".next"
 
@@ -8,13 +13,11 @@
   # after install so the Lambda-compatible engine is present in the bundle.
   PRISMA_HIDE_UPDATE_MESSAGE = "true"
 
-# The Next.js runtime is auto-detected and injected by Netlify. Declaring it
-# explicitly as a plugin conflicts with that injection and fails the build.
-
-[functions]
-  # Prisma's query engine is resolved at runtime, so file tracing has to be told
-  # to include it explicitly or the deployed function cannot connect.
-  included_files = ["node_modules/.prisma/client/**"]
+# Required: auto-detection does not apply the Next.js runtime to upload-based
+# deploys, and without it every route is served as a static file and 404s.
+# Netlify installs this itself, so it is deliberately not a devDependency.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 
 [[headers]]
   for = "/*"
