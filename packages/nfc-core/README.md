@@ -53,3 +53,16 @@ const outcome = await resolveTagPayload(payload, {
 
 Every denial returns one generic message so valid tags cannot be enumerated, and
 every read — allowed or denied — is written to the audit sink.
+
+## How it is consumed here
+
+This directory is a self-contained module, not an npm workspace. The host app
+imports `@pmops/nfc-core`, which resolves through the `tsconfig.json` path alias
+to `src/index.ts`, and Vitest resolves it the same way.
+
+The workspace wiring was removed deliberately: Netlify's monorepo detection
+treats any workspace package as the deployable application and resolves the
+build output inside it, which breaks deployment. Nothing about the module's
+reusability depends on that wiring — it still has zero dependencies, no
+framework coupling, and its own `package.json` declaring its identity. Another
+service consumes it by copying this directory or publishing it from here.
