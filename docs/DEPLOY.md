@@ -1,10 +1,8 @@
 # Deployment
 
-**Live: https://clearline-equipment-care.netlify.app**
+**Live and fully configured: https://clearline-equipment-care.netlify.app**
 
-The app is deployed and serving. One manual step remains before it is usable:
-setting four environment variables, which must be done in the Netlify UI (see
-*Remaining step*).
+Readiness at a glance: `GET /api/v1/health` → `{"ready": true, "missing": []}`
 
 ---
 
@@ -13,16 +11,79 @@ setting four environment variables, which must be done in the Netlify UI (see
 | | |
 | --- | --- |
 | Netlify project | `clearline-equipment-care` (`4a7696fd-9a4b-480e-9c17-c718c2d1cfce`) |
-| Build | **Passing** |
-| Routes | Serving — `/signin` renders, server components and API routes work |
-| Database | **Provisioned and migrated.** `POST /api/v1/auth/login` queries `User` and correctly returns 401, which only happens if the schema exists |
-| Data | **Empty** — not yet seeded |
-| Dependency audit | **0 vulnerabilities** |
+| Build | Passing, 0 dependency vulnerabilities |
+| Database | Provisioned and migrated (40 tables) |
+| Data | Seeded — 19 assets, 15 tags, 14 service records, 2 issues |
+| Configuration | Complete |
+| Scheduled job | Registered, 07:00 UTC daily |
 
-A second project, `clearline-equipment-care-misdetected`, is a dead first
-attempt kept only so its deploy history stays readable. It can be deleted.
+### Verified against the live site
+
+| Check | Result |
+| --- | --- |
+| All five roles sign in | 200 |
+| Customer, technician and admin pages render | all 200 |
+| Location manager sees only Mona | 16 of 19 assets |
+| Location manager opens a Mona East asset | **404** |
+| Location manager attempts `tags/mint` | **403** |
+| Customer payloads contain `technicianNotes` | **no** |
+| Technician resolving the same tag sees internal notes | yes |
+| Signed tag resolves to the right asset | Main Water Filtration · Mona · Basement |
+| Forged tag payload | **404**, generic message |
+| Tap while signed out | 307 → `/signin?next=/t/…`, preserving the tap |
+| Tap as owner | 307 → the equipment passport |
+| Maintenance Health | 77 GOOD from 19 assets / 7 overdue / 2 issues |
+
+## Demo accounts
+
+One generated password, shared by all five. It was returned once by the
+bootstrap endpoint and is not recoverable — re-run bootstrap with
+`{"reset": true}` to issue a new one.
+
+| Email | Role | Sees |
+| --- | --- | --- |
+| `admin@clearline.example` | Super Admin | Everything |
+| `manager@clearline.example` | Service Manager | Command center |
+| `tech@clearline.example` | Technician | Today / visits |
+| `owner@monagroup.example` | Customer Org Owner | Both locations |
+| `gm@monagroup.example` | Customer Location Manager | Mona only |
+
+## Configuration
+
+Only two variables have to be set by hand. `SESSION_SECRET` was a requirement I
+invented — nothing reads it, because sessions use a random token hashed into the
+database. `APP_BASE_URL` now falls back to Netlify's own `URL`, and
+`DATABASE_URL` is deliberately unset so Netlify DB's per-branch database is used,
+which keeps deploy previews off production data.
+
+| Variable | Why |
+| --- | --- |
+| `NFC_TAG_SECRET` | Signs every tag identifier. **Back it up** — losing it makes every tag in the field unresolvable |
+| `JOB_TOKEN` | Authenticates the nightly job and the bootstrap endpoint |
+
+> **Rotate `NFC_TAG_SECRET` before writing real tags.** The current value was
+> generated during this session and has appeared in a chat transcript. Nothing
+> of value depends on it yet — the 15 seeded tags are demo data — so rotating now
+> costs nothing and later costs every tag in the field:
+>
+> ```bash
+> node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+> ```
+>
+> Set it in Netlify, redeploy, then re-run bootstrap with `{"reset": true}` so
+> the demo tags are re-minted under the new key.
+
+### A trap worth knowing
+
+Setting environment variables through the MCP tooling **silently does nothing**
+when `newVarContext` or `newVarScopes` are supplied — it still reports
+`Environment variable upserted`. Only the minimal form persists:
+`{siteId, upsertEnvVar, envVarKey, envVarValue}`. This cost several deploys to
+notice, which is why `/api/v1/health` now exists: it reports which configuration
+is actually present in the running function, as booleans only.
 
 ## What was blocking it
+
 
 Netlify refuses to build Next.js versions carrying **CVE-2025-55182** (RCE in
 the React flight protocol). That single fact explains every symptom seen while
@@ -51,66 +112,22 @@ npx netlify build --offline # Netlify's own pipeline, plugins included
 The working directory lies: Next loads `.env` from disk regardless of the shell,
 so `env -u DATABASE_URL` does not reproduce a missing-database build.
 
-## Remaining step: environment variables
+## Operations
 
-Four variables must be set, and the MCP tooling available here reports
-`Environment variable upserted` while nothing actually persists — verified by
-reading them back (empty) and by two live tests. **They have to be set in the
-Netlify UI**: Project configuration → Environment variables.
+- **Readiness:** `GET /api/v1/health` — database, schema, seeded, and missing config.
+- **Re-seed:** `POST /api/v1/jobs/bootstrap` with `x-job-token`, body `{"reset": true}`.
+  Refuses to wipe a populated database without it, and returns the new password once.
+- **Nightly job:** `netlify/functions/scheduled-refresh.ts` at 07:00 UTC calls
+  `/api/v1/jobs/refresh`, advancing schedule statuses and sending the overdue
+  digest. Both are idempotent, so a missed or doubled run is harmless.
+- **Reproduce a build failure locally** — the working directory lies, because Next
+  loads `.env` from disk regardless of the shell:
 
-Generate fresh values — nothing depends on any earlier ones, since no tag has
-been written yet:
+  ```bash
+  git archive HEAD | tar -x -C /tmp/cleanroom && cd /tmp/cleanroom && npm ci
+  npm run build
+  npx netlify build --offline   # Netlify's own pipeline, plugins included
+  ```
 
-```bash
-node -e "const c=require('crypto');for(const k of ['NFC_TAG_SECRET','SESSION_SECRET','JOB_TOKEN'])console.log(k+'='+c.randomBytes(48).toString('base64url'))"
-```
-
-| Variable | Value | Notes |
-| --- | --- | --- |
-| `NFC_TAG_SECRET` | generated, ≥32 chars | **Back this up.** Every tag identifier is signed with it; losing it makes every tag in the field unresolvable |
-| `SESSION_SECRET` | generated | |
-| `JOB_TOKEN` | generated | Authenticates the nightly job and the bootstrap endpoint |
-| `APP_BASE_URL` | `https://clearline-equipment-care.netlify.app` | Used to build tag URLs |
-
-`DATABASE_URL` is deliberately **not** set — Netlify DB provisions it and
-`resolveDatabaseUrl()` picks it up. Setting it would override the per-branch
-database that keeps deploy previews off production data.
-
-Redeploy after setting them.
-
-## Then seed the demo data
-
-Once, with the `JOB_TOKEN` you set:
-
-```bash
-curl -X POST https://clearline-equipment-care.netlify.app/api/v1/jobs/bootstrap \
-  -H "x-job-token: YOUR_JOB_TOKEN" -H 'content-type: application/json' -d '{}'
-```
-
-The response carries a generated password **once** and is never logged. It is
-shared by all five demo accounts (`admin@clearline.example`,
-`manager@clearline.example`, `tech@clearline.example`, `owner@monagroup.example`,
-`gm@monagroup.example`). The endpoint refuses to run against a populated
-database unless sent `{"reset": true}`.
-
-The development password `password123` cannot reach this deployment: the CLI
-seed refuses to run when `NODE_ENV=production` or `NETLIFY` is set.
-
-## Then verify
-
-In this order:
-
-1. `/signin` renders, and signing in as `owner@monagroup.example` lands on `/home`
-2. `gm@monagroup.example` sees only Mona — 16 of 19 assets — and gets 404 for a
-   Mona East asset
-3. `/admin` renders the command center for `admin@clearline.example`
-4. A photo upload round-trips through Netlify Blobs
-5. `/t/<payload>` resolves a tag (requires `NFC_TAG_SECRET` to match whatever
-   signed the tag)
-
-## Scheduled job
-
-`netlify/functions/scheduled-refresh.ts` runs at 07:00 UTC daily and calls
-`/api/v1/jobs/refresh`, which advances schedule statuses and sends the overdue
-digest. Both operations are idempotent, so a missed or doubled run is harmless.
-It needs `JOB_TOKEN` and `APP_BASE_URL` to be set.
+A second project, `clearline-equipment-care-misdetected`, is a dead first attempt
+kept only so its deploy history stays readable. It can be deleted.
