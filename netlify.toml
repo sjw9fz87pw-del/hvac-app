@@ -8,8 +8,8 @@
   # after install so the Lambda-compatible engine is present in the bundle.
   PRISMA_HIDE_UPDATE_MESSAGE = "true"
 
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
+# The Next.js runtime is auto-detected and injected by Netlify. Declaring it
+# explicitly as a plugin conflicts with that injection and fails the build.
 
 [functions]
   # Prisma's query engine is resolved at runtime, so file tracing has to be told
