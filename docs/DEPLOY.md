@@ -1,7 +1,10 @@
 # Deployment
 
-Target: Netlify. **Status: not yet deploying successfully.** What is verified,
-what is fixed, and what is still blocked is recorded below rather than implied.
+**Live: https://clearline-equipment-care.netlify.app**
+
+The app is deployed and serving. One manual step remains before it is usable:
+setting four environment variables, which must be done in the Netlify UI (see
+*Remaining step*).
 
 ---
 
@@ -10,105 +13,104 @@ what is fixed, and what is still blocked is recorded below rather than implied.
 | | |
 | --- | --- |
 | Netlify project | `clearline-equipment-care` (`4a7696fd-9a4b-480e-9c17-c718c2d1cfce`) |
-| URL | https://clearline-equipment-care.netlify.app |
-| Build | **Failing** — `Failed during stage 'building site': Build script returned non-zero exit code: 2` |
-| Environment variables | Set: `NFC_TAG_SECRET`, `SESSION_SECRET`, `JOB_TOKEN` (all secret), `APP_BASE_URL` |
-| Database | Not provisioned — every deploy shows `database_branch_id: null` |
+| Build | **Passing** |
+| Routes | Serving — `/signin` renders, server components and API routes work |
+| Database | **Provisioned and migrated.** `POST /api/v1/auth/login` queries `User` and correctly returns 401, which only happens if the schema exists |
+| Data | **Empty** — not yet seeded |
+| Dependency audit | **0 vulnerabilities** |
 
 A second project, `clearline-equipment-care-misdetected`, is a dead first
 attempt kept only so its deploy history stays readable. It can be deleted.
 
-## What is verified to work
+## What was blocking it
 
-Reproducing the deploy faithfully takes two steps, because the working
-directory lies:
+Netlify refuses to build Next.js versions carrying **CVE-2025-55182** (RCE in
+the React flight protocol). That single fact explains every symptom seen while
+debugging:
+
+- The build failed **only** when the Next.js runtime plugin was active, because
+  the runtime performs the version check.
+- Without the plugin the build passed, but every route 404'd, because nothing
+  was there to serve them.
+- `netlify build --offline` passed locally, because the check needs network.
+
+15.5.4 was carrying not one advisory but **31**, three critical. The floor
+across all of them was 15.5.24. Upgraded to **15.5.25**, the latest backport on
+the 15.5 line, which clears every one without a major-version jump.
+
+Four further defects were found and fixed along the way; see the commit history
+from `Make the app deployable` onward. The two-step reproduction that found them:
 
 ```bash
-# 1. Clean-room build from the committed tree only — no .env, no stale
-#    node_modules. This is what the deploy actually sees.
-git archive HEAD | tar -x -C /tmp/cleanroom
-cd /tmp/cleanroom && npm ci && npm run build          # passes
-
-# 2. Netlify's own pipeline, plugins included.
-npx netlify build --offline                            # "Netlify Build Complete"
+# Clean room — the committed tree only. No .env, no stale node_modules.
+git archive HEAD | tar -x -C /tmp/cleanroom && cd /tmp/cleanroom && npm ci
+npm run build              # catches what your working directory hides
+npx netlify build --offline # Netlify's own pipeline, plugins included
 ```
 
-Both pass. `npm test` (106 tests) and `npm run typecheck` pass.
+The working directory lies: Next loads `.env` from disk regardless of the shell,
+so `env -u DATABASE_URL` does not reproduce a missing-database build.
 
-## Fixed along the way
+## Remaining step: environment variables
 
-Four real defects, each found by a reproduction rather than a guess:
+Four variables must be set, and the MCP tooling available here reports
+`Environment variable upserted` while nothing actually persists — verified by
+reading them back (empty) and by two live tests. **They have to be set in the
+Netlify UI**: Project configuration → Environment variables.
 
-1. **`@netlify/functions` was imported but never installed.** The scheduled
-   function imports a type from it. Local typechecking passed only because
-   `netlify-cli` pulled it in transitively — removing that made the local check
-   faithful again.
-2. **`packagePath: packages/nfc-core`.** `netlify build --dry` showed Netlify's
-   monorepo detection treating the NFC workspace package as the deployable app,
-   resolving build output to `packages/nfc-core/.next`. Removing the npm
-   workspace wiring fixed it; the package still resolves through the tsconfig
-   path alias, which is how it always actually resolved.
-3. **`datasources: { db: { url: undefined } }`** threw in the Prisma
-   constructor, which runs at module load and therefore during `next build`.
-   Invisible locally because Next loads `.env` from disk regardless of the shell
-   environment, and `.env` is gitignored.
-4. **`publish = ".next"` without the runtime** published build output as static
-   files, 404ing every route.
+Generate fresh values — nothing depends on any earlier ones, since no tag has
+been written yet:
 
-## What is still blocked
+```bash
+node -e "const c=require('crypto');for(const k of ['NFC_TAG_SECRET','SESSION_SECRET','JOB_TOKEN'])console.log(k+'='+c.randomBytes(48).toString('base64url'))"
+```
 
-With `[[plugins]] package = "@netlify/plugin-nextjs"` present, the build fails.
-Without it, the build succeeds but every route 404s because the runtime never
-applies. Ruled out by direct test: the workspace misdetection, the Prisma
-constructor, `[functions] included_files`, `base`, `@netlify/database`, and
-whether the plugin is a devDependency.
+| Variable | Value | Notes |
+| --- | --- | --- |
+| `NFC_TAG_SECRET` | generated, ≥32 chars | **Back this up.** Every tag identifier is signed with it; losing it makes every tag in the field unresolvable |
+| `SESSION_SECRET` | generated | |
+| `JOB_TOKEN` | generated | Authenticates the nightly job and the bootstrap endpoint |
+| `APP_BASE_URL` | `https://clearline-equipment-care.netlify.app` | Used to build tag URLs |
 
-**The blocker is the build log.** Netlify exposes it only in the web UI, which
-this environment cannot reach, and a failed deploy publishes nothing — so the
-trick of writing the log to a static asset works only for builds that succeed.
+`DATABASE_URL` is deliberately **not** set — Netlify DB provisions it and
+`resolveDatabaseUrl()` picks it up. Setting it would override the per-branch
+database that keeps deploy previews off production data.
 
-### To unblock it
+Redeploy after setting them.
 
-Either is enough:
+## Then seed the demo data
 
-1. **Open the build log** at
-   `https://app.netlify.com/projects/clearline-equipment-care/deploys` and share
-   the error from the failing deploy. The clean-room reproduction above makes a
-   fix quick once the message is known.
-2. **Connect the GitHub repository** to the Netlify project (Project
-   configuration → Build & deploy → Link repository, branch
-   `claude/restaurant-maintenance-platform-dydlsy`). Git-based builds are the
-   supported path, deploy on push, and surface logs normally.
+Once, with the `JOB_TOKEN` you set:
 
-## After the build succeeds
+```bash
+curl -X POST https://clearline-equipment-care.netlify.app/api/v1/jobs/bootstrap \
+  -H "x-job-token: YOUR_JOB_TOKEN" -H 'content-type: application/json' -d '{}'
+```
 
-1. **Provision the database.** `@netlify/database` provisions Postgres on
-   deploy; confirm `database_branch_id` is no longer null. The initial migration
-   in `netlify/database/migrations/001_initial/` (40 tables) is applied
-   automatically before a production deploy is published, and a failure blocks
-   publishing.
+The response carries a generated password **once** and is never logged. It is
+shared by all five demo accounts (`admin@clearline.example`,
+`manager@clearline.example`, `tech@clearline.example`, `owner@monagroup.example`,
+`gm@monagroup.example`). The endpoint refuses to run against a populated
+database unless sent `{"reset": true}`.
 
-2. **Seed demo data** — once, with a generated password:
+The development password `password123` cannot reach this deployment: the CLI
+seed refuses to run when `NODE_ENV=production` or `NETLIFY` is set.
 
-   ```bash
-   curl -X POST https://clearline-equipment-care.netlify.app/api/v1/jobs/bootstrap \
-     -H "x-job-token: $JOB_TOKEN" -H 'content-type: application/json' -d '{}'
-   ```
+## Then verify
 
-   The response carries the password **once** and is not logged anywhere. The
-   endpoint refuses to run against a populated database unless sent
-   `{"reset": true}`.
+In this order:
 
-3. **Verify**, in this order: `/signin`, sign in, `/home` renders the dashboard,
-   `/admin` renders the command center, a photo upload round-trips through
-   Netlify Blobs, and a tag resolves at `/t/<payload>`.
+1. `/signin` renders, and signing in as `owner@monagroup.example` lands on `/home`
+2. `gm@monagroup.example` sees only Mona — 16 of 19 assets — and gets 404 for a
+   Mona East asset
+3. `/admin` renders the command center for `admin@clearline.example`
+4. A photo upload round-trips through Netlify Blobs
+5. `/t/<payload>` resolves a tag (requires `NFC_TAG_SECRET` to match whatever
+   signed the tag)
 
-## Secrets
+## Scheduled job
 
-`NFC_TAG_SECRET`, `SESSION_SECRET` and `JOB_TOKEN` were generated at deploy time
-and stored as secret Netlify environment variables. They are readable in the
-Netlify UI and were never written to the repository.
-
-**`NFC_TAG_SECRET` is the one that matters.** Every tag identifier is signed
-with it, so rotating or losing it makes every tag in the field unresolvable.
-Back it up somewhere durable before tags are written.
+`netlify/functions/scheduled-refresh.ts` runs at 07:00 UTC daily and calls
+`/api/v1/jobs/refresh`, which advances schedule statuses and sends the overdue
+digest. Both operations are idempotent, so a missed or doubled run is harmless.
+It needs `JOB_TOKEN` and `APP_BASE_URL` to be set.
