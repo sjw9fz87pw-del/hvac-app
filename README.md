@@ -18,6 +18,8 @@ issue-reporting system.
   NFC plan, screen map, phases, risks and test plan.
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — how it is built and why.
 - **[docs/API.md](docs/API.md)** — the REST surface.
+- **[docs/HARDWARE.md](docs/HARDWARE.md)** — which NFC tags to buy and why the obvious
+  choice fails on 95% of restaurant equipment.
 - **[docs/TEST-PLAN.md](docs/TEST-PLAN.md)** — what is tested automatically, and the manual checklist.
 
 ## Run it

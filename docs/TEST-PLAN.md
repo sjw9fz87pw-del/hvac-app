@@ -95,8 +95,14 @@ paths are unit-tested against a mocked transport, so the physical read/write has
 2. **Write → verify → pair** — confirm pairing is refused if the read-back fails,
    and that the failure appears in the command center.
 3. **Replace a damaged tag** — old revoked, new paired, history intact on the asset.
-4. **Tap on iPhone** — confirm the QR fallback resolves to the identical record.
-5. **Airplane mode** — complete a service offline, confirm it appears in the queue on
+4. **Tap on iPhone** — iPhone XR/XS and later on iOS 14+ read NDEF URL tags with no
+   app via Background Tag Reading, so the tap should raise a banner that opens
+   `/t/<token>` in Safari. Confirm that, *and* confirm the QR fallback resolves to the
+   identical record for older iPhones and for the cases where background reading does
+   not fire (camera or Apple Pay active, some lock states).
+5. **On-metal read range** — confirm a standard tag fails on a stainless door and an
+   on-metal tag reads at arm's length on a condenser housing. See `docs/HARDWARE.md`.
+6. **Airplane mode** — complete a service offline, confirm it appears in the queue on
    Profile, then restore signal and confirm exactly one record is created.
 
 ## Not covered

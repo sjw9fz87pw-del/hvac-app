@@ -137,10 +137,23 @@ the asset is never without an identity and the old tag's history stays attached.
 
 ### QR fallback
 
-Web NFC exists on Chrome for Android and essentially nowhere else. The QR code
-encodes the **same token** and hits the **same endpoint**, so it is a first-class
-path rather than a degraded one. The UI detects capability and never shows a
-button that cannot work on the device looking at it.
+Web NFC — scanning and writing from inside a web page — exists on Chrome for
+Android and essentially nowhere else. That constrains **technician** operations to
+Android.
+
+Customer taps are less constrained than that suggests: iPhone XR/XS and later on
+iOS 14+ read NDEF URL tags natively with no app, raising a banner that opens
+`/t/<token>` in Safari. So a tag tap works on both platforms; only writing is
+Android-only.
+
+The QR code encodes the **same token** and hits the **same endpoint**, so it
+covers older iPhones, desktop, and the cases where background reading does not
+fire — a first-class path rather than a degraded one. The UI detects capability
+and never shows a button that cannot work on the device looking at it.
+
+Hardware constraints that follow from this are in [HARDWARE.md](HARDWARE.md);
+the one that matters most is that nearly every asset is mounted on steel, which
+ordinary NFC tags cannot read through.
 
 ---
 
