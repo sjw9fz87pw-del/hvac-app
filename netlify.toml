@@ -1,9 +1,4 @@
 [build]
-  # `base` and `publish` are both explicit because framework detection picks the
-  # wrong directory here: packages/nfc-core has its own package.json, so Netlify
-  # treats that workspace package as the app and looks for the build output at
-  # packages/nfc-core/.next, which never exists.
-  base = "."
   command = "npm run build"
   publish = ".next"
 
