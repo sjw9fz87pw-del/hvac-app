@@ -1,0 +1,32 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # Prisma's postinstall generates the client; the build script regenerates it
+  # after install so the Lambda-compatible engine is present in the bundle.
+  PRISMA_HIDE_UPDATE_MESSAGE = "true"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[functions]
+  # Prisma's query engine is resolved at runtime, so file tracing has to be told
+  # to include it explicitly or the deployed function cannot connect.
+  included_files = ["node_modules/.prisma/client/**"]
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(self), geolocation=(), microphone=()"
+
+# Photos are served through the app so they stay behind authentication; make sure
+# nothing caches them at the edge across users.
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "private, no-store"

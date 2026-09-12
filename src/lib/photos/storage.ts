@@ -81,7 +81,25 @@ export class LocalBlobStore implements BlobStore {
 
 let store: BlobStore | undefined;
 
+/**
+ * Local disk in development, Netlify Blobs when deployed.
+ *
+ * This is the whole reason storage sits behind a port: a serverless filesystem
+ * is ephemeral, so the local implementation would silently lose service proof in
+ * production. Swapping to S3/R2 later is another implementation of `BlobStore`,
+ * not a refactor of anything that stores a photo.
+ */
 export function blobStore(): BlobStore {
-  store ??= new LocalBlobStore(process.env.BLOB_DIR ?? "./.data/blobs");
+  if (store) return store;
+
+  const onNetlify = Boolean(process.env.NETLIFY || process.env.NETLIFY_BLOBS_CONTEXT);
+  if (onNetlify) {
+    // Required lazily so local runs and tests never load the Netlify SDK.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { NetlifyBlobStore } = require("./netlify-store") as typeof import("./netlify-store");
+    store = new NetlifyBlobStore();
+  } else {
+    store = new LocalBlobStore(process.env.BLOB_DIR ?? "./.data/blobs");
+  }
   return store;
 }

@@ -5,6 +5,9 @@
 generator client {
   provider = "prisma-client-js"
   output   = "../node_modules/.prisma/client"
+  // Netlify Functions run on Amazon Linux with OpenSSL 3; without these the
+  // deployed bundle carries only the local engine and fails at runtime.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
