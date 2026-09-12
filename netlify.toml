@@ -10,7 +10,8 @@
 
 # Required: auto-detection does not apply the Next.js runtime to upload-based
 # deploys, and without it every route is served as a static file and 404s.
-# Netlify installs this itself, so it is deliberately not a devDependency.
+# Pinned as a devDependency so the build does not depend on resolving it at
+# build time.
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
