@@ -52,7 +52,18 @@ export async function seedDemoData(
   prisma: PrismaClient,
   plainPassword: string,
 ): Promise<SeedResult> {
-  const TAG_SECRET = process.env.NFC_TAG_SECRET ?? TAG_SECRET_FALLBACK;
+  // Minting with the published development secret would make every tag forgeable
+  // by anyone who has read this repository, so a deployed environment has to
+  // supply a real one.
+  const configuredSecret = process.env.NFC_TAG_SECRET;
+  const deployed = Boolean(process.env.NETLIFY) || process.env.NODE_ENV === "production";
+  if (deployed && (!configuredSecret || configuredSecret.length < 32)) {
+    throw new Error(
+      "NFC_TAG_SECRET must be set to at least 32 characters before seeding a deployed environment. " +
+      "Tags minted with the development fallback would be forgeable by anyone.",
+    );
+  }
+  const TAG_SECRET = configuredSecret ?? TAG_SECRET_FALLBACK;
 
   
 

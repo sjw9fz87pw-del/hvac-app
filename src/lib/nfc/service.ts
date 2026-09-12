@@ -26,7 +26,11 @@ function tagSecret(): string {
 }
 
 export function appBaseUrl(): string {
-  return process.env.APP_BASE_URL ?? "http://localhost:3000";
+  // Netlify sets URL to the site's primary address on every build and every
+  // function invocation, so APP_BASE_URL only needs setting for a custom domain
+  // or a non-Netlify host. One less thing to configure by hand, and one less
+  // thing to get wrong when a tag URL has to be right forever.
+  return process.env.APP_BASE_URL ?? process.env.URL ?? "http://localhost:3000";
 }
 
 // --- ports -----------------------------------------------------------------
