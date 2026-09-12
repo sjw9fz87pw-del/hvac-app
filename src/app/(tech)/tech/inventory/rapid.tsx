@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card, Button, Pill } from "@/components/ui/primitives";
 import { compressImage, uploadPhoto } from "@/lib/photos/client";
-import { isNfcSupported, writeTag, readTagOnce } from "@/lib/nfc/web-nfc";
+import { isNfcSupported, writeTag, readTagOnce, lockTag, canLockTags } from "@/lib/nfc/web-nfc";
 
 interface LocationOption {
   id: string; name: string; organizationId: string; organizationName: string;
@@ -27,6 +27,7 @@ const EQUIPMENT_TYPES = [
 const INTERVALS = [30, 60, 90, 180];
 
 type Phase = "capture" | "tagging" | "done";
+type TagState = "idle" | "writing" | "verifying" | "locking" | "paired" | "failed";
 
 /**
  * One screen, one unit, then straight on to the next. State that carries over
@@ -60,7 +61,9 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
 
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [createdAssetId, setCreatedAssetId] = useState<string | null>(null);
-  const [tagState, setTagState] = useState<"idle" | "writing" | "verifying" | "paired" | "failed">("idle");
+  const [tagState, setTagState] = useState<TagState>("idle");
+  const [lockTags, setLockTags] = useState(true);
+  const [lockNote, setLockNote] = useState<string | null>(null);
   const [tagMessage, setTagMessage] = useState<string | null>(null);
 
   const [busy, setBusy] = useState(false);
@@ -159,6 +162,26 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
       });
       if (!pair.ok) throw new Error((await pair.json()).error ?? "Pairing failed");
 
+      // Locking is irreversible and comes last, after the write is verified and
+      // the pairing is committed — a locked tag pointing at nothing is scrap.
+      // The asset is already working at this point, so a lock that fails is
+      // recorded and reported, never allowed to undo the pairing.
+      if (lockTags) {
+        setTagState("locking");
+        const outcome = await lockTag();
+        await fetch("/api/v1/tags/lock", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            tagId: minted.tagId,
+            locked: outcome.locked,
+            reason: outcome.locked ? null : outcome.reason,
+            unsupported: outcome.locked ? false : Boolean(outcome.unsupported),
+          }),
+        }).catch(() => {});
+        setLockNote(outcome.locked ? null : outcome.reason);
+      }
+
       setTagState("paired");
     } catch (e) {
       setTagState("failed");
@@ -172,7 +195,7 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
     setName(""); setModel(""); setSerial("");
     setPhotoKey(null); setPreview(null);
     setCreatedId(null); setCreatedAssetId(null);
-    setTagState("idle"); setTagMessage(null); setError(null);
+    setTagState("idle"); setTagMessage(null); setLockNote(null); setError(null);
   }
 
   if (phase === "tagging") {
@@ -185,12 +208,19 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
             {tagState === "idle" ? "Hold a blank tag against the phone and assign it."
               : tagState === "writing" ? "Writing the secure identifier…"
               : tagState === "verifying" ? "Reading the tag back to verify the write…"
-              : tagState === "paired" ? "Tag written, verified and paired."
+              : tagState === "locking" ? "Locking the tag so it cannot be rewritten…"
+              : tagState === "paired" ? (lockTags && !lockNote ? "Tag written, verified, paired and locked." : "Tag written, verified and paired.")
               : "The tag was not paired."}
           </p>
 
           {tagState === "paired" ? (
             <div style={{ fontSize: 40, marginTop: 14, color: "var(--good)" }}>✓</div>
+          ) : null}
+
+          {tagState === "paired" && lockNote ? (
+            <div style={{ marginTop: 14, background: "var(--warn-soft)", color: "var(--warn)", padding: 12, borderRadius: 10, fontSize: 13.5, textAlign: "left" }}>
+              Paired, but not locked — {lockNote} It still works; it can be locked later from the NFC console.
+            </div>
           ) : null}
 
           {tagMessage ? (
@@ -202,7 +232,7 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
           <div style={{ marginTop: 22, display: "grid", gap: 10 }}>
             {tagState !== "paired" ? (
               nfcAvailable ? (
-                <Button size="lg" onClick={assignTag} disabled={tagState === "writing" || tagState === "verifying"}>
+                <Button size="lg" onClick={assignTag} disabled={tagState === "writing" || tagState === "verifying" || tagState === "locking"}>
                   {tagState === "failed" ? "Try again" : "Assign NFC tag"}
                 </Button>
               ) : (
@@ -335,6 +365,37 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
             </button>
           ))}
         </div>
+      </Card>
+
+      <Card style={{ marginBottom: 14, padding: 14 }}>
+        <button
+          onClick={() => setLockTags((v) => !v)}
+          disabled={!canLockTags()}
+          style={{
+            display: "flex", alignItems: "center", gap: 11, width: "100%", background: "none",
+            border: "none", padding: 0, textAlign: "left", cursor: canLockTags() ? "pointer" : "not-allowed",
+            opacity: canLockTags() ? 1 : 0.55,
+          }}
+        >
+          <span
+            style={{
+              width: 26, height: 26, borderRadius: 8, flexShrink: 0, display: "grid", placeItems: "center",
+              border: `2px solid ${lockTags && canLockTags() ? "var(--good)" : "var(--line)"}`,
+              background: lockTags && canLockTags() ? "var(--good)" : "transparent",
+              color: "#fff", fontSize: 15, fontWeight: 700,
+            }}
+          >
+            {lockTags && canLockTags() ? "✓" : ""}
+          </span>
+          <span style={{ flex: 1 }}>
+            <span style={{ display: "block", fontWeight: 620, fontSize: 14.5 }}>Lock tags after pairing</span>
+            <span style={{ display: "block", fontSize: 12.5, color: "var(--ink-faint)", marginTop: 1 }}>
+              {canLockTags()
+                ? "Permanent. Stops anyone repointing the tag at different equipment."
+                : "This browser cannot lock tags — they will pair but stay rewritable."}
+            </span>
+          </span>
+        </button>
       </Card>
 
       {error ? <div style={{ color: "var(--bad)", fontSize: 13.5, marginBottom: 10 }}>{error}</div> : null}

@@ -15,12 +15,13 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
   const scope = organizationScope(actor);
   const orgFilter = scope ? { organizationId: { in: scope.length ? scope : ["__none__"] } } : {};
 
-  const [tags, counts, untagged, failures] = await Promise.all([
+  const [tags, counts, untagged, unlocked, failures] = await Promise.all([
     prisma.tag.findMany({
       where: {
         ...orgFilter,
         ...(filter === "revoked" ? { state: "REVOKED" as const } : {}),
         ...(filter === "unassigned" ? { state: "UNASSIGNED" as const } : {}),
+        ...(filter === "unlocked" ? { state: "ACTIVE" as const, lockedAt: null } : {}),
       },
       include: {
         organization: { select: { name: true } },
@@ -35,8 +36,9 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
       include: { location: { select: { name: true } }, area: { select: { name: true } } },
       take: 25,
     }),
+    prisma.tag.count({ where: { ...orgFilter, state: "ACTIVE", lockedAt: null } }),
     prisma.tagEvent.findMany({
-      where: { type: { in: ["WRITE_FAILED", "VERIFY_FAILED", "READ_DENIED"] } },
+      where: { type: { in: ["WRITE_FAILED", "VERIFY_FAILED", "READ_DENIED", "LOCK_FAILED"] } },
       orderBy: { createdAt: "desc" },
       take: 15,
     }),
@@ -61,6 +63,7 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
         <Stat label="Unassigned" value={byState.UNASSIGNED ?? 0} />
         <Stat label="Revoked" value={byState.REVOKED ?? 0} tone="bad" />
         <Stat label="Assets untagged" value={untagged.length} tone={untagged.length > 0 ? "warn" : "good"} />
+        <Stat label="Unlocked" value={unlocked} tone={unlocked > 0 ? "warn" : "good"} hint="Can still be rewritten" />
       </StatGrid>
 
       <div style={{ display: "flex", gap: 8, marginTop: 18, flexWrap: "wrap" }}>
@@ -68,6 +71,7 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
           { key: undefined, label: "Recent" },
           { key: "unassigned", label: "Unassigned" },
           { key: "revoked", label: "Revoked" },
+          { key: "unlocked", label: "Unlocked" },
           { key: "untagged", label: "Assets without tags" },
         ].map((option) => (
           <a
@@ -124,7 +128,12 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
                         ? `${tag.assignments[0].equipment.location.name} · ${tag.organization?.name ?? ""}`
                         : `${tag.organization?.name ?? "Unassigned stock"} · written ${formatDate(tag.writtenAt)}`
                     }
-                    right={<StatusPill status={tag.state} />}
+                    right={
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                        {tag.state === "ACTIVE" && !tag.lockedAt ? <Pill tone="warn">Unlocked</Pill> : null}
+                        <StatusPill status={tag.state} />
+                      </div>
+                    }
                   />
                 </div>
               ))}
@@ -157,6 +166,9 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
           A single URL containing a random 128-bit identifier and a truncated HMAC. No customer name, location,
           equipment, model or serial number is written to the chip. Every read is checked server-side for tag state,
           tenant binding and the reader&rsquo;s own access — and logged either way.
+          Tags are locked read-only once paired, so nobody who can physically reach one can repoint it at
+          different equipment. Locking is irreversible and happens only after the write is verified, so
+          any tag that could not be locked is listed above rather than quietly left rewritable.
         </p>
       </Card>
     </main>

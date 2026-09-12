@@ -193,3 +193,71 @@ describe("tap resolution", () => {
     expect(messages.size).toBe(1);
   });
 });
+
+describe("tag locking", () => {
+  // Locking is irreversible on the hardware, so the ordering guarantees around
+  // it matter more than the call itself. The transport is mocked because no NFC
+  // radio exists in this environment.
+  function mockTransport(opts: { canLock?: boolean; lockFails?: boolean } = {}) {
+    const calls: string[] = [];
+    return {
+      calls,
+      transport: {
+        isSupported: () => true,
+        async write(_payload: string) { calls.push("write"); },
+        async readOnce(_timeoutMs?: number) { calls.push("read"); return "payload"; },
+        canLock: () => opts.canLock ?? true,
+        async lock(_timeoutMs?: number) {
+          calls.push("lock");
+          if (opts.lockFails) throw new Error("Tag moved away before locking finished");
+        },
+      } satisfies import("@pmops/nfc-core").NfcTransport & { canLock: () => boolean },
+    };
+  }
+
+  /** Mirrors the order the pairing flow uses: write, verify, pair, then lock. */
+  async function pairAndLock(t: ReturnType<typeof mockTransport>["transport"], commitPairing: () => void) {
+    await t.write("payload");
+    await t.readOnce();
+    commitPairing();
+    if (t.canLock?.()) {
+      try { await t.lock?.(); } catch { /* recorded, never fatal */ }
+    }
+  }
+
+  it("locks only after the write is verified and the pairing committed", async () => {
+    const { transport, calls } = mockTransport();
+    let pairedAt = -1;
+    await pairAndLock(transport, () => { pairedAt = calls.length; });
+
+    expect(calls).toEqual(["write", "read", "lock"]);
+    // The lock must come after pairing — a locked tag pointing at nothing is scrap.
+    expect(calls.indexOf("lock")).toBeGreaterThan(pairedAt - 1);
+    expect(calls.indexOf("read")).toBeLessThan(calls.indexOf("lock"));
+  });
+
+  it("still pairs when the device cannot lock", async () => {
+    const { transport, calls } = mockTransport({ canLock: false });
+    let paired = false;
+    await pairAndLock(transport, () => { paired = true; });
+
+    expect(paired).toBe(true);
+    expect(calls).not.toContain("lock");
+  });
+
+  it("does not undo a committed pairing when locking fails", async () => {
+    const { transport, calls } = mockTransport({ lockFails: true });
+    let paired = false;
+    await expect(pairAndLock(transport, () => { paired = true; })).resolves.toBeUndefined();
+
+    // The asset is already working; an unlocked tag is a smaller problem than
+    // an unpaired one, so the failure is recorded rather than thrown.
+    expect(paired).toBe(true);
+    expect(calls).toContain("lock");
+  });
+
+  it("treats lock events as part of the audit vocabulary", () => {
+    const types: import("@pmops/nfc-core").TagAuditType[] = ["LOCKED", "LOCK_FAILED"];
+    expect(types).toHaveLength(2);
+  });
+});

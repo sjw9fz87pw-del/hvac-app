@@ -15,7 +15,7 @@ import { AuthError, type Actor } from "@/lib/auth/session";
 import { capabilitiesFor } from "@/lib/auth/permissions";
 import { withIdempotency, IdempotencyConflict } from "@/lib/sync/idempotency";
 import { completeService, ProofIncompleteError } from "@/lib/maintenance/completion";
-import { pairTag, unpairTag, replaceTag, resolveTap, mintTag, TagOperationError } from "@/lib/nfc/service";
+import { pairTag, unpairTag, replaceTag, resolveTap, mintTag, recordTagLock, TagOperationError } from "@/lib/nfc/service";
 
 const prisma = new PrismaClient();
 const SECRET = process.env.NFC_TAG_SECRET!;
@@ -435,6 +435,47 @@ describe("tag operations", () => {
     const after = await prisma.tagAssignment.count({ where: { equipmentId: ctx.assetA } });
     expect(after).toBe(before);
     expect(await prisma.tagAssignment.count({ where: { equipmentId: ctx.assetA, unassignedAt: null } })).toBe(0);
+  });
+
+  it("records a lock and leaves the tag usable", async () => {
+    const { tag } = await mintTag({ organizationId: ctx.orgA, actor: staff() });
+    expect(tag.lockedAt).toBeNull();
+
+    const locked = await recordTagLock({ tagId: tag.id, actor: staff(), locked: true });
+    expect(locked.lockedAt).not.toBeNull();
+    expect(locked.state).toBe("UNASSIGNED"); // locking the chip is not a state change
+
+    const events = await prisma.tagEvent.findMany({ where: { tagId: tag.id, type: "LOCKED" } });
+    expect(events).toHaveLength(1);
+    const audit = await prisma.auditEvent.findFirst({ where: { action: "tag.locked", entityId: tag.id } });
+    expect(audit).not.toBeNull();
+  });
+
+  it("records why a lock failed without marking the tag locked", async () => {
+    const { tag } = await mintTag({ organizationId: ctx.orgA, actor: staff() });
+    const result = await recordTagLock({
+      tagId: tag.id, actor: staff(), locked: false,
+      reason: "This browser cannot lock tags.", unsupported: true,
+    });
+
+    // A tag that could not be locked still works; it must simply be findable.
+    expect(result.lockedAt).toBeNull();
+    const events = await prisma.tagEvent.findMany({ where: { tagId: tag.id, type: "LOCK_FAILED" } });
+    expect(events).toHaveLength(1);
+    expect((events[0].detail as { unsupported?: boolean }).unsupported).toBe(true);
+  });
+
+  it("does not let a lock be recorded against another tenant's tag", async () => {
+    const { tag } = await mintTag({ organizationId: ctx.orgB, actor: staff() });
+    const outsider = actor({ userId: ctx.ownerA, roles: ["TECHNICIAN"], organizationIds: new Set([ctx.orgA]) });
+    await expect(recordTagLock({ tagId: tag.id, actor: outsider, locked: true })).rejects.toBeInstanceOf(AuthError);
+  });
+
+  it("is idempotent — re-recording a lock keeps the original timestamp", async () => {
+    const { tag } = await mintTag({ organizationId: ctx.orgA, actor: staff() });
+    const first = await recordTagLock({ tagId: tag.id, actor: staff(), locked: true });
+    const second = await recordTagLock({ tagId: tag.id, actor: staff(), locked: true });
+    expect(second.lockedAt?.toISOString()).toBe(first.lockedAt?.toISOString());
   });
 
   it("mints tokens that carry no tenant id", async () => {

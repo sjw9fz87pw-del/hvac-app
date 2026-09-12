@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Card, Button } from "@/components/ui/primitives";
-import { isNfcSupported, writeTag, readTagOnce } from "@/lib/nfc/web-nfc";
+import { isNfcSupported, writeTag, readTagOnce, lockTag, canLockTags } from "@/lib/nfc/web-nfc";
 
 /**
  * Replace, unpair and revoke.
@@ -49,6 +49,21 @@ export function TagActions({ tagId, equipmentId, equipmentName, organizationId, 
         body: JSON.stringify({ equipmentId, newTagId: minted.tagId, reason: reason || "Tag replaced", verified: true }),
       });
       if (!response.ok) throw new Error((await response.json()).error ?? "Replacement failed");
+
+      if (canLockTags()) {
+        setStatus("Locking the replacement so it cannot be rewritten…");
+        const outcome = await lockTag();
+        await fetch("/api/v1/tags/lock", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            tagId: minted.tagId,
+            locked: outcome.locked,
+            reason: outcome.locked ? null : outcome.reason,
+            unsupported: outcome.locked ? false : Boolean(outcome.unsupported),
+          }),
+        }).catch(() => {});
+      }
 
       setStatus("Replaced. The old tag is revoked and its history retained.");
       setTimeout(() => window.location.reload(), 1200);

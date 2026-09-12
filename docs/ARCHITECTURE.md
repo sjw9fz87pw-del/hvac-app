@@ -135,6 +135,13 @@ in the command center's *Failed NFC pairing* list rather than disappearing.
 Replacement revokes the old tag and pairs the new one in a single transaction, so
 the asset is never without an identity and the old tag's history stays attached.
 
+**Locking** closes the loop: once paired, the chip is made permanently read-only
+so nobody who can physically reach a tag can repoint it at different equipment.
+It is deliberately the last step — irreversible, and a locked tag pointing at
+nothing is scrap — and a failure never undoes a committed pairing. Unlocked live
+tags are counted and filterable in the NFC console, because a risk nobody can
+find is a risk nobody fixes.
+
 ### QR fallback
 
 Web NFC — scanning and writing from inside a web page — exists on Chrome for
@@ -216,13 +223,15 @@ human. There is no AI write path, and no model is called anywhere in this codeba
 
 ## Known limits
 
-- Photos are stored on local disk behind a `BlobStore` port. S3/R2 is an
-  implementation of that interface, not a refactor.
+- Photos go to Netlify Blobs when deployed and local disk in development, both
+  behind a `BlobStore` port. S3/R2 is another implementation of that interface,
+  not a refactor.
 - Notification delivery is in-app only; the preference table carries email/push
   flags that nothing reads yet.
-- Visit generation is on-demand. A scheduled job to run `refreshScheduleStatuses()`
-  and `notifyOverdueDigest()` nightly is not wired up — both functions exist and
-  are idempotent.
-- Web NFC paths are unit-tested against a mocked transport; no NFC hardware was
-  available in the build environment, so the physical read/write has not been
-  exercised on a real tag.
+- Visit generation is on-demand. `refreshScheduleStatuses()` and
+  `notifyOverdueDigest()` run nightly at 07:00 UTC via
+  `netlify/functions/scheduled-refresh.ts`; both are idempotent, so a missed or
+  doubled run is harmless.
+- Web NFC paths — read, write and lock — are unit-tested against a mocked
+  transport; no NFC hardware was available in the build environment, so none of
+  them has been exercised on a real tag.

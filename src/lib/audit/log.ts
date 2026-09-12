@@ -13,6 +13,7 @@ export type AuditAction =
   | "asset.replaced" | "asset.frequency_changed"
   | "tag.minted" | "tag.assigned" | "tag.replaced" | "tag.unpaired"
   | "tag.reassigned" | "tag.revoked" | "tag.verified"
+  | "tag.locked" | "tag.lock_failed"
   | "service.completed" | "service.edited"
   | "issue.created" | "issue.assigned" | "issue.resolved"
   | "visit.created" | "visit.updated" | "visit.completed"

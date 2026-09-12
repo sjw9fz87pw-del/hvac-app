@@ -445,3 +445,56 @@ export async function testTag(payload: string, ctx: TapContext) {
   }
   return outcome;
 }
+
+export interface RecordLockOptions {
+  tagId: string;
+  actor: Actor;
+  locked: boolean;
+  /** Why it did not lock, when it did not. */
+  reason?: string | null;
+  /** True when the browser cannot lock at all, as opposed to a failed attempt. */
+  unsupported?: boolean;
+}
+
+/**
+ * Record that a tag was locked, or why it was not.
+ *
+ * Locking happens on the device and is irreversible on the hardware, so the
+ * server's job is only to remember it. A tag that could not be locked is still
+ * a working tag — it is recorded rather than treated as a failure, and surfaces
+ * in the NFC console so unlocked tags can be found and dealt with later.
+ */
+export async function recordTagLock(opts: RecordLockOptions) {
+  return prisma.$transaction(async (tx) => {
+    const tag = await tx.tag.findUnique({ where: { id: opts.tagId } });
+    if (!tag) throw new TagOperationError("Tag not found", "TAG_NOT_FOUND");
+    if (tag.organizationId && !canAccessOrganization(opts.actor, tag.organizationId)) {
+      throw new AuthError(404, "Not found");
+    }
+
+    if (opts.locked) {
+      await tx.tag.update({ where: { id: tag.id }, data: { lockedAt: tag.lockedAt ?? new Date() } });
+    }
+
+    await tagAuditSink(tx).record({
+      type: opts.locked ? "LOCKED" : "LOCK_FAILED",
+      tagId: tag.id,
+      actorId: opts.actor.userId,
+      detail: opts.locked ? {} : { reason: opts.reason ?? null, unsupported: Boolean(opts.unsupported) },
+    });
+
+    await recordAudit(
+      {
+        action: opts.locked ? "tag.locked" : "tag.lock_failed",
+        entityType: "Tag",
+        entityId: tag.id,
+        actorId: opts.actor.userId,
+        organizationId: tag.organizationId,
+        detail: opts.locked ? {} : { reason: opts.reason ?? null },
+      },
+      tx,
+    );
+
+    return tx.tag.findUniqueOrThrow({ where: { id: tag.id } });
+  });
+}

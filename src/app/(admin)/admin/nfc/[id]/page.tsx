@@ -53,6 +53,10 @@ export default async function TagDetail({ params }: { params: Promise<{ id: stri
           <SectionRow label="Customer" value={tag.organization?.name ?? "Unassigned stock"} />
           <SectionRow label="Written" value={formatDate(tag.writtenAt)} />
           <SectionRow label="Verified" value={formatDate(tag.verifiedAt)} />
+          <SectionRow
+            label="Locked"
+            value={tag.lockedAt ? formatDate(tag.lockedAt) : "Not locked — this tag can still be rewritten"}
+          />
           {tag.revokedAt ? <SectionRow label="Revoked" value={`${formatDate(tag.revokedAt)} — ${tag.revokedReason ?? ""}`} /> : null}
           {current ? (
             <SectionRow label="Paired to" value={`${current.equipment.name} (${current.equipment.internalAssetId})`} />

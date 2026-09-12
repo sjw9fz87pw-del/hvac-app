@@ -15,6 +15,8 @@ interface NdefReadingEventLike extends Event { message: NdefMessageLike }
 interface NdefReaderLike {
   scan(options?: { signal?: AbortSignal }): Promise<void>;
   write(message: { records: { recordType: string; data: string }[] }, options?: { signal?: AbortSignal }): Promise<void>;
+  /** Chrome 100+. Absent on older builds, hence the capability check below. */
+  makeReadOnly?(options?: { signal?: AbortSignal }): Promise<void>;
   addEventListener(type: "reading", listener: (event: NdefReadingEventLike) => void): void;
   addEventListener(type: "readingerror", listener: () => void): void;
 }
@@ -89,6 +91,59 @@ export async function writeTag(url: string, timeoutMs = 25_000): Promise<void> {
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     await new Ctor().write({ records: [{ recordType: "url", data: url }] }, { signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * Can this browser lock a tag?
+ *
+ * `makeReadOnly()` arrived later than the rest of Web NFC, so a device can be
+ * perfectly able to read and write while unable to lock. Checked rather than
+ * assumed, so the flow degrades instead of throwing.
+ */
+export function canLockTags(): boolean {
+  const Ctor = reader();
+  return Boolean(Ctor && typeof Ctor.prototype?.makeReadOnly === "function");
+}
+
+export type LockOutcome =
+  | { locked: true }
+  | { locked: false; reason: string; unsupported?: boolean };
+
+/**
+ * Make a tag permanently read-only.
+ *
+ * **Irreversible.** Only ever call this after the write has been read back and
+ * verified and the pairing is committed — a locked tag that points at nothing
+ * is scrap, and there is no way to rewrite it.
+ *
+ * Never throws. A tag that is paired and working but unlocked is a smaller
+ * problem than a failed pairing, so a lock failure is reported and recorded
+ * rather than aborting the flow the technician is in the middle of.
+ */
+export async function lockTag(timeoutMs = 15_000): Promise<LockOutcome> {
+  const Ctor = reader();
+  if (!Ctor) return { locked: false, reason: "This device cannot write NFC tags.", unsupported: true };
+  if (!canLockTags()) {
+    return {
+      locked: false,
+      unsupported: true,
+      reason: "This browser cannot lock tags. The tag works, but can still be rewritten.",
+    };
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    await new Ctor().makeReadOnly!({ signal: controller.signal });
+    return { locked: true };
+  } catch (error) {
+    return {
+      locked: false,
+      reason: error instanceof Error ? error.message : "The tag could not be locked.",
+    };
   } finally {
     clearTimeout(timer);
   }

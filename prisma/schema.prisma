@@ -3,8 +3,8 @@
 // that history accrues from day one and later phases are additive.
 
 generator client {
-  provider = "prisma-client-js"
-  output   = "../node_modules/.prisma/client"
+  provider      = "prisma-client-js"
+  output        = "../node_modules/.prisma/client"
   // Netlify Functions run on Amazon Linux with OpenSSL 3; without these the
   // deployed bundle carries only the local engine and fails at runtime.
   binaryTargets = ["native", "rhel-openssl-3.0.x"]
@@ -84,6 +84,8 @@ enum TagEventType {
   READ
   READ_DENIED
   TESTED
+  LOCKED
+  LOCK_FAILED
 }
 
 enum PlanScope {
@@ -444,6 +446,10 @@ model Tag {
   hardwareUid    String? // NFC chip UID if the reader exposes it
   writtenAt      DateTime?
   verifiedAt     DateTime?
+  /// Set once the chip has been made permanently read-only. Irreversible: a
+  /// locked tag can never be rewritten, which is the point — it cannot be
+  /// repointed at another asset by anyone who can physically touch it.
+  lockedAt       DateTime?
   revokedAt      DateTime?
   revokedReason  String?
   lastReadAt     DateTime?

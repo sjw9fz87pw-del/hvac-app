@@ -211,16 +211,26 @@ NTAG213 offers two protections:
 - **32-bit password (`PWD_AUTH`)** — can gate writes while leaving reads open.
   Reversible, but you now have a key to manage across every tag in the field.
 
-**Recommendation: lock after the verify step, do not use passwords.** Locking is
-simpler, has no key-management burden, and the economics are trivial — you are
-protecting a recurring service contract with a tag that costs under a dollar.
+**Locking is what this does, and passwords are not.** Locking is simpler, has no
+key-management burden, and the economics are trivial — you are protecting a
+recurring service contract with a tag that costs under a dollar.
 
-Read access must stay open, because customers tap these.
+Read access stays open, because customers tap these.
 
-The transport interface already carries this: `NfcTransport.write()` accepts
-`{ lockReadOnly }` in `packages/nfc-core/src/ports.ts`. The Web NFC implementation
-does not yet call it — Chrome exposes `NDEFReader.makeReadOnly()`, which needs
-verifying against your target Chrome version before being wired in.
+**Implemented.** Rapid Inventory and tag replacement both lock the chip, in this
+order: write → read back → verify → **pair** → lock. Locking comes last on
+purpose, because it is irreversible and a locked tag pointing at nothing is
+scrap. Since the asset is already paired and working by that point, a lock that
+fails never undoes the pairing — it is recorded as `LOCK_FAILED` and the tag
+appears under **Unlocked** in the NFC console, so it can be found rather than
+quietly left rewritable.
+
+Two things to know in the field:
+
+- `NDEFReader.makeReadOnly()` arrived later than the rest of Web NFC, so a phone
+  can be perfectly able to read and write while unable to lock. The flow detects
+  this (`canLockTags()`), greys out the toggle and says so, rather than failing.
+- The technician can switch locking off per session. It defaults on.
 
 ---
 
@@ -270,8 +280,6 @@ restaurant. Specifically confirm, on your own equipment:
 
 Stated plainly, so nobody discovers it mid-deployment:
 
-- **`makeReadOnly()` is not wired into the write flow.** The port accepts the
-  option; the Web NFC adapter ignores it. Tags written today stay writable.
 - **No USB reader bridge.** Bulk desk encoding needs a local helper that does not
   exist yet.
 - **No UID capture**, since Web NFC cannot provide it.
