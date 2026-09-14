@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { roleHas, capabilitiesFor, isInternalRole, ROLE_CAPABILITIES, type Role, type Capability } from "@/lib/auth/permissions";
+import { roleHas, capabilitiesFor, isInternalRole, canGrantRole, ROLE_CAPABILITIES, type Role, type Capability } from "@/lib/auth/permissions";
 import { toCustomerEquipment, toCustomerServiceRecord } from "@/lib/api/serializers";
 import { canAccessAsset, assertAsset } from "@/lib/auth/scope";
 
@@ -202,6 +202,45 @@ describe("location scope", () => {
       throw new Error("should have refused");
     } catch (error) {
       expect((error as { status?: number }).status).toBe(404);
+    }
+  });
+});
+
+describe("who may create which users", () => {
+  // user.manage is held by internal admins AND by customer organization owners,
+  // so without a grant rule a restaurant owner could mint themselves a Super
+  // Admin and walk out of their own tenant entirely.
+  const superAdmin = { internal: true, roles: ["SUPER_ADMIN"] as Role[] };
+  const opsAdmin = { internal: true, roles: ["OPERATIONS_ADMIN"] as Role[] };
+  const orgOwner = { internal: false, roles: ["CUSTOMER_ORG_OWNER"] as Role[] };
+
+  it("lets only a Super Admin create another Super Admin", () => {
+    expect(canGrantRole(superAdmin, "SUPER_ADMIN")).toBe(true);
+    expect(canGrantRole(opsAdmin, "SUPER_ADMIN")).toBe(false);
+    expect(canGrantRole(orgOwner, "SUPER_ADMIN")).toBe(false);
+  });
+
+  it("never lets a customer create any internal role", () => {
+    for (const role of INTERNAL) {
+      expect(canGrantRole(orgOwner, role), `customer must not create ${role}`).toBe(false);
+    }
+  });
+
+  it("lets a customer org owner create customer accounts", () => {
+    for (const role of CUSTOMER_ROLES) {
+      expect(canGrantRole(orgOwner, role)).toBe(true);
+    }
+  });
+
+  it("lets an operations admin create staff below Super Admin", () => {
+    for (const role of ["OPERATIONS_ADMIN", "SERVICE_MANAGER", "TECHNICIAN"] as Role[]) {
+      expect(canGrantRole(opsAdmin, role)).toBe(true);
+    }
+  });
+
+  it("lets a Super Admin create anything", () => {
+    for (const role of [...INTERNAL, ...CUSTOMER_ROLES]) {
+      expect(canGrantRole(superAdmin, role)).toBe(true);
     }
   });
 });

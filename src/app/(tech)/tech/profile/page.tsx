@@ -1,5 +1,6 @@
 import { requireActor } from "@/lib/auth/session";
 import { PageHeader, Card, SectionTitle, Pill, titleCase } from "@/components/ui/primitives";
+import { ChangePassword } from "@/components/ui/change-password";
 import { SignOutButton } from "@/app/(customer)/account/sign-out";
 import { QueueStatus } from "./queue-status";
 
@@ -20,6 +21,9 @@ export default async function ProfilePage() {
 
       <SectionTitle>Offline queue</SectionTitle>
       <QueueStatus />
+
+      <SectionTitle>Security</SectionTitle>
+      <ChangePassword />
 
       <div style={{ marginTop: 24, marginBottom: 20 }}><SignOutButton /></div>
     </main>

@@ -95,3 +95,23 @@ export function capabilitiesFor(roles: readonly Role[]): Set<Capability> {
   for (const role of roles) for (const cap of ROLE_CAPABILITIES[role] ?? []) caps.add(cap);
   return caps;
 }
+
+export const CUSTOMER_ROLES: ReadonlySet<Role> = new Set<Role>([
+  "CUSTOMER_ORG_OWNER", "CUSTOMER_LOCATION_MANAGER", "CUSTOMER_STAFF",
+]);
+
+/**
+ * Which roles may this actor hand out?
+ *
+ * `user.manage` is held by internal admins *and* by customer organization
+ * owners, so without this a restaurant owner could mint themselves a Super
+ * Admin and walk straight out of their own tenant. The rule is that nobody
+ * grants upward, and no customer ever grants an internal role.
+ */
+export function canGrantRole(actor: { internal: boolean; roles: readonly Role[] }, role: Role): boolean {
+  // Customers may only create other customer accounts, never internal staff.
+  if (!actor.internal) return CUSTOMER_ROLES.has(role);
+  // Super Admin is the only role that can create another Super Admin.
+  if (role === "SUPER_ADMIN") return actor.roles.includes("SUPER_ADMIN");
+  return true;
+}

@@ -2,6 +2,7 @@ import { requireActor } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
 import { organizationScope } from "@/lib/auth/scope";
 import { PageHeader, Card, SectionTitle, List, Row, Divider, Pill } from "@/components/ui/primitives";
+import { ChangePassword } from "@/components/ui/change-password";
 import { SignOutButton } from "./sign-out";
 import { titleCase } from "@/components/ui/primitives";
 
@@ -51,6 +52,9 @@ export default async function AccountPage() {
           Overdue items are digested into one daily summary per location rather than one message per unit.
         </p>
       </Card>
+
+      <SectionTitle>Security</SectionTitle>
+      <ChangePassword />
 
       <div style={{ marginTop: 24, marginBottom: 20 }}><SignOutButton /></div>
     </main>
