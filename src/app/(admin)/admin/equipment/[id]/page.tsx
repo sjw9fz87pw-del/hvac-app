@@ -38,7 +38,6 @@ export default async function AdminEquipmentDetail({ params }: { params: Promise
 
   return (
     <main className="rise">
-      <a href="/admin/equipment" style={{ fontSize: 14, color: "var(--ink-soft)", fontWeight: 600 }}>← Equipment</a>
 
       <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "12px 0 6px", flexWrap: "wrap" }}>
         <h1 style={{ fontSize: 26 }}>{equipment.name}</h1>

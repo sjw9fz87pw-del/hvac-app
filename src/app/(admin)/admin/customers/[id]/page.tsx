@@ -33,7 +33,6 @@ export default async function CustomerDetail({ params }: { params: Promise<{ id:
 
   return (
     <main className="rise">
-      <a href="/admin/customers" style={{ fontSize: 14, color: "var(--ink-soft)", fontWeight: 600 }}>← Customers</a>
       <h1 style={{ fontSize: 27, margin: "12px 0 18px" }}>{organization.name}</h1>
 
       <Card style={{ display: "flex", gap: 20, alignItems: "center", marginBottom: 16 }}>

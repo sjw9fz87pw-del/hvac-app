@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { currentActor } from "@/lib/auth/session";
-import { ShellReturn } from "@/components/ui/shell-return";
+import { ShellBar } from "@/components/ui/shell-bar";
+import { homeFor } from "@/lib/auth/routing";
 import { AppBar, TabBar } from "@/components/ui/nav";
 import { GlobalSearch } from "@/components/ui/global-search";
 
@@ -12,14 +13,21 @@ import { GlobalSearch } from "@/components/ui/global-search";
  * thumb-height at the bottom, matching the customer and technician shells, and
  * the rest live in a browsable More hub.
  */
+const SHELL_LABEL: Record<string, string> = { "/admin": "Dashboard", "/tech": "Today", "/home": "Home" };
+
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const actor = await currentActor();
   if (!actor) redirect("/signin");
   if (!actor.internal) redirect("/home");
 
+  const home = homeFor(actor);
+
   return (
     <div style={{ minHeight: "100dvh", paddingBottom: 86 }}>
-      <ShellReturn actor={actor} shellRoot="/admin" />
+      <ShellBar
+        roots={["/admin", "/admin/equipment", "/admin/schedule", "/admin/issues", "/admin/more"]}
+        crossShell={home === "/admin" ? null : { href: home, label: SHELL_LABEL[home] ?? "Dashboard" }}
+      />
       <AppBar title="Equipment Care" />
       <GlobalSearch />
       <div style={{ maxWidth: 1240, margin: "0 auto", padding: "18px 20px 8px" }}>{children}</div>

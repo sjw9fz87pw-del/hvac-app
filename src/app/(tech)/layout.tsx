@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
 import { currentActor } from "@/lib/auth/session";
-import { ShellReturn } from "@/components/ui/shell-return";
+import { ShellBar } from "@/components/ui/shell-bar";
+import { homeFor } from "@/lib/auth/routing";
 import { TabBar } from "@/components/ui/nav";
+
+const SHELL_LABEL: Record<string, string> = { "/admin": "Dashboard", "/tech": "Today", "/home": "Home" };
 
 export default async function TechLayout({ children }: { children: React.ReactNode }) {
   const actor = await currentActor();
@@ -9,9 +12,14 @@ export default async function TechLayout({ children }: { children: React.ReactNo
   // The technician surface is internal-only; a customer session never renders it.
   if (!actor.internal) redirect("/home");
 
+  const home = homeFor(actor);
+
   return (
     <div style={{ minHeight: "100dvh", paddingBottom: 82 }}>
-      <ShellReturn actor={actor} shellRoot="/tech" />
+      <ShellBar
+        roots={["/tech", "/tech/visits", "/tech/scan", "/tech/activity", "/tech/profile"]}
+        crossShell={home === "/tech" ? null : { href: home, label: SHELL_LABEL[home] ?? "Dashboard" }}
+      />
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "22px 18px 8px" }}>{children}</div>
       <TabBar
         items={[

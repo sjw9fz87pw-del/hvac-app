@@ -151,7 +151,6 @@ export function ServiceTask({ task, equipment, serviceType, nextTask }: Props) {
 
   return (
     <main className="rise">
-      <a href={`/tech/visits/${task.visitId}`} style={{ fontSize: 14, color: "var(--ink-soft)", fontWeight: 600 }}>← Visit</a>
 
       <Card style={{ marginTop: 12, display: "flex", gap: 12, alignItems: "center" }}>
         {photoThumb(equipment.photoBlobKey, equipment.name)}

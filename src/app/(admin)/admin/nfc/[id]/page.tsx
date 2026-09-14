@@ -40,7 +40,6 @@ export default async function TagDetail({ params }: { params: Promise<{ id: stri
 
   return (
     <main className="rise">
-      <a href="/admin/nfc" style={{ fontSize: 14, color: "var(--ink-soft)", fontWeight: 600 }}>← NFC</a>
 
       <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "12px 0 18px", flexWrap: "wrap" }}>
         <h1 style={{ fontSize: 25 }}>{current?.equipment.name ?? tag.label ?? "Unassigned tag"}</h1>

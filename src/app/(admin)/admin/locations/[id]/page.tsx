@@ -41,7 +41,6 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
 
   return (
     <main className="rise">
-      <a href="/admin/locations" style={{ fontSize: 14, color: "var(--ink-soft)", fontWeight: 600 }}>← Locations</a>
 
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, margin: "12px 0 18px" }}>
         <div>

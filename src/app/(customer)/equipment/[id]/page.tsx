@@ -46,7 +46,6 @@ export default async function EquipmentPassport({ params }: { params: Promise<{ 
 
   return (
     <main className="rise">
-      <a href="/equipment" style={{ fontSize: 14, color: "var(--ink-soft)", fontWeight: 600 }}>← Equipment</a>
 
       <div style={{ marginTop: 12, marginBottom: 4 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>

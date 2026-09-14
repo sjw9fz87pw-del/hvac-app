@@ -36,7 +36,6 @@ export default async function IssueDetail({ params }: { params: Promise<{ id: st
 
   return (
     <main className="rise">
-      <a href="/admin/issues" style={{ fontSize: 14, color: "var(--ink-soft)", fontWeight: 600 }}>← Issues</a>
 
       <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "12px 0 6px", flexWrap: "wrap" }}>
         <h1 style={{ fontSize: 25 }}>{issue.title}</h1>

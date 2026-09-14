@@ -23,7 +23,6 @@ export default async function VisitReportPage({ params }: { params: Promise<{ id
 
   return (
     <main className="rise">
-      <a href="/service" style={{ fontSize: 14, color: "var(--ink-soft)", fontWeight: 600 }}>← Service</a>
 
       <div style={{ margin: "12px 0 18px" }}>
         <h1 style={{ fontSize: 25 }}>{report.locationName}</h1>

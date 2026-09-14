@@ -47,7 +47,6 @@ export default async function VisitPage({ params }: { params: Promise<{ id: stri
 
   return (
     <main className="rise">
-      <a href="/tech" style={{ fontSize: 14, color: "var(--ink-soft)", fontWeight: 600 }}>← Today</a>
 
       <div style={{ margin: "12px 0 16px" }}>
         <h1 style={{ fontSize: 25 }}>{visit.location.name}</h1>
