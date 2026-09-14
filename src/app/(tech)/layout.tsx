@@ -13,7 +13,7 @@ export default async function TechLayout({ children }: { children: React.ReactNo
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "22px 18px 8px" }}>{children}</div>
       <TabBar
         items={[
-          { href: "/tech", label: "Today", icon: "today" },
+          { href: "/tech", label: "Today", icon: "today", exact: true },
           { href: "/tech/visits", label: "Visits", icon: "route" },
           { href: "/tech/scan", label: "Scan", icon: "scan" },
           { href: "/tech/activity", label: "Activity", icon: "activity" },

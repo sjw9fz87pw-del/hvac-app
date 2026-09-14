@@ -2,6 +2,10 @@ import { defineConfig } from "vitest/config";
 import path from "node:path";
 
 export default defineConfig({
+  // tsconfig sets jsx: "preserve" because Next requires it, which leaves JSX
+  // unparsed for Vitest. Transform it here so component modules are importable
+  // from tests.
+  esbuild: { jsx: "automatic" },
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts"],

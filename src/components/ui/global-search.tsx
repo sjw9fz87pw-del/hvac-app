@@ -47,10 +47,15 @@ export function GlobalSearch() {
             width: "100%", textAlign: "left", padding: "11px 15px", borderRadius: 12,
             border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink-faint)",
             cursor: "pointer", fontSize: 14.5, display: "flex", justifyContent: "space-between",
+            alignItems: "center", gap: 10,
           }}
         >
-          <span>Search restaurants, equipment, model, serial, asset id, tag…</span>
-          <span style={{ fontSize: 12, opacity: 0.7 }}>⌘K</span>
+          {/* One line at any width: the long form wrapped on a phone and ate
+              half the screen above the page title. */}
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            Search equipment, model, serial, tag…
+          </span>
+          <span style={{ fontSize: 12, opacity: 0.7, flexShrink: 0 }}>⌘K</span>
         </button>
       </div>
     );
