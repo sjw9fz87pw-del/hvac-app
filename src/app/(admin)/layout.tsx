@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { currentActor } from "@/lib/auth/session";
+import { ShellReturn } from "@/components/ui/shell-return";
 import { AppBar, TabBar } from "@/components/ui/nav";
 import { GlobalSearch } from "@/components/ui/global-search";
 
@@ -18,6 +19,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div style={{ minHeight: "100dvh", paddingBottom: 86 }}>
+      <ShellReturn actor={actor} shellRoot="/admin" />
       <AppBar title="Equipment Care" />
       <GlobalSearch />
       <div style={{ maxWidth: 1240, margin: "0 auto", padding: "18px 20px 8px" }}>{children}</div>

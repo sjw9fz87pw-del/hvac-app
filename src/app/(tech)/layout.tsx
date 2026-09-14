@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { currentActor } from "@/lib/auth/session";
+import { ShellReturn } from "@/components/ui/shell-return";
 import { TabBar } from "@/components/ui/nav";
 
 export default async function TechLayout({ children }: { children: React.ReactNode }) {
@@ -10,6 +11,7 @@ export default async function TechLayout({ children }: { children: React.ReactNo
 
   return (
     <div style={{ minHeight: "100dvh", paddingBottom: 82 }}>
+      <ShellReturn actor={actor} shellRoot="/tech" />
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "22px 18px 8px" }}>{children}</div>
       <TabBar
         items={[
