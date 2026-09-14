@@ -44,7 +44,7 @@ export function IssueActions({ issueId, status, assignedToId, vendorId, technici
 
   const control: React.CSSProperties = {
     padding: "11px 13px", borderRadius: 11, border: "1px solid var(--line)",
-    background: "var(--canvas)", minHeight: 44, flex: 1, minWidth: 170,
+    background: "var(--surface-2)", minHeight: 44, flex: 1, minWidth: 170,
   };
 
   return (
@@ -86,7 +86,7 @@ export function IssueActions({ issueId, status, assignedToId, vendorId, technici
             onChange={(e) => setNote(e.target.value)}
             placeholder="What was done? This note is shown to the customer."
             rows={2}
-            style={{ width: "100%", padding: 12, borderRadius: 11, border: "1px solid var(--line)", background: "var(--canvas)", resize: "vertical" }}
+            style={{ width: "100%", padding: 12, borderRadius: 11, border: "1px solid var(--line)", background: "var(--surface-2)", resize: "vertical" }}
           />
           <div style={{ marginTop: 10, width: 180 }}>
             <Button size="sm" disabled={busy} onClick={() => patch({ status: "RESOLVED", resolutionNote: note || null })}>

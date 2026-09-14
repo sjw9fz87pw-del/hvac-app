@@ -72,7 +72,7 @@ export default async function VisitPage({ params }: { params: Promise<{ id: stri
           </div>
           <StatusPill status={visit.status} />
         </div>
-        <div style={{ height: 8, borderRadius: 999, background: "var(--canvas)", overflow: "hidden", marginTop: 12 }}>
+        <div style={{ height: 8, borderRadius: 999, background: "var(--surface-2)", overflow: "hidden", marginTop: 12 }}>
           <div style={{ width: `${visit.tasks.length ? (done / visit.tasks.length) * 100 : 0}%`, height: "100%", background: "var(--good)", borderRadius: 999 }} />
         </div>
       </Card>

@@ -70,7 +70,7 @@ export function AddEquipmentForm({ locations }: {
 
   const field: React.CSSProperties = {
     width: "100%", padding: "13px 14px", borderRadius: 12,
-    border: "1px solid var(--line)", background: "var(--canvas)", minHeight: 48,
+    border: "1px solid var(--line)", background: "var(--surface-2)", minHeight: 48,
   };
 
   if (done) {

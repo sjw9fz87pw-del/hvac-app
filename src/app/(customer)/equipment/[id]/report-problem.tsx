@@ -107,7 +107,7 @@ export function ReportProblem({ equipmentId, equipmentName }: { equipmentId: str
         onChange={(e) => setDescription(e.target.value)}
         placeholder="Anything else we should know? (optional)"
         rows={3}
-        style={{ width: "100%", marginTop: 12, padding: 13, borderRadius: 12, border: "1px solid var(--line)", background: "var(--canvas)", resize: "vertical" }}
+        style={{ width: "100%", marginTop: 12, padding: 13, borderRadius: 12, border: "1px solid var(--line)", background: "var(--surface-2)", resize: "vertical" }}
       />
 
       <label

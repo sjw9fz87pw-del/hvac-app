@@ -67,7 +67,7 @@ export default async function ServicePage() {
         </List>
       )}
 
-      <Card style={{ marginTop: 20, background: "var(--canvas)", borderStyle: "dashed" }}>
+      <Card style={{ marginTop: 20, background: "var(--surface-2)", borderStyle: "dashed" }}>
         <div style={{ fontSize: 13.5, color: "var(--ink-soft)" }}>
           Every completed service is recorded permanently with the technician, timestamp, checklist and before/after photos.
         </div>

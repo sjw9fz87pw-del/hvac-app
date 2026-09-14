@@ -61,7 +61,7 @@ export default async function SettingsPage() {
       </div>
 
       <SectionTitle>Maintenance plan overrides</SectionTitle>
-      <Card style={{ marginBottom: 12, background: "var(--canvas)", borderStyle: "dashed", fontSize: 13.5, color: "var(--ink-soft)" }}>
+      <Card style={{ marginBottom: 12, background: "var(--surface-2)", borderStyle: "dashed", fontSize: 13.5, color: "var(--ink-soft)" }}>
         Precedence runs asset → location → customer → system template. The most specific active plan wins.
       </Card>
       <List>

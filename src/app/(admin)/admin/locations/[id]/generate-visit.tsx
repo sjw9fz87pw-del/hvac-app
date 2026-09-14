@@ -38,7 +38,7 @@ export function GenerateVisit({ locationId, dueCount }: { locationId: string; du
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          style={{ padding: "11px 13px", borderRadius: 11, border: "1px solid var(--line)", background: "var(--canvas)", minHeight: 44 }}
+          style={{ padding: "11px 13px", borderRadius: 11, border: "1px solid var(--line)", background: "var(--surface-2)", minHeight: 44 }}
         />
         <div style={{ width: 170 }}>
           <Button onClick={generate} disabled={busy}>{busy ? "Generating…" : "Generate visit"}</Button>

@@ -68,7 +68,7 @@ export default async function VisitReportPage({ params }: { params: Promise<{ id
                 ) : null}
 
                 {item.notes ? (
-                  <p style={{ fontSize: 14, color: "var(--ink-soft)", marginTop: 10, background: "var(--canvas)", padding: 11, borderRadius: 10 }}>
+                  <p style={{ fontSize: 14, color: "var(--ink-soft)", marginTop: 10, background: "var(--surface-2)", padding: 11, borderRadius: 10 }}>
                     {item.notes}
                   </p>
                 ) : null}

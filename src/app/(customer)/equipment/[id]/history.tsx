@@ -61,7 +61,7 @@ export function ServiceHistory({ history }: { history: CustomerServiceRecordView
                 ) : null}
 
                 {record.notes ? (
-                  <p style={{ marginTop: 12, fontSize: 14, color: "var(--ink-soft)", background: "var(--canvas)", padding: 12, borderRadius: 10 }}>
+                  <p style={{ marginTop: 12, fontSize: 14, color: "var(--ink-soft)", background: "var(--surface-2)", padding: 12, borderRadius: 10 }}>
                     {record.notes}
                   </p>
                 ) : null}
@@ -87,7 +87,7 @@ function PhotoColumn({ label, photos }: { label: string; photos: { id: string; u
         {label}
       </div>
       {photos.length === 0 ? (
-        <div style={{ height: 110, borderRadius: 10, background: "var(--canvas)", border: "1px dashed var(--line)", display: "grid", placeItems: "center", color: "var(--ink-faint)", fontSize: 13 }}>
+        <div style={{ height: 110, borderRadius: 10, background: "var(--surface-2)", border: "1px dashed var(--line)", display: "grid", placeItems: "center", color: "var(--ink-faint)", fontSize: 13 }}>
           None
         </div>
       ) : (

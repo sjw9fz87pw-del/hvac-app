@@ -30,14 +30,14 @@ export function SignInForm({ next }: { next: string | null }) {
 
   const field: React.CSSProperties = {
     width: "100%", padding: "13px 14px", borderRadius: 12,
-    border: "1px solid var(--line)", background: "var(--canvas)", minHeight: 48,
+    border: "1px solid var(--line)", background: "var(--surface-2)", minHeight: 48,
   };
 
   return (
     <main style={{ minHeight: "100dvh", display: "grid", placeItems: "center", padding: 20 }}>
       <Card style={{ width: "100%", maxWidth: 400, padding: 28 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 10, background: "var(--accent)", display: "grid", placeItems: "center", color: "#fff", fontWeight: 700 }}>E</div>
+          <div style={{ width: 34, height: 34, borderRadius: 10, background: "var(--accent)", display: "grid", placeItems: "center", color: "#1a0f04", fontWeight: 700 }}>E</div>
           <div>
             <div style={{ fontWeight: 680, letterSpacing: "-0.02em" }}>Equipment Care</div>
             <div style={{ fontSize: 12.5, color: "var(--ink-faint)" }}>Preventive maintenance platform</div>

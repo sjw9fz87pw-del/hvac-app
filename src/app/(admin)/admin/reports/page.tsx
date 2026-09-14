@@ -63,7 +63,7 @@ export default async function ReportsPage() {
         </List>
       )}
 
-      <Card style={{ marginTop: 20, background: "var(--canvas)", borderStyle: "dashed" }}>
+      <Card style={{ marginTop: 20, background: "var(--surface-2)", borderStyle: "dashed" }}>
         <div style={{ fontWeight: 620, fontSize: 14 }}>PDF and email delivery</div>
         <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 5 }}>
           Reports are built as structured data (<code>lib/reports/visit-report.ts</code>) and rendered separately, so

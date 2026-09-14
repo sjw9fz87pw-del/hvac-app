@@ -82,7 +82,7 @@ export default async function TechToday() {
                   </div>
 
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16 }}>
-                    <div style={{ flex: 1, height: 8, borderRadius: 999, background: "var(--canvas)", overflow: "hidden" }}>
+                    <div style={{ flex: 1, height: 8, borderRadius: 999, background: "var(--surface-2)", overflow: "hidden" }}>
                       <div style={{ width: `${progress * 100}%`, height: "100%", background: "var(--good)", borderRadius: 999, transition: "width 300ms ease" }} />
                     </div>
                     <div style={{ fontSize: 13.5, fontWeight: 640, color: "var(--ink-soft)", whiteSpace: "nowrap" }}>

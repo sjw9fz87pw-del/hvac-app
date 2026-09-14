@@ -51,7 +51,7 @@ export function VerifyEquipment({ equipmentId, equipmentName, serviceTypes }: {
             const match = serviceTypes.find((s) => s.id === e.target.value);
             if (match) setIntervalDays(match.defaultIntervalDays);
           }}
-          style={{ padding: "11px 13px", borderRadius: 11, border: "1px solid var(--line)", background: "var(--canvas)", minHeight: 44 }}
+          style={{ padding: "11px 13px", borderRadius: 11, border: "1px solid var(--line)", background: "var(--surface-2)", minHeight: 44 }}
         >
           {serviceTypes.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
@@ -64,8 +64,8 @@ export function VerifyEquipment({ equipmentId, equipmentName, serviceTypes }: {
               style={{
                 padding: "11px 13px", borderRadius: 11, fontSize: 14, fontWeight: 620, cursor: "pointer", minHeight: 44,
                 border: `1px solid ${intervalDays === days ? "transparent" : "var(--line)"}`,
-                background: intervalDays === days ? "var(--accent)" : "var(--canvas)",
-                color: intervalDays === days ? "#fff" : "var(--ink-soft)",
+                background: intervalDays === days ? "linear-gradient(180deg, var(--accent-2), var(--accent))" : "var(--surface-2)",
+                color: intervalDays === days ? "#1a0f04" : "var(--ink-soft)",
               }}
             >
               {days}d

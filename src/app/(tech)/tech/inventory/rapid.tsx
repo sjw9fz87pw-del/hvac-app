@@ -75,7 +75,7 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
 
   const field: React.CSSProperties = {
     width: "100%", padding: "12px 13px", borderRadius: 11,
-    border: "1px solid var(--line)", background: "var(--canvas)", minHeight: 46,
+    border: "1px solid var(--line)", background: "var(--surface-2)", minHeight: 46,
   };
 
   async function capturePhoto(event: React.ChangeEvent<HTMLInputElement>) {
@@ -282,8 +282,8 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
               style={{
                 padding: "9px 14px", borderRadius: 999, fontSize: 14, fontWeight: 600, cursor: "pointer", minHeight: 42,
                 border: `1px solid ${areaId === area.id ? "transparent" : "var(--line)"}`,
-                background: areaId === area.id ? "var(--accent)" : "var(--canvas)",
-                color: areaId === area.id ? "#fff" : "var(--ink-soft)",
+                background: areaId === area.id ? "linear-gradient(180deg, var(--accent-2), var(--accent))" : "var(--surface-2)",
+                color: areaId === area.id ? "#1a0f04" : "var(--ink-soft)",
               }}
             >
               {area.name}
@@ -327,8 +327,8 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
               style={{
                 padding: "9px 13px", borderRadius: 999, fontSize: 13.5, fontWeight: 600, cursor: "pointer", minHeight: 40,
                 border: `1px solid ${type.label === item.label ? "transparent" : "var(--line)"}`,
-                background: type.label === item.label ? "var(--accent)" : "var(--canvas)",
-                color: type.label === item.label ? "#fff" : "var(--ink-soft)",
+                background: type.label === item.label ? "linear-gradient(180deg, var(--accent-2), var(--accent))" : "var(--surface-2)",
+                color: type.label === item.label ? "#1a0f04" : "var(--ink-soft)",
               }}
             >
               {item.label}
@@ -357,8 +357,8 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
               style={{
                 flex: 1, padding: "11px 4px", borderRadius: 11, fontSize: 14, fontWeight: 620, cursor: "pointer", minHeight: 44,
                 border: `1px solid ${intervalDays === days ? "transparent" : "var(--line)"}`,
-                background: intervalDays === days ? "var(--accent)" : "var(--canvas)",
-                color: intervalDays === days ? "#fff" : "var(--ink-soft)",
+                background: intervalDays === days ? "linear-gradient(180deg, var(--accent-2), var(--accent))" : "var(--surface-2)",
+                color: intervalDays === days ? "#1a0f04" : "var(--ink-soft)",
               }}
             >
               {days}d
@@ -382,7 +382,7 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
               width: 26, height: 26, borderRadius: 8, flexShrink: 0, display: "grid", placeItems: "center",
               border: `2px solid ${lockTags && canLockTags() ? "var(--good)" : "var(--line)"}`,
               background: lockTags && canLockTags() ? "var(--good)" : "transparent",
-              color: "#fff", fontSize: 15, fontWeight: 700,
+              color: "#1a0f04", fontSize: 15, fontWeight: 700,
             }}
           >
             {lockTags && canLockTags() ? "✓" : ""}

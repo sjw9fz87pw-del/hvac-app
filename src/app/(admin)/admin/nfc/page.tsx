@@ -80,8 +80,8 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
             style={{
               padding: "8px 14px", borderRadius: 999, fontSize: 13.5, fontWeight: 600,
               border: `1px solid ${filter === option.key ? "transparent" : "var(--line)"}`,
-              background: filter === option.key ? "var(--accent)" : "var(--surface)",
-              color: filter === option.key ? "#fff" : "var(--ink-soft)",
+              background: filter === option.key ? "linear-gradient(180deg, var(--accent-2), var(--accent))" : "var(--surface-2)",
+              color: filter === option.key ? "#1a0f04" : "var(--ink-soft)",
             }}
           >
             {option.label}
@@ -160,7 +160,7 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
         </>
       ) : null}
 
-      <Card style={{ marginTop: 22, background: "var(--canvas)", borderStyle: "dashed" }}>
+      <Card style={{ marginTop: 22, background: "var(--surface-2)", borderStyle: "dashed" }}>
         <div style={{ fontWeight: 620, fontSize: 14 }}>What is on a tag</div>
         <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 5 }}>
           A single URL containing a random 128-bit identifier and a truncated HMAC. No customer name, location,

@@ -89,7 +89,7 @@ export function TagActions({ tagId, equipmentId, equipmentName, organizationId, 
 
   const field: React.CSSProperties = {
     width: "100%", padding: "12px 13px", borderRadius: 11,
-    border: "1px solid var(--line)", background: "var(--canvas)", minHeight: 46, marginTop: 10,
+    border: "1px solid var(--line)", background: "var(--surface-2)", minHeight: 46, marginTop: 10,
   };
 
   return (

@@ -12,7 +12,7 @@ export default function NotFound() {
         </p>
         <a
           href="/"
-          style={{ display: "inline-flex", alignItems: "center", marginTop: 20, padding: "11px 18px", borderRadius: 12, background: "var(--accent)", color: "#fff", fontWeight: 600 }}
+          style={{ display: "inline-flex", alignItems: "center", marginTop: 20, padding: "11px 18px", borderRadius: 12, background: "var(--accent)", color: "#1a0f04", fontWeight: 600 }}
         >
           Go home
         </a>

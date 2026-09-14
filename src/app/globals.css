@@ -3,86 +3,45 @@
 /*
  * Design tokens.
  *
- * One accent, four status colors, and a neutral ramp. Everything else is
- * spacing and type. Both themes are defined explicitly so nothing inherits a
- * background from the browser.
+ * Dark-first and warm: a near-black ground with a single amber-to-orange accent
+ * carrying every interactive and branded surface, hairline warm borders, and a
+ * small set of status colours that stay semantic. Committed to one look on
+ * purpose rather than half-supporting a light theme.
  */
 @theme {
   --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-
-  --color-ink: #0b0d10;
-  --color-ink-soft: #4a5361;
-  --color-ink-faint: #8b95a5;
-  --color-surface: #ffffff;
-  --color-canvas: #f6f7f9;
-  --color-line: #e6e9ee;
-
-  --color-accent: #1f6feb;
-  --color-accent-soft: #e8f0fe;
-
-  --color-good: #12864f;
-  --color-good-soft: #e6f5ee;
-  --color-warn: #b56b00;
-  --color-warn-soft: #fdf1de;
-  --color-bad: #c02b2b;
-  --color-bad-soft: #fdeceb;
-  --color-info: #5b4bd6;
-  --color-info-soft: #eeecfd;
-
   --radius-card: 16px;
 }
 
 :root {
-  color-scheme: light;
-  --ink: var(--color-ink);
-  --ink-soft: var(--color-ink-soft);
-  --ink-faint: var(--color-ink-faint);
-  --surface: var(--color-surface);
-  --canvas: var(--color-canvas);
-  --line: var(--color-line);
-  --accent: var(--color-accent);
-  --accent-soft: var(--color-accent-soft);
-  --good: var(--color-good);       --good-soft: var(--color-good-soft);
-  --warn: var(--color-warn);       --warn-soft: var(--color-warn-soft);
-  --bad: var(--color-bad);         --bad-soft: var(--color-bad-soft);
-  --info: var(--color-info);       --info-soft: var(--color-info-soft);
-  --shadow-card: 0 1px 2px rgb(11 13 16 / 0.04), 0 4px 16px rgb(11 13 16 / 0.04);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --ink: #f2f4f7;
-    --ink-soft: #a4adbb;
-    --ink-faint: #6f7889;
-    --surface: #15181d;
-    --canvas: #0b0d10;
-    --line: #262b33;
-    --accent: #58a0ff;
-    --accent-soft: #16243a;
-    --good: #4ec98a;   --good-soft: #12281e;
-    --warn: #e2a33c;   --warn-soft: #2b2113;
-    --bad: #ff7b72;    --bad-soft: #2d1817;
-    --info: #a396ff;   --info-soft: #1e1b33;
-    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 20px rgb(0 0 0 / 0.28);
-  }
-}
-
-:root[data-theme="dark"] {
   color-scheme: dark;
-  --ink: #f2f4f7;
-  --ink-soft: #a4adbb;
-  --ink-faint: #6f7889;
-  --surface: #15181d;
-  --canvas: #0b0d10;
-  --line: #262b33;
-  --accent: #58a0ff;
-  --accent-soft: #16243a;
-  --good: #4ec98a;   --good-soft: #12281e;
-  --warn: #e2a33c;   --warn-soft: #2b2113;
-  --bad: #ff7b72;    --bad-soft: #2d1817;
-  --info: #a396ff;   --info-soft: #1e1b33;
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 20px rgb(0 0 0 / 0.28);
+
+  /* Ground and surfaces: warm blacks, each step barely lighter than the last. */
+  --canvas: #0b0907;
+  --surface: #16110d;
+  --surface-2: #1e1711;
+  --line: #2b211a;
+  --line-strong: #3a2c21;
+
+  /* Ink */
+  --ink: #f7f4f1;
+  --ink-soft: #a79c92;
+  --ink-faint: #6f6459;
+
+  /* One accent, used for anything interactive, selected or branded. */
+  --accent: #ff8a1f;
+  --accent-2: #ffb443;
+  --accent-soft: rgba(255, 138, 31, 0.13);
+  --accent-line: rgba(255, 138, 31, 0.32);
+
+  /* Status stays semantic: current, due, overdue, informational. */
+  --good: #35c78a;  --good-soft: rgba(53, 199, 138, 0.14);
+  --warn: #f0b429;  --warn-soft: rgba(240, 180, 41, 0.14);
+  --bad:  #ff5d55;  --bad-soft:  rgba(255, 93, 85, 0.14);
+  --info: #8b93ff;  --info-soft: rgba(139, 147, 255, 0.14);
+
+  --shadow-card: 0 1px 0 rgb(255 255 255 / 0.02) inset, 0 8px 28px rgb(0 0 0 / 0.45);
+  --glow-accent: 0 0 0 1px var(--accent-line), 0 8px 30px rgba(255, 138, 31, 0.16);
 }
 
 * { box-sizing: border-box; }
@@ -96,23 +55,47 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+
+  /* A faint warm bloom off the top, so the near-black never reads as flat grey. */
+  background-image:
+    radial-gradient(1100px 460px at 50% -180px, rgba(255, 138, 31, 0.10), transparent 70%),
+    radial-gradient(720px 320px at 100% 0, rgba(255, 138, 31, 0.05), transparent 65%);
+  background-attachment: fixed;
 }
 
-h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; font-weight: 640; }
+h1, h2, h3, h4 { margin: 0; letter-spacing: -0.025em; font-weight: 700; }
 p { margin: 0; }
 button, input, select, textarea { font: inherit; color: inherit; }
 a { color: inherit; text-decoration: none; }
 
+input, select, textarea { color-scheme: dark; }
+input::placeholder, textarea::placeholder { color: var(--ink-faint); }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+
 /* Touch targets stay comfortable on a phone in a hot kitchen. */
 button, [role="button"], a.tap { min-height: 44px; }
 
+/*
+ * The signature label: tiny, wide-tracked, uppercase. Used for section kickers
+ * and field labels throughout.
+ */
+.kicker {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
 @media (prefers-reduced-motion: no-preference) {
-  .rise { animation: rise 240ms cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+  .rise { animation: rise 260ms cubic-bezier(0.2, 0.7, 0.3, 1) both; }
   @keyframes rise {
-    from { opacity: 0; transform: translateY(6px); }
+    from { opacity: 0; transform: translateY(7px); }
     to   { opacity: 1; transform: none; }
   }
 }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 6px; }

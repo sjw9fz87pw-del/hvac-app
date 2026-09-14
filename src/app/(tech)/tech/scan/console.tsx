@@ -94,7 +94,7 @@ export function ScanConsole() {
           value={manual}
           onChange={(e) => setManual(e.target.value)}
           placeholder="Paste the tag URL or id"
-          style={{ width: "100%", padding: "13px 14px", borderRadius: 12, border: "1px solid var(--line)", background: "var(--canvas)", minHeight: 48 }}
+          style={{ width: "100%", padding: "13px 14px", borderRadius: 12, border: "1px solid var(--line)", background: "var(--surface-2)", minHeight: 48 }}
         />
         <div style={{ marginTop: 10 }}>
           <Button variant="secondary" onClick={() => resolve(manual.trim())} disabled={manual.trim().length < 6}>

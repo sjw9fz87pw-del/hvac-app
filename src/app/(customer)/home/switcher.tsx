@@ -27,8 +27,8 @@ function Chip({ children, active, onClick }: { children: React.ReactNode; active
       style={{
         padding: "9px 15px", borderRadius: 999, whiteSpace: "nowrap", fontSize: 14, fontWeight: 600, cursor: "pointer",
         border: `1px solid ${active ? "transparent" : "var(--line)"}`,
-        background: active ? "var(--accent)" : "var(--surface)",
-        color: active ? "#fff" : "var(--ink-soft)",
+        background: active ? "linear-gradient(180deg, var(--accent-2), var(--accent))" : "var(--surface-2)",
+        color: active ? "#1a0f04" : "var(--ink-soft)",
       }}
     >
       {children}

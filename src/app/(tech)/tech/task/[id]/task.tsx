@@ -209,7 +209,7 @@ export function ServiceTask({ task, equipment, serviceType, nextTask }: Props) {
                   width: 26, height: 26, borderRadius: 8, flexShrink: 0, display: "grid", placeItems: "center",
                   border: `2px solid ${checked[item.id] ? "var(--good)" : "var(--line)"}`,
                   background: checked[item.id] ? "var(--good)" : "transparent",
-                  color: "#fff", fontSize: 15, fontWeight: 700,
+                  color: "#1a0f04", fontSize: 15, fontWeight: 700,
                 }}
               >
                 {checked[item.id] ? "✓" : ""}
@@ -232,14 +232,14 @@ export function ServiceTask({ task, equipment, serviceType, nextTask }: Props) {
           onChange={(e) => setNotes(e.target.value)}
           placeholder={serviceType.requirements.note ? "Technician note (required) — internal only" : "Technician note (optional) — internal only"}
           rows={2}
-          style={{ width: "100%", padding: 12, borderRadius: 10, border: "1px solid var(--line)", background: "var(--canvas)", resize: "vertical" }}
+          style={{ width: "100%", padding: 12, borderRadius: 10, border: "1px solid var(--line)", background: "var(--surface-2)", resize: "vertical" }}
         />
         <textarea
           value={customerNotes}
           onChange={(e) => setCustomerNotes(e.target.value)}
           placeholder="Note for the customer (optional) — this one is visible to them"
           rows={2}
-          style={{ width: "100%", marginTop: 8, padding: 12, borderRadius: 10, border: "1px solid var(--line)", background: "var(--canvas)", resize: "vertical" }}
+          style={{ width: "100%", marginTop: 8, padding: 12, borderRadius: 10, border: "1px solid var(--line)", background: "var(--surface-2)", resize: "vertical" }}
         />
       </Card>
 
@@ -257,7 +257,7 @@ export function ServiceTask({ task, equipment, serviceType, nextTask }: Props) {
             onChange={(e) => setIssueNote(e.target.value)}
             placeholder="e.g. unusual compressor noise — recommend a refrigeration contractor look at it"
             rows={2}
-            style={{ width: "100%", marginTop: 10, padding: 12, borderRadius: 10, border: "1px solid var(--line)", background: "var(--canvas)", resize: "vertical" }}
+            style={{ width: "100%", marginTop: 10, padding: 12, borderRadius: 10, border: "1px solid var(--line)", background: "var(--surface-2)", resize: "vertical" }}
           />
         ) : null}
       </Card>
@@ -305,7 +305,7 @@ function PhotoSlot({ kind, label, required, photos, onAdd }: {
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={taken[taken.length - 1].preview} alt={label} style={{ width: "100%", height: 128, objectFit: "cover" }} />
-          <span style={{ position: "absolute", bottom: 8, left: 8, background: "var(--good)", color: "#fff", fontSize: 11.5, fontWeight: 700, padding: "3px 8px", borderRadius: 999 }}>
+          <span style={{ position: "absolute", bottom: 8, left: 8, background: "var(--good)", color: "#1a0f04", fontSize: 11.5, fontWeight: 700, padding: "3px 8px", borderRadius: 999 }}>
             {label} ✓
           </span>
         </>

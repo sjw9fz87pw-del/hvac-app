@@ -13,16 +13,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <TopNav
         title="Equipment Care"
         items={[
-          { href: "/admin", label: "Dashboard", icon: null },
-          { href: "/admin/customers", label: "Customers", icon: null },
-          { href: "/admin/locations", label: "Locations", icon: null },
-          { href: "/admin/equipment", label: "Equipment", icon: null },
-          { href: "/admin/schedule", label: "Schedule", icon: null },
-          { href: "/admin/technicians", label: "Technicians", icon: null },
-          { href: "/admin/issues", label: "Issues", icon: null },
-          { href: "/admin/reports", label: "Reports", icon: null },
-          { href: "/admin/nfc", label: "NFC", icon: null },
-          { href: "/admin/settings", label: "Settings", icon: null },
+          { href: "/admin", label: "Dashboard" },
+          { href: "/admin/customers", label: "Customers" },
+          { href: "/admin/locations", label: "Locations" },
+          { href: "/admin/equipment", label: "Equipment" },
+          { href: "/admin/schedule", label: "Schedule" },
+          { href: "/admin/technicians", label: "Technicians" },
+          { href: "/admin/issues", label: "Issues" },
+          { href: "/admin/reports", label: "Reports" },
+          { href: "/admin/nfc", label: "NFC" },
+          { href: "/admin/settings", label: "Settings" },
         ]}
       />
       <GlobalSearch />

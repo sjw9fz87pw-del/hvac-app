@@ -47,8 +47,8 @@ export default async function AdminEquipment({ searchParams }: { searchParams: P
             style={{
               padding: "8px 14px", borderRadius: 999, fontSize: 13.5, fontWeight: 600,
               border: `1px solid ${status === filter.key ? "transparent" : "var(--line)"}`,
-              background: status === filter.key ? "var(--accent)" : "var(--surface)",
-              color: status === filter.key ? "#fff" : "var(--ink-soft)",
+              background: status === filter.key ? "linear-gradient(180deg, var(--accent-2), var(--accent))" : "var(--surface-2)",
+              color: status === filter.key ? "#1a0f04" : "var(--ink-soft)",
             }}
           >
             {filter.label}
