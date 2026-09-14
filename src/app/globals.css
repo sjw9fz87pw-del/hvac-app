@@ -96,6 +96,17 @@ button, [role="button"], a.tap { min-height: 44px; }
   }
 }
 
+/*
+ * Netlify appends a floating badge/toolbar iframe to the body, anchored bottom
+ * right — which lands squarely on top of the bottom tab bar and blocks the last
+ * tab. The widget carries its own dismiss control that persists per device;
+ * this applies the same outcome for every visitor.
+ */
+#nl-badge-frame,
+#nl-hud-frame {
+  display: none !important;
+}
+
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 6px; }
