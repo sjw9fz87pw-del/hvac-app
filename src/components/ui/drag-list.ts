@@ -1,57 +1,39 @@
 /**
- * Long-press drag, for grouping things on a phone.
+ * Dragging rows around on a touch screen.
  *
- * HTML5 drag-and-drop does not fire on touch at all, so this is built on
- * pointer events. The important part is the gesture split: a finger that goes
- * down on a row might be starting a drag or might be starting a scroll, and
- * guessing wrong makes the list feel broken either way.
+ * The hard constraint is `touch-action`. A browser decides who owns a gesture
+ * at touchstart and will not revisit it: with `pan-y` anywhere on the path it
+ * claims every vertical movement for scrolling, stops delivering touchmove, and
+ * fires pointercancel. Since dragging one row onto another *is* vertical
+ * movement, no amount of long-pressing or preventDefault wins that argument
+ * after the fact.
  *
- * So nothing is captured until a long press proves intent. Move beyond a few
- * pixels before the timer fires and it was a scroll — the drag never starts and
- * the browser keeps the gesture. Hold still and the row lifts, at which point
- * the pointer is captured and scrolling is suppressed for the duration.
+ * So dragging starts from a handle that declares `touch-action: none`. The
+ * browser never claims gestures that begin there, touchmove keeps arriving, and
+ * the rest of the row scrolls normally. A visible grip also says the row can be
+ * dragged, which a long press never does.
  *
- * Pure DOM and timing logic, kept out of the component so the thresholds can be
- * unit-tested rather than felt for.
+ * Movement still has to clear a few pixels first, so a tap that lands on the
+ * handle does not lift the row.
  */
 
-/** Hold this long without moving to start a drag. */
-export const LONG_PRESS_MS = 320;
-
-/** Move more than this before the timer fires and it counts as a scroll. */
-export const SLOP_PX = 8;
-
-export type Gesture = "pending" | "drag" | "scroll";
+/** Movement before a press on the handle becomes a drag. */
+export const SLOP_PX = 4;
 
 export interface GestureState {
-  gesture: Gesture;
   startX: number;
   startY: number;
-  startedAt: number;
+  dragging: boolean;
 }
 
-export function beginGesture(x: number, y: number, now: number): GestureState {
-  return { gesture: "pending", startX: x, startY: y, startedAt: now };
+export function beginGesture(x: number, y: number): GestureState {
+  return { startX: x, startY: y, dragging: false };
 }
 
-/**
- * Decide what a pointer move means. Once a gesture has resolved it stays
- * resolved — a drag does not become a scroll halfway through.
- */
-export function onMove(state: GestureState, x: number, y: number, now: number): GestureState {
-  if (state.gesture !== "pending") return state;
-
-  const moved = Math.hypot(x - state.startX, y - state.startY);
-  const held = now - state.startedAt;
-
-  if (held >= LONG_PRESS_MS) return { ...state, gesture: "drag" };
-  if (moved > SLOP_PX) return { ...state, gesture: "scroll" };
-  return state;
-}
-
-/** The long-press timer firing while the finger has stayed put. */
-export function onHoldElapsed(state: GestureState): GestureState {
-  return state.gesture === "pending" ? { ...state, gesture: "drag" } : state;
+/** Has the finger moved far enough to mean it. Once dragging, stays dragging. */
+export function pastSlop(state: GestureState, x: number, y: number): boolean {
+  if (state.dragging) return true;
+  return Math.hypot(x - state.startX, y - state.startY) > SLOP_PX;
 }
 
 /**

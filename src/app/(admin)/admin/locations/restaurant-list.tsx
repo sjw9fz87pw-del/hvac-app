@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { List, Row, Divider, Pill, Disclosure, Card, Button } from "@/components/ui/primitives";
-import { beginGesture, onMove, onHoldElapsed, targetIdAt, LONG_PRESS_MS, type GestureState } from "@/components/ui/drag-list";
+import { beginGesture, pastSlop, targetIdAt, type GestureState } from "@/components/ui/drag-list";
 
 export interface RestaurantRow {
   id: string; name: string; groupId: string; groupName: string; groupSlug: string;
@@ -12,6 +12,35 @@ export interface RestaurantRow {
 
 export interface GroupBlock {
   id: string; name: string; restaurants: RestaurantRow[];
+}
+
+/**
+ * The grip. `touch-action: none` on this element is the whole trick: a gesture
+ * that starts here is never claimed by the browser for scrolling, so touchmove
+ * keeps being delivered and the drag can happen. The rest of the row keeps its
+ * normal scrolling behaviour.
+ */
+function Grip({ onPointerDown }: { onPointerDown: (event: React.PointerEvent) => void }) {
+  return (
+    <span
+      role="button"
+      aria-label="Drag to group"
+      onPointerDown={onPointerDown}
+      style={{
+        display: "grid", placeItems: "center", flexShrink: 0,
+        width: 34, height: 44, marginLeft: -6, cursor: "grab",
+        touchAction: "none", userSelect: "none",
+        WebkitUserSelect: "none", WebkitTouchCallout: "none",
+        color: "var(--ink-faint)",
+      }}
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+        {[3, 8, 13].map((y) =>
+          [5, 11].map((x) => <circle key={`${x}-${y}`} cx={x} cy={y} r="1.5" fill="currentColor" />),
+        )}
+      </svg>
+    </span>
+  );
 }
 
 function statusPill(row: RestaurantRow) {
@@ -36,14 +65,56 @@ export function RestaurantList({ groups, loose, canGroup }: {
   const [ghost, setGhost] = useState<{ x: number; y: number } | null>(null);
 
   const state = useRef<GestureState | null>(null);
-  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const row = useRef<RestaurantRow | null>(null);
 
-  useEffect(() => () => { if (holdTimer.current) clearTimeout(holdTimer.current); }, []);
+  const justDragged = useRef(false);
+  const overRef = useRef<string | null>(null);
+  useEffect(() => { overRef.current = over; }, [over]);
+
+  /**
+   * While a drag is live the gesture is driven from the document, not from the
+   * handle it started on: the finger leaves that element immediately and the
+   * events have to keep arriving anyway. preventDefault on a non-passive
+   * touchmove holds the page still for the duration.
+   */
+  useEffect(() => {
+    if (!dragging) return;
+
+    const at = (x: number, y: number) => {
+      setGhost({ x, y });
+      const id = targetIdAt(x, y);
+      setOver(id && id !== row.current?.id ? id : null);
+    };
+
+    const onTouchMove = (event: TouchEvent) => {
+      const touch = event.touches[0];
+      if (!touch) return;
+      event.preventDefault();
+      at(touch.clientX, touch.clientY);
+    };
+    const onPointerMove = (event: PointerEvent) => {
+      if (event.pointerType === "touch") return;
+      at(event.clientX, event.clientY);
+    };
+    const onEnd = () => { void finish(); };
+
+    document.addEventListener("touchmove", onTouchMove, { passive: false });
+    document.addEventListener("touchend", onEnd);
+    document.addEventListener("touchcancel", onEnd);
+    document.addEventListener("pointermove", onPointerMove);
+    document.addEventListener("pointerup", onEnd);
+    return () => {
+      document.removeEventListener("touchmove", onTouchMove);
+      document.removeEventListener("touchend", onEnd);
+      document.removeEventListener("touchcancel", onEnd);
+      document.removeEventListener("pointermove", onPointerMove);
+      document.removeEventListener("pointerup", onEnd);
+    };
+    // finish() reads the live target through a ref, so this binds once per drag.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dragging]);
 
   function reset() {
-    if (holdTimer.current) clearTimeout(holdTimer.current);
-    holdTimer.current = null;
     state.current = null;
     row.current = null;
     setDragging(null);
@@ -51,41 +122,49 @@ export function RestaurantList({ groups, loose, canGroup }: {
     setGhost(null);
   }
 
-  function pointerDown(event: React.PointerEvent, item: RestaurantRow) {
-    if (!canGroup) return;
-    state.current = beginGesture(event.clientX, event.clientY, Date.now());
-    row.current = item;
-    holdTimer.current = setTimeout(() => {
-      if (!state.current) return;
-      state.current = onHoldElapsed(state.current);
-      if (state.current.gesture === "drag") {
-        setDragging(row.current);
-        setGhost({ x: state.current.startX, y: state.current.startY });
-        // Tiny buzz where supported, so the lift is felt rather than guessed at.
-        navigator.vibrate?.(12);
-      }
-    }, LONG_PRESS_MS);
-  }
-
-  function pointerMove(event: React.PointerEvent) {
-    if (!state.current) return;
-    state.current = onMove(state.current, event.clientX, event.clientY, Date.now());
-
-    if (state.current.gesture === "scroll") { reset(); return; }
-    if (state.current.gesture !== "drag") return;
-
-    // Only now take the gesture off the browser, so scrolling stayed possible
-    // right up to the moment the drag actually began.
+  /** Press on the grip. Nothing lifts until the finger actually moves. */
+  function handleDown(event: React.PointerEvent, item: RestaurantRow) {
+    if (!canGroup || event.button !== 0) return;
     event.preventDefault();
-    setGhost({ x: event.clientX, y: event.clientY });
-    const id = targetIdAt(event.clientX, event.clientY);
-    setOver(id && id !== row.current?.id ? id : null);
+    state.current = beginGesture(event.clientX, event.clientY);
+    row.current = item;
+
+    const arm = (x: number, y: number) => {
+      if (!state.current || state.current.dragging) return;
+      if (!pastSlop(state.current, x, y)) return;
+      state.current = { ...state.current, dragging: true };
+      setDragging(row.current);
+      setGhost({ x, y });
+      navigator.vibrate?.(12);
+      document.removeEventListener("touchmove", armTouch);
+      document.removeEventListener("pointermove", armPointer);
+    };
+    const armTouch = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (t) { e.preventDefault(); arm(t.clientX, t.clientY); }
+    };
+    const armPointer = (e: PointerEvent) => {
+      if (e.pointerType !== "touch") arm(e.clientX, e.clientY);
+    };
+    const disarm = () => {
+      document.removeEventListener("touchmove", armTouch);
+      document.removeEventListener("pointermove", armPointer);
+      document.removeEventListener("touchend", disarm);
+      document.removeEventListener("pointerup", disarm);
+      if (state.current && !state.current.dragging) reset();
+    };
+    document.addEventListener("touchmove", armTouch, { passive: false });
+    document.addEventListener("pointermove", armPointer);
+    document.addEventListener("touchend", disarm);
+    document.addEventListener("pointerup", disarm);
   }
 
-  async function pointerUp() {
+  async function finish() {
     const dragged = row.current;
-    const target = over;
-    const wasDragging = state.current?.gesture === "drag";
+    const target = overRef.current;
+    const wasDragging = Boolean(state.current?.dragging);
+    // The click that follows a drop would otherwise open what we dropped onto.
+    justDragged.current = wasDragging;
     reset();
     if (!wasDragging || !dragged || !target) return;
 
@@ -137,22 +216,38 @@ export function RestaurantList({ groups, loose, canGroup }: {
       <div
         key={item.id}
         data-drop-id={item.id}
-        onPointerDown={(e) => pointerDown(e, item)}
-        onPointerMove={pointerMove}
-        onPointerUp={pointerUp}
-        onPointerCancel={reset}
+        onContextMenu={(e) => { if (canGroup) e.preventDefault(); }}
+        onClickCapture={(e) => {
+          if (justDragged.current) { e.preventDefault(); e.stopPropagation(); justDragged.current = false; }
+        }}
         style={{
           ...dropStyle(item.id),
           opacity: dragging?.id === item.id ? 0.4 : 1,
-          touchAction: dragging ? "none" : "pan-y",
+          // Long-pressing a link is a browser gesture before it is ours: iOS
+          // raises a preview sheet and both platforms start selecting text,
+          // either of which swallows the drag before it begins.
+          ...(canGroup
+            ? {
+                userSelect: "none" as const,
+                WebkitUserSelect: "none" as const,
+                WebkitTouchCallout: "none" as const,
+                touchAction: "pan-y" as const,
+              }
+            : {}),
         }}
       >
         {index > 0 && total > 1 ? <Divider /> : null}
+        {/* The href must not depend on `dragging`. Row renders an <a> when it
+            has one and a plain <div> when it does not, so toggling it mid-drag
+            makes React replace the node the touch is attached to — and the
+            browser cancels the whole gesture. The click that follows a drop is
+            suppressed in onClickCapture instead. */}
         <Row
-          href={dragging ? undefined : `/admin/locations/${item.id}`}
+          href={`/admin/locations/${item.id}`}
           title={item.name}
           subtitle={[`${item.units} unit${item.units === 1 ? "" : "s"}`, item.place].filter(Boolean).join(" · ")}
           right={statusPill(item)}
+          leading={canGroup ? <Grip onPointerDown={(e: React.PointerEvent) => handleDown(e, item)} /> : undefined}
         />
       </div>
     );
@@ -183,7 +278,7 @@ export function RestaurantList({ groups, loose, canGroup }: {
 
       {canGroup && groups.length === 0 && loose.length > 1 ? (
         <p style={{ color: "var(--ink-faint)", fontSize: 13, marginTop: 14, lineHeight: 1.55 }}>
-          Press and hold a restaurant, then drag it onto another to put them in a group.
+          Drag a restaurant by its grip onto another to put them in a group.
         </p>
       ) : null}
 

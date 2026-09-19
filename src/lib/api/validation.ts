@@ -38,7 +38,9 @@ export const createEquipmentSchema = z.object({
 });
 
 export const createLocationSchema = z.object({
-  organizationId: z.string().min(1),
+  /** An existing group, or a name to create one. Exactly one of the two. */
+  organizationId: z.string().min(1).optional(),
+  newGroupName: z.string().min(1).max(120).optional(),
   name: z.string().min(1).max(120),
   addressLine1: z.string().max(160).nullish(),
   city: z.string().max(80).nullish(),
@@ -48,6 +50,8 @@ export const createLocationSchema = z.object({
   accessNotes: z.string().max(4000).nullish(),
   /** Areas to create with the restaurant, e.g. Kitchen and Bar. */
   areas: z.array(z.string().min(1).max(80)).max(30).default([]),
+}).refine((v) => Boolean(v.organizationId) !== Boolean(v.newGroupName), {
+  message: "Choose an existing group or name a new one, not both",
 });
 
 export const completeServiceSchema = z.object({

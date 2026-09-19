@@ -17,11 +17,19 @@ const label: React.CSSProperties = {
   color: "var(--ink-soft)", marginBottom: 6,
 };
 
-export function AddRestaurantForm({ organizations }: {
-  organizations: { id: string; name: string }[];
+const NEW_GROUP = "__new__";
+
+export function AddRestaurantForm({ organizations, defaultGroupId, canCreateGroup }: {
+  organizations: { id: string; name: string; restaurants: number }[];
+  /** The group the last restaurant went into, so a run of them lands together. */
+  defaultGroupId: string | null;
+  canCreateGroup: boolean;
 }) {
   const router = useRouter();
-  const [organizationId, setOrganizationId] = useState(organizations[0]?.id ?? "");
+  const [organizationId, setOrganizationId] = useState(
+    defaultGroupId ?? organizations[0]?.id ?? NEW_GROUP,
+  );
+  const [newGroupName, setNewGroupName] = useState("");
   const [name, setName] = useState("");
   const [addressLine1, setAddress] = useState("");
   const [city, setCity] = useState("");
@@ -40,6 +48,10 @@ export function AddRestaurantForm({ organizations }: {
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (!name.trim()) { setError("Give the restaurant a name"); return; }
+    if (organizationId === NEW_GROUP && !newGroupName.trim()) {
+      setError("Name the new group");
+      return;
+    }
     setBusy(true);
     setError(null);
 
@@ -47,7 +59,9 @@ export function AddRestaurantForm({ organizations }: {
       method: "POST",
       headers: { "content-type": "application/json", "idempotency-key": crypto.randomUUID() },
       body: JSON.stringify({
-        organizationId,
+        ...(organizationId === NEW_GROUP
+          ? { newGroupName: newGroupName.trim() }
+          : { organizationId }),
         name: name.trim(),
         addressLine1: addressLine1.trim() || null,
         city: city.trim() || null,
@@ -75,14 +89,31 @@ export function AddRestaurantForm({ organizations }: {
 
       <form onSubmit={submit}>
         <Card>
-          {organizations.length > 1 ? (
-            <div style={{ marginBottom: 16 }}>
-              <label style={label} htmlFor="org">Group</label>
-              <select id="org" style={field} value={organizationId} onChange={(e) => setOrganizationId(e.target.value)}>
-                {organizations.map((org) => <option key={org.id} value={org.id}>{org.name}</option>)}
-              </select>
-            </div>
-          ) : null}
+          <div style={{ marginBottom: 16 }}>
+            <label style={label} htmlFor="org">Group</label>
+            <select id="org" style={field} value={organizationId} onChange={(e) => setOrganizationId(e.target.value)}>
+              {organizations.map((org) => (
+                <option key={org.id} value={org.id}>
+                  {org.name}{org.restaurants > 0 ? ` · ${org.restaurants}` : ""}
+                </option>
+              ))}
+              {canCreateGroup ? <option value={NEW_GROUP}>+ New group…</option> : null}
+            </select>
+
+            {organizationId === NEW_GROUP ? (
+              <input
+                style={{ ...field, marginTop: 10 }}
+                value={newGroupName}
+                onChange={(e) => setNewGroupName(e.target.value)}
+                placeholder="Group name, e.g. Dad&rsquo;s Restaurants"
+                autoComplete="off"
+              />
+            ) : (
+              <p style={{ color: "var(--ink-faint)", fontSize: 13, marginTop: 8 }}>
+                The next restaurant you add will default to this group.
+              </p>
+            )}
+          </div>
 
           <div style={{ marginBottom: 16 }}>
             <label style={label} htmlFor="name">Restaurant name</label>

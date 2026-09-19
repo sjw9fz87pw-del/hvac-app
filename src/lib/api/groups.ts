@@ -76,6 +76,24 @@ async function reparent(
  * Callers must have already checked that every location is inside the actor's
  * scope; this does the movement, not the authorisation.
  */
+/** A slug free of collisions within the service company. */
+export async function uniqueGroupSlug(
+  tx: Prisma.TransactionClient,
+  serviceCompanyId: string,
+  name: string,
+): Promise<string> {
+  const base = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "group";
+  let slug = base;
+  for (let n = 2; n < 100; n++) {
+    const clash = await tx.customerOrganization.findFirst({
+      where: { serviceCompanyId, slug }, select: { id: true },
+    });
+    if (!clash) return slug;
+    slug = `${base}-${n}`;
+  }
+  return `${base}-${Date.now().toString(36)}`;
+}
+
 export async function assignToGroup(
   locationIds: string[],
   target: { groupId: string } | { newGroupName: string },
@@ -97,20 +115,12 @@ export async function assignToGroup(
       });
     } else {
       const name = target.newGroupName.trim();
-      const base = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "group";
-      // Slugs are unique per service company, so settle collisions here rather
-      // than letting the insert fail.
-      let slug = base;
-      for (let n = 2; n < 100; n++) {
-        const clash = await tx.customerOrganization.findFirst({
-          where: { serviceCompanyId: actor.serviceCompanyId, slug },
-          select: { id: true },
-        });
-        if (!clash) break;
-        slug = `${base}-${n}`;
-      }
       group = await tx.customerOrganization.create({
-        data: { serviceCompanyId: actor.serviceCompanyId, name, slug },
+        data: {
+          serviceCompanyId: actor.serviceCompanyId,
+          name,
+          slug: await uniqueGroupSlug(tx, actor.serviceCompanyId, name),
+        },
         select: { id: true, name: true },
       });
     }

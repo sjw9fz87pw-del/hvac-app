@@ -3,9 +3,10 @@ import { prisma } from "@/lib/db/client";
 import { requireCapability } from "@/lib/auth/session";
 import { assertOrganization, organizationScope } from "@/lib/auth/scope";
 import { createLocationSchema } from "@/lib/api/validation";
+import { uniqueGroupSlug } from "@/lib/api/groups";
 import { recordAudit } from "@/lib/audit/log";
 import { withIdempotency } from "@/lib/sync/idempotency";
-import { ok, route } from "@/lib/api/respond";
+import { ok, fail, route } from "@/lib/api/respond";
 
 export const GET = route(async () => {
   const actor = await requireCapability("org.read");
@@ -25,17 +26,32 @@ export const POST = route(async (request: NextRequest) => {
   const body = await request.json();
   const input = createLocationSchema.parse(body);
 
+  // Creating a group is a change to the customer structure, which is a
+  // different right from adding a restaurant to one that already exists.
+  if (input.newGroupName && !actor.capabilities.has("org.manage")) {
+    return fail(403, "Your role cannot create a group");
+  }
   // Out-of-scope organizations 404 rather than 403, so this cannot be used to
   // probe which organizations exist.
-  assertOrganization(actor, input.organizationId);
+  if (input.organizationId) assertOrganization(actor, input.organizationId);
 
   const outcome = await withIdempotency(
     { actorId: actor.userId, key: request.headers.get("idempotency-key"), endpoint: "POST /locations", body },
     async () => {
       const location = await prisma.$transaction(async (tx) => {
+        const organizationId = input.organizationId
+          ?? (await tx.customerOrganization.create({
+            data: {
+              serviceCompanyId: actor.serviceCompanyId,
+              name: input.newGroupName!.trim(),
+              slug: await uniqueGroupSlug(tx, actor.serviceCompanyId, input.newGroupName!),
+            },
+            select: { id: true },
+          })).id;
+
         const created = await tx.restaurantLocation.create({
           data: {
-            organizationId: input.organizationId,
+            organizationId,
             name: input.name,
             addressLine1: input.addressLine1 ?? null,
             city: input.city ?? null,
@@ -52,8 +68,8 @@ export const POST = route(async (request: NextRequest) => {
         await recordAudit(
           {
             action: "location.created", entityType: "RestaurantLocation", entityId: created.id,
-            actorId: actor.userId, organizationId: input.organizationId,
-            after: { name: created.name, areas: input.areas },
+            actorId: actor.userId, organizationId,
+            after: { name: created.name, areas: input.areas, group: input.newGroupName ?? null },
           },
           tx,
         );
@@ -61,7 +77,7 @@ export const POST = route(async (request: NextRequest) => {
         return created;
       });
 
-      return { status: 201, body: { id: location.id, name: location.name } };
+      return { status: 201, body: { id: location.id, name: location.name, groupId: location.organizationId } };
     },
   );
 
