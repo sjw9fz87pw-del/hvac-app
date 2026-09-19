@@ -43,6 +43,13 @@ export const POST = route(async (request: NextRequest) => {
   const reset = body?.reset === true;
   const ownerEmail = typeof body?.ownerEmail === "string" ? body.ownerEmail.trim() : "";
   const ownerName = typeof body?.ownerName === "string" ? body.ownerName.trim() : undefined;
+  // When the recorded work was actually done. Defaults to now; pass it when
+  // backdating so the next-due dates land where they really should.
+  const performedAt = typeof body?.performedAt === "string" ? new Date(body.performedAt) : undefined;
+
+  if (performedAt && Number.isNaN(performedAt.getTime())) {
+    return fail(422, "performedAt must be an ISO date");
+  }
 
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ownerEmail)) {
     return fail(422, "ownerEmail is required and must be an email address");
@@ -56,7 +63,7 @@ export const POST = route(async (request: NextRequest) => {
   }
 
   const password = generatePassword();
-  const result = await installInitialData(prisma, password, { ownerEmail, ownerName });
+  const result = await installInitialData(prisma, password, { ownerEmail, ownerName, performedAt });
 
   return ok({
     installed: result.counts,
