@@ -2,6 +2,7 @@ import { requireCapability } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
 import { organizationScope } from "@/lib/auth/scope";
 import { roleCopy, roleLabel } from "@/lib/auth/role-copy";
+import { awaitingSetup } from "@/lib/auth/invite-service";
 import type { Role } from "@/lib/auth/permissions";
 import { PageHeader, List, Row, Divider, Pill, SectionTitle, EmptyState, Button, formatDate } from "@/components/ui/primitives";
 
@@ -33,7 +34,7 @@ export default async function PeoplePage() {
     const where = membership?.location?.name
       ?? membership?.organization?.name
       ?? "Your company";
-    return { person, role, copy, where };
+    return { person, role, copy, where, pending: awaitingSetup(person.passwordHash) };
   });
 
   const team = rows.filter((r) => r.copy.kind === "internal");
@@ -53,16 +54,19 @@ export default async function PeoplePage() {
           <EmptyState title={empty} />
         ) : (
           <List>
-            {items.map(({ person, copy, where }, index) => (
+            {items.map(({ person, copy, where, pending }, index) => (
               <div key={person.id}>
                 {index > 0 ? <Divider /> : null}
                 <Row
+                  href={`/admin/people/${person.id}`}
                   title={person.name}
                   subtitle={`${person.email} · ${where}`}
                   right={
                     <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                       {person.id === actor.userId ? <Pill tone="accent">You</Pill> : null}
-                      <Pill tone={copy.kind === "internal" ? "info" : "neutral"}>{copy.label}</Pill>
+                      {!person.active ? <Pill tone="bad">No access</Pill>
+                        : pending ? <Pill tone="warn">Invited</Pill>
+                        : <Pill tone={copy.kind === "internal" ? "info" : "neutral"}>{copy.label}</Pill>}
                     </div>
                   }
                 />
@@ -89,6 +93,7 @@ export default async function PeoplePage() {
         Everyone signs in at the same address and lands on the view their role gives them.
         A restaurant manager sees only their own restaurant; a group owner sees every
         restaurant in their group. {roleLabel("TECHNICIAN")}s see today&rsquo;s work.
+        Tap anyone to reset them, change what they see, or remove their access.
       </p>
     </main>
   );

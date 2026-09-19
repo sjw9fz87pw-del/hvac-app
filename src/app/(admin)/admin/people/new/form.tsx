@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { RoleCopy } from "@/lib/auth/role-copy";
 import { Button, Card, PageHeader, Pill, SectionTitle } from "@/components/ui/primitives";
+import { CopyLink } from "@/components/ui/copy-link";
 
 const field: React.CSSProperties = {
   width: "100%", padding: "13px 14px", borderRadius: 12,
@@ -31,7 +32,10 @@ export function AddPersonForm({ roles, organizations }: {
   const [locationId, setLocationId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [created, setCreated] = useState<{ name: string; email: string; password: string } | null>(null);
+  const [created, setCreated] = useState<{
+    name: string; email: string;
+    invite: { emailed: boolean; link: string; expiresInHours: number; error: string | null };
+  } | null>(null);
 
   const organization = organizations.find((o) => o.id === organizationId);
   const needsRestaurant = selected.scope === "restaurant";
@@ -67,38 +71,53 @@ export function AddPersonForm({ roles, organizations }: {
     setBusy(false);
     const body = await response.json().catch(() => ({}));
     if (!response.ok) { setError(body.error ?? "Could not add them"); return; }
-    setCreated({ name: body.name, email: body.email, password: body.password });
+    setCreated({ name: body.name, email: body.email, invite: body.invite });
   }
 
-  // The password exists in exactly one place: this screen, once.
+  // What happens next depends entirely on whether email is configured, so the
+  // screen says which of the two it was rather than assuming delivery.
   if (created) {
+    const { invite } = created;
+    const first = created.name.split(" ")[0];
     return (
       <main className="rise">
-        <PageHeader title="Added" subtitle={created.name} />
-        <Card>
-          <Pill tone="warn">Shown once — copy it now</Pill>
-          <p style={{ fontSize: 14.5, marginTop: 12, color: "var(--ink-soft)" }}>
-            Send {created.name.split(" ")[0]} these two things. They can change the
-            password from Account once they are in.
-          </p>
-          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-            <div>
-              <span style={label}>Email</span>
-              <div style={{ ...field, display: "flex", alignItems: "center", fontVariantNumeric: "tabular-nums" }}>
-                {created.email}
-              </div>
-            </div>
-            <div>
-              <span style={label}>Temporary password</span>
-              <div style={{ ...field, display: "flex", alignItems: "center", fontFamily: "var(--mono, ui-monospace, monospace)", fontSize: 17, letterSpacing: "0.02em" }}>
-                {created.password}
-              </div>
-            </div>
-          </div>
-        </Card>
+        <PageHeader title="Invited" subtitle={created.name} />
+
+        {invite.emailed ? (
+          <Card style={{ textAlign: "center", padding: 28 }}>
+            <div style={{ fontSize: 38, color: "var(--good)" }}>✓</div>
+            <h2 style={{ fontSize: 20, marginTop: 8 }}>Invitation sent</h2>
+            <p style={{ color: "var(--ink-soft)", fontSize: 14.5, marginTop: 8, lineHeight: 1.55 }}>
+              {created.email} will get an email with a link to choose their own password.
+              It works once and expires in {Math.round(invite.expiresInHours / 24)} days.
+            </p>
+          </Card>
+        ) : (
+          <>
+            <Card>
+              <Pill tone="warn">Email is not set up — send this yourself</Pill>
+              <p style={{ fontSize: 14.5, marginTop: 12, color: "var(--ink-soft)", lineHeight: 1.55 }}>
+                {first}&rsquo;s account is ready but nothing has been emailed. Send them this
+                link however you like — text, WhatsApp, in person. They choose their own
+                password; you never see it.
+              </p>
+              <CopyLink link={invite.link} />
+              <p style={{ fontSize: 12.5, color: "var(--ink-faint)", marginTop: 10 }}>
+                Works once, expires in {Math.round(invite.expiresInHours / 24)} days.
+                You can issue a fresh one any time from their profile.
+              </p>
+              {invite.error ? (
+                <p style={{ fontSize: 12.5, color: "var(--warn)", marginTop: 10 }}>
+                  Sending failed: {invite.error}
+                </p>
+              ) : null}
+            </Card>
+          </>
+        )}
+
         <div style={{ marginTop: 18, display: "grid", gap: 10 }}>
           <Button href="/admin/people">Done</Button>
-          <Button href="/admin/people/new" variant="secondary">Add another</Button>
+          <Button href="/admin/people/new" variant="secondary">Invite someone else</Button>
         </div>
       </main>
     );

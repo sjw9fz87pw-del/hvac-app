@@ -19,6 +19,7 @@ export type AuditAction =
   | "visit.created" | "visit.updated" | "visit.completed"
   | "location.created" | "location.updated" | "area.created"
   | "org.created" | "user.invited" | "user.role_changed"
+  | "user.reset_requested" | "user.activated" | "user.deactivated" | "user.password_set"
   | "serviceType.updated"
   | "auth.login" | "auth.logout" | "auth.login_failed";
 

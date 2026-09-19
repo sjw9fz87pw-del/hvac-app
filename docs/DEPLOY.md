@@ -56,6 +56,26 @@ straight after the first sign-in, then add the rest of the team from People.
 
 ## Configuration
 
+### Email (optional)
+
+Invitations work without it: the admin screen shows a single-use link to pass on
+by hand. Set both of these and they go out by email instead — no code change.
+
+| Variable | Value |
+| --- | --- |
+| `RESEND_API_KEY` | An API key from resend.com |
+| `EMAIL_FROM` | A sender on a domain verified with that provider, e.g. `Equipment Care <no-reply@bruphilly.com>` |
+
+Until both are set, `emailConfigured()` is false and nothing is sent.
+
+Invitation and reset links are signed rather than stored, so there is no table
+to migrate. The signature covers the user's current password hash, which is what
+makes a link single-use: setting a password invalidates every link issued before
+it. The signing key is derived from `NFC_TAG_SECRET` with a domain separator, so
+rotating that value also invalidates any link still outstanding.
+
+
+
 Only two variables have to be set by hand. `SESSION_SECRET` was a requirement I
 invented — nothing reads it, because sessions use a random token hashed into the
 database. `APP_BASE_URL` now falls back to Netlify's own `URL`, and

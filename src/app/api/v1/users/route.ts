@@ -1,12 +1,11 @@
 import { NextRequest } from "next/server";
-import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/db/client";
 import { requireCapability, AuthError } from "@/lib/auth/session";
 import { canGrantRole, type Role } from "@/lib/auth/permissions";
 import { assertOrganization, assertLocation } from "@/lib/auth/scope";
-import { hashPassword } from "@/lib/auth/password";
 import { recordAudit } from "@/lib/audit/log";
+import { freshUnusableHash, issueAccessLink } from "@/lib/auth/invite-service";
 import { ok, fail, route } from "@/lib/api/respond";
 
 const schema = z.object({
@@ -19,13 +18,6 @@ const schema = z.object({
   organizationId: z.string().nullish(),
   locationId: z.string().nullish(),
 });
-
-/** Readable enough to type on a phone, with ~62 bits of entropy. */
-function generatePassword(): string {
-  const alphabet = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const chars = Array.from(randomBytes(18), (byte) => alphabet[byte % alphabet.length]);
-  return [chars.slice(0, 6), chars.slice(6, 12), chars.slice(12, 18)].map((g) => g.join("")).join("-");
-}
 
 /**
  * Create a user.
@@ -40,8 +32,9 @@ function generatePassword(): string {
  *      against the creator's own scope, so nobody can attach a user to a tenant
  *      they cannot see.
  *
- * The password is generated and returned exactly once; it is never stored in
- * readable form and never logged.
+ * No password is set here. The account is created holding a placeholder hash
+ * that no password can produce, and an invitation link is issued so the person
+ * chooses their own. Until they do, the account cannot be signed into at all.
  */
 export const POST = route(async (request: NextRequest) => {
   const actor = await requireCapability("user.manage");
@@ -65,14 +58,14 @@ export const POST = route(async (request: NextRequest) => {
     return fail(409, "A user with that email already exists");
   }
 
-  const password = generatePassword();
   const user = await prisma.$transaction(async (tx) => {
     const created = await tx.user.create({
       data: {
         serviceCompanyId: actor.serviceCompanyId,
         email,
         name: input.name,
-        passwordHash: await hashPassword(password),
+        // Unusable by construction: verifyPassword only accepts "scrypt$..." hashes.
+        passwordHash: freshUnusableHash(),
         memberships: {
           create: {
             role,
@@ -93,15 +86,22 @@ export const POST = route(async (request: NextRequest) => {
     return created;
   });
 
+  const issued = await issueAccessLink(user.id, "invite", actor.userId);
+
   return ok(
     {
       id: user.id,
       email: user.email,
       name: user.name,
       role,
-      // Shown once. There is no way to read it back afterwards.
-      password,
-      note: "Store this now — it is not recoverable. Change it from Account once signed in.",
+      invite: {
+        emailed: issued.emailed,
+        // Returned so an admin can pass it on by hand when email is not set up
+        // or a message bounces. It is single-use and expires.
+        link: issued.link,
+        expiresInHours: issued.expiresInHours,
+        error: issued.emailError ?? null,
+      },
     },
     201,
   );
