@@ -25,6 +25,8 @@ export function ManagePerson({ person, roles, organizations, isSelf, isLastOwner
   person: Person; roles: RoleCopy[]; organizations: Organization[];
   isSelf: boolean; isLastOwner: boolean;
 }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +40,21 @@ export function ManagePerson({ person, roles, organizations, isSelf, isLastOwner
   const selected = roles.find((r) => r.role === role);
   const organization = organizations.find((o) => o.id === organizationId);
   const locked = isSelf || isLastOwner;
+
+  async function remove() {
+    setBusy("delete");
+    setDeleteError(null);
+    const response = await fetch(`/api/v1/users/${person.id}`, { method: "DELETE" });
+    setBusy(null);
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      setConfirmDelete(false);
+      setDeleteError(body.error ?? "Could not delete this account");
+      return;
+    }
+    router.push("/admin/people");
+    router.refresh();
+  }
 
   async function act(action: string, extra: Record<string, unknown> = {}) {
     setBusy(action);
@@ -104,6 +121,17 @@ export function ManagePerson({ person, roles, organizations, isSelf, isLastOwner
 
       {error ? (
         <p style={{ color: "var(--bad)", fontSize: 14, marginTop: 14 }} role="alert">{error}</p>
+      ) : null}
+
+      {person.awaitingSetup && !issued ? (
+        <Card style={{ marginTop: 14, borderColor: "var(--accent-line)" }}>
+          <Pill tone="warn">Waiting on them</Pill>
+          <p style={{ fontSize: 14, marginTop: 10, color: "var(--ink-soft)", lineHeight: 1.6 }}>
+            {person.name.split(" ")[0]} has not set a password yet, so they cannot sign in.
+            Invitation links are shown once and are not stored anywhere — if theirs was
+            lost, issue a fresh one below and send it to them.
+          </p>
+        </Card>
       ) : null}
 
       <SectionTitle>Fix their access</SectionTitle>
@@ -184,7 +212,7 @@ export function ManagePerson({ person, roles, organizations, isSelf, isLastOwner
         </Card>
       ) : null}
 
-      <SectionTitle>Remove their access</SectionTitle>
+      <SectionTitle>Remove them</SectionTitle>
       <Card>
         {locked ? (
           <p style={{ fontSize: 14, color: "var(--ink-soft)", lineHeight: 1.6 }}>
@@ -226,6 +254,40 @@ export function ManagePerson({ person, roles, organizations, isSelf, isLastOwner
           </>
         )}
       </Card>
+
+      {!locked ? (
+        <Card style={{ marginTop: 12 }}>
+          <p style={{ fontSize: 14, color: "var(--ink-soft)", lineHeight: 1.6 }}>
+            Or delete the account entirely, so it stops appearing in this list. Only
+            possible while nothing is recorded in their name — anyone who has completed
+            work keeps it, and can only have their access removed.
+          </p>
+
+          {deleteError ? (
+            <p style={{ color: "var(--warn)", fontSize: 13.5, marginTop: 10, lineHeight: 1.55 }} role="alert">
+              {deleteError}
+            </p>
+          ) : null}
+
+          {!confirmDelete ? (
+            <div style={{ marginTop: 14 }}>
+              <Button variant="secondary" disabled={busy !== null} onClick={() => { setDeleteError(null); setConfirmDelete(true); }}>
+                Delete permanently
+              </Button>
+            </div>
+          ) : (
+            <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+              <p style={{ fontSize: 14, fontWeight: 620 }}>
+                Delete {person.name} permanently? This cannot be undone.
+              </p>
+              <Button disabled={busy !== null} onClick={remove}>
+                {busy === "delete" ? "Deleting…" : "Yes, delete"}
+              </Button>
+              <Button variant="secondary" onClick={() => setConfirmDelete(false)}>Cancel</Button>
+            </div>
+          )}
+        </Card>
+      ) : null}
     </main>
   );
 }
