@@ -17,7 +17,7 @@ export default async function TechLayout({ children }: { children: React.ReactNo
   return (
     <div style={{ minHeight: "100dvh", paddingBottom: 82 }}>
       <ShellBar
-        roots={["/tech", "/tech/visits", "/tech/scan", "/tech/activity", "/tech/profile"]}
+        roots={["/tech", "/tech/visits", "/tech/scan", "/tech/complete", "/tech/profile"]}
         crossShell={home === "/tech" ? null : { href: home, label: SHELL_LABEL[home] ?? "Dashboard" }}
       />
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "22px 18px 8px" }}>{children}</div>
@@ -26,7 +26,7 @@ export default async function TechLayout({ children }: { children: React.ReactNo
           { href: "/tech", label: "Today", icon: "today", exact: true },
           { href: "/tech/visits", label: "Visits", icon: "route" },
           { href: "/tech/scan", label: "Scan", icon: "scan" },
-          { href: "/tech/activity", label: "Activity", icon: "activity" },
+          { href: "/tech/complete", label: "Done", icon: "check" },
           { href: "/tech/profile", label: "Profile", icon: "user" },
         ]}
       />

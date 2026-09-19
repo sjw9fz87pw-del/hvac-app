@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { roleHas, capabilitiesFor, isInternalRole, canGrantRole, ROLE_CAPABILITIES, type Role, type Capability } from "@/lib/auth/permissions";
 import { toCustomerEquipment, toCustomerServiceRecord } from "@/lib/api/serializers";
 import { canAccessAsset, assertAsset } from "@/lib/auth/scope";
+import { ROLE_COPY } from "@/lib/auth/role-copy";
 
 const CUSTOMER_ROLES: Role[] = ["CUSTOMER_ORG_OWNER", "CUSTOMER_LOCATION_MANAGER", "CUSTOMER_STAFF"];
 const INTERNAL: Role[] = ["SUPER_ADMIN", "OPERATIONS_ADMIN", "SERVICE_MANAGER", "TECHNICIAN"];
@@ -242,5 +243,52 @@ describe("who may create which users", () => {
     for (const role of [...INTERNAL, ...CUSTOMER_ROLES]) {
       expect(canGrantRole(superAdmin, role)).toBe(true);
     }
+  });
+});
+
+describe("role descriptions", () => {
+  it("describes every role exactly once", () => {
+    const roles: Role[] = [
+      "SUPER_ADMIN", "OPERATIONS_ADMIN", "SERVICE_MANAGER", "TECHNICIAN",
+      "CUSTOMER_ORG_OWNER", "CUSTOMER_LOCATION_MANAGER", "CUSTOMER_STAFF",
+    ];
+    expect(ROLE_COPY).toHaveLength(roles.length);
+    for (const role of roles) {
+      expect(ROLE_COPY.filter((entry) => entry.role === role)).toHaveLength(1);
+    }
+  });
+
+  // The picker groups roles by `kind`. If that ever disagreed with the real
+  // internal/customer split, a customer owner would be offered staff roles that
+  // the server then refuses — or worse, shown as internal.
+  it("agrees with the internal/customer split the server enforces", () => {
+    for (const entry of ROLE_COPY) {
+      expect(entry.kind === "internal").toBe(isInternalRole(entry.role));
+    }
+  });
+
+  it("only scopes customer roles to a single restaurant", () => {
+    for (const entry of ROLE_COPY) {
+      if (entry.scope === "restaurant") expect(entry.kind).toBe("customer");
+      if (entry.kind === "internal") expect(entry.scope).toBe("company");
+    }
+  });
+
+  // What the Add person screen offers has to be exactly what POST /v1/users
+  // will accept from the same actor.
+  it("offers a customer owner only customer roles", () => {
+    const actor = { internal: false, roles: ["CUSTOMER_ORG_OWNER"] as Role[] };
+    const offered = ROLE_COPY.filter((e) => canGrantRole(actor, e.role));
+    expect(offered.map((e) => e.role).sort()).toEqual(
+      ["CUSTOMER_LOCATION_MANAGER", "CUSTOMER_ORG_OWNER", "CUSTOMER_STAFF"],
+    );
+  });
+
+  it("lets only a super admin offer the owner role", () => {
+    const superAdmin = { internal: true, roles: ["SUPER_ADMIN"] as Role[] };
+    const opsAdmin = { internal: true, roles: ["OPERATIONS_ADMIN"] as Role[] };
+    expect(ROLE_COPY.filter((e) => canGrantRole(superAdmin, e.role))).toHaveLength(7);
+    expect(ROLE_COPY.filter((e) => canGrantRole(opsAdmin, e.role)).map((e) => e.role))
+      .not.toContain("SUPER_ADMIN");
   });
 });

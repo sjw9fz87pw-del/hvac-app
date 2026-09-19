@@ -98,8 +98,10 @@ export default async function TechToday() {
 
       <SectionTitle>Quick actions</SectionTitle>
       <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" }}>
-        <Button href="/tech/scan" size="lg">Scan a tag</Button>
+        <Button href="/tech/complete" size="lg">Mark a restaurant serviced</Button>
+        <Button href="/tech/scan" size="lg" variant="secondary">Scan a tag</Button>
         <Button href="/tech/inventory" size="lg" variant="secondary">Rapid inventory</Button>
+        <Button href="/tech/activity" size="lg" variant="secondary">My activity</Button>
       </div>
       <div style={{ marginTop: 10, fontSize: 12.5, color: "var(--ink-faint)", textAlign: "center" }}>
         Next visit {upcoming > 0 ? "scheduled" : "unscheduled"} · {formatDate(new Date())}

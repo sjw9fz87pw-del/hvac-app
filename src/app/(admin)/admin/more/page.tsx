@@ -21,7 +21,7 @@ export default async function MorePage() {
       ? prisma.customerOrganization.count({ where: { id: { in: scope } } })
       : prisma.customerOrganization.count({ where: { serviceCompanyId: actor.serviceCompanyId } }),
     prisma.equipment.count({ where: { ...orgFilter, archivedAt: null } }),
-    prisma.user.count({ where: { serviceCompanyId: actor.serviceCompanyId, memberships: { some: { role: "TECHNICIAN" } } } }),
+    prisma.user.count({ where: { serviceCompanyId: actor.serviceCompanyId } }),
     prisma.tag.count({ where: { ...orgFilter, state: "ACTIVE", lockedAt: null } }),
     prisma.issue.count({ where: { ...orgFilter, status: { in: ["OPEN", "TRIAGED", "ASSIGNED", "IN_PROGRESS"] } } }),
   ]);
@@ -37,7 +37,7 @@ export default async function MorePage() {
     {
       title: "Operations",
       items: [
-        { href: "/admin/technicians", icon: "people", label: "Technicians", hint: "Who is on site and what they completed", badge: { text: `${technicians}`, tone: "neutral" } },
+        { href: "/admin/people", icon: "people", label: "People", hint: "Who can sign in, and what each of them sees", badge: { text: `${technicians}`, tone: "neutral" } },
         { href: "/admin/nfc", icon: "tag", label: "NFC", hint: "Tags, pairing, history and QR fallback", ...(untagged > 0 ? { badge: { text: `${untagged} unlocked`, tone: "warn" as const } } : {}) },
         { href: "/admin/reports", icon: "chart", label: "Reports", hint: "Service proof and year-to-date performance" },
       ],

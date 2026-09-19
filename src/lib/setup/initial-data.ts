@@ -83,7 +83,11 @@ export async function installInitialData(
     data: {
       serviceCompanyId: company.id, key: "CONDENSER_CLEANING", name: "Condenser cleaning",
       category: "REFRIGERATION", defaultIntervalDays: CONDENSER_INTERVAL_DAYS, estimatedMinutes: 20,
-      requiresNfcVerification: false, requiresBeforePhoto: true, requiresAfterPhoto: true, requiresChecklist: true,
+      // Photo and tag proof start off, because that matches how the work is
+      // actually being done today — no tags on the units, no photos taken. The
+      // checklist still has to be attested. Raise the bar in Settings once
+      // tags are on the equipment; the completion path enforces whatever is set.
+      requiresNfcVerification: false, requiresBeforePhoto: false, requiresAfterPhoto: false, requiresChecklist: true,
       checklistItems: {
         create: [
           { label: "Inspect condenser coil", sortOrder: 0 },

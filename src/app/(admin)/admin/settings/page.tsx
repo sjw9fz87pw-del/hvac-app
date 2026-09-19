@@ -1,10 +1,13 @@
 import { requireActor } from "@/lib/auth/session";
+import { RequirementsEditor } from "./requirements";
 import { prisma } from "@/lib/db/client";
 import { PageHeader, SectionTitle, List, Row, Divider, Card, Pill, titleCase } from "@/components/ui/primitives";
 
 /** Service types and their completion requirements — the configurable proof gates. */
 export default async function SettingsPage() {
   const actor = await requireActor();
+  // Proof gates are only editable by someone who holds settings.manage.
+  const canEdit = actor.capabilities.has("settings.manage");
 
   const [serviceTypes, plans, vendors] = await Promise.all([
     prisma.serviceType.findMany({
@@ -27,7 +30,7 @@ export default async function SettingsPage() {
 
   return (
     <main className="rise">
-      <PageHeader title="Settings" subtitle="Service types, maintenance plans and vendors" />
+      <PageHeader title="Settings" subtitle="What each job must prove before it counts as done" />
 
       <SectionTitle>Service types</SectionTitle>
       <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
@@ -41,13 +44,26 @@ export default async function SettingsPage() {
               {titleCase(serviceType.category)} · ~{serviceType.estimatedMinutes} min
             </div>
 
-            <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 12 }}>
-              {serviceType.requiresNfcVerification ? <Pill tone="info">Tag verification</Pill> : null}
-              {serviceType.requiresBeforePhoto ? <Pill tone="info">Before photo</Pill> : null}
-              {serviceType.requiresAfterPhoto ? <Pill tone="info">After photo</Pill> : null}
-              {serviceType.requiresChecklist ? <Pill tone="info">Checklist</Pill> : null}
-              {serviceType.requiresTechnicianNote ? <Pill tone="info">Note</Pill> : null}
-            </div>
+            {canEdit ? (
+              <RequirementsEditor
+                serviceTypeId={serviceType.id}
+                initial={{
+                  requiresNfcVerification: serviceType.requiresNfcVerification,
+                  requiresBeforePhoto: serviceType.requiresBeforePhoto,
+                  requiresAfterPhoto: serviceType.requiresAfterPhoto,
+                  requiresChecklist: serviceType.requiresChecklist,
+                  requiresTechnicianNote: serviceType.requiresTechnicianNote,
+                }}
+              />
+            ) : (
+              <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 12 }}>
+                {serviceType.requiresNfcVerification ? <Pill tone="info">Tag verification</Pill> : null}
+                {serviceType.requiresBeforePhoto ? <Pill tone="info">Before photo</Pill> : null}
+                {serviceType.requiresAfterPhoto ? <Pill tone="info">After photo</Pill> : null}
+                {serviceType.requiresChecklist ? <Pill tone="info">Checklist</Pill> : null}
+                {serviceType.requiresTechnicianNote ? <Pill tone="info">Note</Pill> : null}
+              </div>
+            )}
 
             {serviceType.checklistItems.length > 0 ? (
               <ul style={{ margin: "12px 0 0", paddingLeft: 18, fontSize: 13.5, color: "var(--ink-soft)" }}>

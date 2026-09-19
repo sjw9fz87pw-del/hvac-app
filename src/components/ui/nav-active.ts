@@ -8,7 +8,7 @@
 export type IconName =
   | "home" | "grid" | "calendar" | "alert" | "user"
   | "today" | "route" | "scan" | "activity" | "tag"
-  | "more" | "building" | "pin" | "people" | "chart" | "gear";
+  | "more" | "building" | "pin" | "people" | "chart" | "gear" | "check";
 
 export interface NavItem {
   href: string;
