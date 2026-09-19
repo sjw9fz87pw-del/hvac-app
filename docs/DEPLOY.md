@@ -61,12 +61,30 @@ straight after the first sign-in, then add the rest of the team from People.
 Invitations work without it: the admin screen shows a single-use link to pass on
 by hand. Set both of these and they go out by email instead — no code change.
 
+Two routes, whichever is configured wins:
+
+**SMTP — sends as your own mailbox, no DNS setup.**
+
+| Variable | Value |
+| --- | --- |
+| `SMTP_USER` | The mailbox to send from, e.g. `you@gmail.com` |
+| `SMTP_PASSWORD` | An app password, not the account password |
+| `SMTP_HOST` | Optional, defaults to `smtp.gmail.com` |
+| `SMTP_PORT` | Optional, defaults to `465` |
+
+Gmail requires 2-Step Verification before it will issue an app password
+(Google Account → Security → App passwords). Sending limits are around 500
+a day, which is far beyond what invitations need.
+
+**Resend — needs a verified domain, better at volume.**
+
 | Variable | Value |
 | --- | --- |
 | `RESEND_API_KEY` | An API key from resend.com |
-| `EMAIL_FROM` | A sender on a domain verified with that provider, e.g. `Equipment Care <no-reply@bruphilly.com>` |
+| `EMAIL_FROM` | A sender on a domain verified there |
 
-Until both are set, `emailConfigured()` is false and nothing is sent.
+`REPLY_TO` overrides where replies go; it defaults to the SMTP mailbox. With
+neither route configured, `emailConfigured()` is false and nothing is sent.
 
 Invitation and reset links are signed rather than stored, so there is no table
 to migrate. The signature covers the user's current password hash, which is what

@@ -26,6 +26,14 @@ export const CONDENSER_INTERVAL_DAYS = 60;
  */
 export const DEFAULT_GROUP_NAME = "My Restaurants";
 
+/**
+ * Slug of the container every restaurant lands in at setup. It is the "no group
+ * yet" bucket, not a grouping decision, so the UI renders its members as plain
+ * rows. The slug is used rather than the name because renaming the group in the
+ * app must not change what it means.
+ */
+export const DEFAULT_GROUP_SLUG = "restaurants";
+
 export interface SetupOptions {
   ownerEmail: string;
   ownerName?: string;
@@ -197,7 +205,7 @@ export async function installInitialData(
 
   // --------------------------------------------------------------- customer
   const group = await prisma.customerOrganization.create({
-    data: { serviceCompanyId: company.id, name: DEFAULT_GROUP_NAME, slug: "restaurants" },
+    data: { serviceCompanyId: company.id, name: DEFAULT_GROUP_NAME, slug: DEFAULT_GROUP_SLUG },
   });
 
   const location = await prisma.restaurantLocation.create({

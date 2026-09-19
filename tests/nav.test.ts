@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { beginGesture, onMove, onHoldElapsed, LONG_PRESS_MS } from "@/components/ui/drag-list";
 import { activeHref, type NavItem } from "@/components/ui/nav-active";
 
 /**
@@ -51,5 +52,34 @@ describe("active tab", () => {
 
   it("returns null when nothing matches and there is no fallback", () => {
     expect(activeHref("/elsewhere", TECH)).toBeNull();
+  });
+});
+
+describe("long-press drag gesture", () => {
+  // The whole point is telling a scroll from a drag. If a small wobble started
+  // a drag, the list would be unusable on a phone; if a long hold did not, the
+  // feature would not exist.
+  it("treats an early move as a scroll", () => {
+    const start = beginGesture(100, 100, 0);
+    const moved = onMove(start, 100, 140, 50);
+    expect(moved.gesture).toBe("scroll");
+  });
+
+  it("tolerates a wobble that stays within slop", () => {
+    const start = beginGesture(100, 100, 0);
+    expect(onMove(start, 104, 103, 50).gesture).toBe("pending");
+  });
+
+  it("starts a drag once the hold is long enough", () => {
+    const start = beginGesture(100, 100, 0);
+    expect(onMove(start, 101, 101, LONG_PRESS_MS + 10).gesture).toBe("drag");
+    expect(onHoldElapsed(start).gesture).toBe("drag");
+  });
+
+  it("does not let a resolved gesture change its mind", () => {
+    const scrolling = onMove(beginGesture(0, 0, 0), 0, 99, 10);
+    expect(scrolling.gesture).toBe("scroll");
+    expect(onMove(scrolling, 0, 0, LONG_PRESS_MS + 500).gesture).toBe("scroll");
+    expect(onHoldElapsed(scrolling).gesture).toBe("scroll");
   });
 });
