@@ -52,8 +52,25 @@ export const DELETE = route(async (_request: NextRequest, context: { params: Pro
 
   const group = await reachable(actor, id);
   if (!group) return fail(404, "Not found");
+
   if (group.slug === DEFAULT_GROUP_SLUG) {
-    return fail(422, "That is the ungrouped list, not a group you can remove.");
+    // The ungrouped bucket is where restaurants land when a group is dissolved,
+    // so it cannot be dissolved itself. Empty, it is only clutter — and it is
+    // recreated the moment something needs it again.
+    const [restaurants, members] = await Promise.all([
+      prisma.restaurantLocation.count({ where: { organizationId: id } }),
+      prisma.membership.count({ where: { organizationId: id } }),
+    ]);
+    if (restaurants > 0) return fail(422, "That is the ungrouped list, not a group you can remove.");
+    if (members > 0) {
+      return fail(409, "People still have access through this list. Move them to a group first.");
+    }
+    await prisma.customerOrganization.delete({ where: { id } });
+    await recordAudit({
+      action: "org.deleted", entityType: "CustomerOrganization", entityId: id,
+      actorId: actor.userId, organizationId: null, before: { name: group.name, empty: true },
+    });
+    return ok({ id, removed: true, restaurantsKept: 0 });
   }
 
   const result = await ungroup(id, { userId: actor.userId, serviceCompanyId: actor.serviceCompanyId }, DEFAULT_GROUP_SLUG);

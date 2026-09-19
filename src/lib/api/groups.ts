@@ -56,7 +56,9 @@ async function reparent(
   await tx.visit.updateMany({ where, data });
   await tx.serviceRecord.updateMany({ where, data });
   await tx.maintenancePlan.updateMany({ where, data });
-  // A location manager follows their restaurant; an org-wide membership does not.
+  // A manager scoped to this restaurant follows it. Memberships scoped to the
+  // whole group are handled by the caller, which alone can see whether the
+  // group still has anything left in it.
   await tx.membership.updateMany({ where, data });
 
   if (tagIds.length > 0) {
@@ -125,6 +127,8 @@ export async function assignToGroup(
       });
     }
 
+    const sourceGroupIds = [...new Set(locations.map((l) => l.organizationId))].filter((id) => id !== group.id);
+
     let movedEquipment = 0;
     let movedLocations = 0;
     for (const location of locations) {
@@ -140,6 +144,18 @@ export async function assignToGroup(
         },
         tx,
       );
+    }
+
+    // Anyone scoped to a group rather than a single restaurant would otherwise
+    // be left pointing at an empty group — signed in, with nothing to see. If
+    // this move took the last restaurant out, their access follows it.
+    for (const sourceId of sourceGroupIds) {
+      const left = await tx.restaurantLocation.count({ where: { organizationId: sourceId } });
+      if (left > 0) continue;
+      await tx.membership.updateMany({
+        where: { organizationId: sourceId, locationId: null },
+        data: { organizationId: group.id },
+      });
     }
 
     return { movedLocations, movedEquipment, groupId: group.id, groupName: group.name };
