@@ -5,17 +5,18 @@ import { installInitialData } from "@/lib/setup/initial-data";
 import { ok, fail, route } from "@/lib/api/respond";
 
 /**
- * One-shot setup for a deployed environment.
+ * First-time setup for a deployed environment.
  *
- * Two things this must not do, both of which are easy to get wrong:
+ * This runs exactly once, against an empty database, and then never again.
+ * There is deliberately no reset or force flag: once the database holds a
+ * service company it holds real equipment passports and immutable service
+ * records, and no single authenticated request should be able to destroy
+ * those. Reinstalling is a code change and a deploy — a deliberate act with a
+ * diff attached — not a parameter someone can pass by accident or a leaked
+ * token can pass on purpose.
  *
- *   1. Put a well-known password on a public URL. It generates a strong one
- *      instead and returns it exactly once, in this response. Nothing logs it.
- *   2. Wipe real data by accident. It refuses if the database already holds a
- *      service company, unless `reset: true` is sent deliberately.
- *
- * Authenticated by the same shared token as the nightly job — there is no user
- * behind this call, and it has to work before any user exists.
+ * Authenticated by the same shared token as the nightly job, because there is
+ * no user behind this call and it has to work before any user exists.
  */
 function authorized(request: NextRequest): boolean {
   const expected = process.env.JOB_TOKEN;
@@ -40,25 +41,24 @@ export const POST = route(async (request: NextRequest) => {
   if (!authorized(request)) return fail(401, "Unauthorized");
 
   const body = await request.json().catch(() => ({}));
-  const reset = body?.reset === true;
   const ownerEmail = typeof body?.ownerEmail === "string" ? body.ownerEmail.trim() : "";
   const ownerName = typeof body?.ownerName === "string" ? body.ownerName.trim() : undefined;
   // When the recorded work was actually done. Defaults to now; pass it when
   // backdating so the next-due dates land where they really should.
   const performedAt = typeof body?.performedAt === "string" ? new Date(body.performedAt) : undefined;
 
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ownerEmail)) {
+    return fail(422, "ownerEmail is required and must be an email address");
+  }
   if (performedAt && Number.isNaN(performedAt.getTime())) {
     return fail(422, "performedAt must be an ISO date");
   }
 
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ownerEmail)) {
-    return fail(422, "ownerEmail is required and must be an email address");
-  }
-
+  // The guard. Nothing past this point runs against a database with data in it.
   const existing = await prisma.serviceCompany.count();
-  if (existing > 0 && !reset) {
+  if (existing > 0) {
     return fail(409, "Already set up", {
-      hint: "Send { \"reset\": true } to wipe and reinstall. This destroys all data.",
+      hint: "This environment holds live data. Setup only runs against an empty database.",
     });
   }
 

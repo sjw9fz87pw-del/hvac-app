@@ -24,6 +24,9 @@ async function main() {
     const result = await installInitialData(prisma, DEV_PASSWORD, {
       ownerEmail: DEV_OWNER,
       ownerName: "Owner",
+      // Local only, and guarded by the production check above: re-seeding a
+      // development database is the entire point of this script.
+      allowWipe: true,
     });
     console.log(`\nInstalled: ${JSON.stringify(result.counts)}`);
     console.log(`Sign in as ${result.ownerEmail} (password: ${DEV_PASSWORD})\n`);

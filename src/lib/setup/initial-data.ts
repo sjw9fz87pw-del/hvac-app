@@ -31,6 +31,13 @@ export interface SetupOptions {
   ownerName?: string;
   /** When the twelve units were serviced. Defaults to now. */
   performedAt?: Date;
+  /**
+   * Permission to clear a database that already has rows in it. Only the local
+   * development seed passes this. Nothing reachable from a deployed environment
+   * does, so live equipment passports and service records cannot be destroyed
+   * by a request — only by someone editing this code on purpose.
+   */
+  allowWipe?: boolean;
 }
 
 export interface SetupResult {
@@ -59,8 +66,12 @@ async function wipe(prisma: PrismaClient): Promise<void> {
 }
 
 /**
- * Wipes and installs the real dataset. Destructive by design — callers have to
- * be deliberate about when they run it.
+ * Installs the starting dataset into an empty database.
+ *
+ * Refuses outright if the database already holds a service company, unless the
+ * caller passes `allowWipe`. Service records are immutable by design, so the
+ * one way to lose them would be a call like this one — which is exactly why it
+ * will not happen without a caller that says so in its own source.
  */
 export async function installInitialData(
   prisma: PrismaClient,
@@ -68,6 +79,14 @@ export async function installInitialData(
   options: SetupOptions,
 ): Promise<SetupResult> {
   const performedAt = options.performedAt ?? new Date();
+
+  const existing = await prisma.serviceCompany.count();
+  if (existing > 0 && !options.allowWipe) {
+    throw new Error(
+      "Refusing to install over a database that already holds data. " +
+      "This would destroy equipment passports and immutable service records.",
+    );
+  }
 
   await wipe(prisma);
 
