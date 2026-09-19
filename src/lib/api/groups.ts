@@ -167,3 +167,63 @@ export async function pruneEmptyGroups(serviceCompanyId: string, client: PrismaC
   });
   return result.count;
 }
+
+/**
+ * Dissolve a group: its restaurants go back to the ungrouped bucket and the
+ * group itself is removed. Nothing underneath a restaurant is touched beyond
+ * the tenant pointer every row already carries, which `reparent` moves.
+ */
+export async function ungroup(
+  groupId: string,
+  actor: { userId: string; serviceCompanyId: string },
+  defaultSlug: string,
+  client: PrismaClient = prisma,
+): Promise<{ moved: number; name: string }> {
+  return client.$transaction(async (tx) => {
+    const group = await tx.customerOrganization.findUniqueOrThrow({
+      where: { id: groupId },
+      select: { id: true, name: true, slug: true },
+    });
+
+    // The bucket restaurants sit in before anyone has grouped anything. It is
+    // created at setup, but a deployment that never had one still needs
+    // somewhere for these to land.
+    let bucket = await tx.customerOrganization.findFirst({
+      where: { serviceCompanyId: actor.serviceCompanyId, slug: defaultSlug },
+      select: { id: true },
+    });
+    if (!bucket) {
+      bucket = await tx.customerOrganization.create({
+        data: { serviceCompanyId: actor.serviceCompanyId, name: "My Restaurants", slug: defaultSlug },
+        select: { id: true },
+      });
+    }
+
+    if (bucket.id === group.id) throw new Error("That is the ungrouped list, not a group");
+
+    const locations = await tx.restaurantLocation.findMany({
+      where: { organizationId: group.id }, select: { id: true },
+    });
+    for (const location of locations) {
+      await reparent(tx, location.id, group.id, bucket.id);
+    }
+
+    // Anything still pointing at the group would block the delete; org-wide
+    // memberships move with it rather than being dropped.
+    await tx.membership.updateMany({
+      where: { organizationId: group.id }, data: { organizationId: bucket.id },
+    });
+
+    await recordAudit(
+      {
+        action: "org.deleted", entityType: "CustomerOrganization", entityId: group.id,
+        actorId: actor.userId, organizationId: bucket.id,
+        before: { name: group.name, restaurants: locations.length },
+      },
+      tx,
+    );
+
+    await tx.customerOrganization.delete({ where: { id: group.id } });
+    return { moved: locations.length, name: group.name };
+  });
+}

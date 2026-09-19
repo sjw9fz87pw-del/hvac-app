@@ -11,7 +11,12 @@ export default async function LocationsPage() {
   const scope = organizationScope(actor);
 
   const locations = await prisma.restaurantLocation.findMany({
-    where: scope ? { organizationId: { in: scope.length ? scope : ["__none__"] } } : {},
+    // Archived restaurants are deliberately out of sight; the restaurant's own
+    // page is where they are brought back.
+    where: {
+      active: true,
+      ...(scope ? { organizationId: { in: scope.length ? scope : ["__none__"] } } : {}),
+    },
     include: {
       organization: { select: { id: true, name: true, slug: true } },
       equipment: {

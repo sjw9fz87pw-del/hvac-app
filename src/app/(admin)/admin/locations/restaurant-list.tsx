@@ -55,6 +55,8 @@ export function RestaurantList({ groups, loose, canGroup }: {
   loose: RestaurantRow[];
   canGroup: boolean;
 }) {
+  const [managing, setManaging] = useState<GroupBlock | null>(null);
+  const [renameTo, setRenameTo] = useState("");
   const router = useRouter();
   const [dragging, setDragging] = useState<RestaurantRow | null>(null);
   const [over, setOver] = useState<string | null>(null);
@@ -188,6 +190,23 @@ export function RestaurantList({ groups, loose, canGroup }: {
     setNaming({ a: dragged, b: onto });
   }
 
+  async function groupAction(group: GroupBlock, method: "PATCH" | "DELETE", body?: unknown) {
+    setBusy(true);
+    setError(null);
+    const response = await fetch(`/api/v1/groups/${group.id}`, {
+      method,
+      ...(body ? { headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {}),
+    });
+    setBusy(false);
+    setManaging(null);
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      setError(payload.error ?? "That did not work");
+      return;
+    }
+    router.refresh();
+  }
+
   async function assign(locationIds: string[], target: { groupId: string } | { newGroupName: string }) {
     setBusy(true);
     setError(null);
@@ -268,6 +287,19 @@ export function RestaurantList({ groups, loose, canGroup }: {
             <List>
               {group.restaurants.map((item, i) => renderRow(item, i, group.restaurants.length))}
             </List>
+            {canGroup ? (
+              <button
+                type="button"
+                onClick={() => { setRenameTo(group.name); setManaging(group); }}
+                style={{
+                  marginTop: 8, background: "none", border: "none", cursor: "pointer",
+                  color: "var(--accent)", fontSize: 13.5, fontWeight: 650,
+                  padding: "8px 4px", minHeight: 40,
+                }}
+              >
+                Rename or remove this group
+              </button>
+            ) : null}
           </Disclosure>
         </div>
       ))}
@@ -294,6 +326,53 @@ export function RestaurantList({ groups, loose, canGroup }: {
           }}
         >
           {dragging.name}
+        </div>
+      ) : null}
+
+      {managing ? (
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 95, display: "grid", placeItems: "center",
+            background: "rgba(0,0,0,.55)", padding: 18,
+          }}
+          onClick={() => setManaging(null)}
+        >
+          <div style={{ width: "100%", maxWidth: 380 }} onClick={(e) => e.stopPropagation()}>
+            <Card>
+              <h2 style={{ fontSize: 19 }}>{managing.name}</h2>
+              <p style={{ color: "var(--ink-soft)", fontSize: 14, marginTop: 6, lineHeight: 1.55 }}>
+                {managing.restaurants.length} restaurant{managing.restaurants.length === 1 ? "" : "s"} in this group.
+              </p>
+
+              <input
+                value={renameTo} onChange={(e) => setRenameTo(e.target.value)}
+                style={{
+                  width: "100%", marginTop: 14, padding: "13px 14px", borderRadius: 12,
+                  border: "1px solid var(--line)", background: "var(--surface-2)", minHeight: 48,
+                }}
+              />
+
+              <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+                <Button
+                  disabled={busy || !renameTo.trim() || renameTo.trim() === managing.name}
+                  onClick={() => groupAction(managing, "PATCH", { name: renameTo.trim() })}
+                >
+                  {busy ? "Saving…" : "Rename group"}
+                </Button>
+                <Button
+                  variant="secondary" disabled={busy}
+                  onClick={() => groupAction(managing, "DELETE")}
+                >
+                  Remove group
+                </Button>
+                <p style={{ color: "var(--ink-faint)", fontSize: 12.5, lineHeight: 1.5, margin: 0 }}>
+                  Removing the group keeps every restaurant in it — they go back to the
+                  ungrouped list. Nothing recorded is lost.
+                </p>
+                <Button variant="secondary" onClick={() => setManaging(null)}>Cancel</Button>
+              </div>
+            </Card>
+          </div>
         </div>
       ) : null}
 

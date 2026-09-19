@@ -5,6 +5,7 @@ import { canAccessLocation } from "@/lib/auth/scope";
 import { scheduleStatus, urgencyRank } from "@/lib/maintenance/engine";
 import { Card, Stat, StatGrid, SectionTitle, List, Row, Divider, Pill, StatusPill, Button, Disclosure, EmptyState, formatDate } from "@/components/ui/primitives";
 import { GenerateVisit } from "./generate-visit";
+import { ManageLocation } from "./manage-location";
 
 export default async function LocationDetail({ params }: { params: Promise<{ id: string }> }) {
   const actor = await requireCapability("org.read");
@@ -148,6 +149,14 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
           );
         })
       )}
+      {actor.capabilities.has("location.manage") ? (
+        <ManageLocation
+          id={location.id}
+          name={location.name}
+          active={location.active}
+          equipment={location.equipment.length}
+        />
+      ) : null}
     </main>
   );
 }
