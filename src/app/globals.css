@@ -110,3 +110,11 @@ button, [role="button"], a.tap { min-height: 44px; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 6px; }
+
+/* Collapsible groups. The default marker is replaced by our own caret, which
+   rotates as the group opens. */
+.disclosure > summary::-webkit-details-marker { display: none; }
+.disclosure > summary::marker { content: ""; }
+.disclosure > summary .disclosure-caret { transition: transform 160ms ease; }
+.disclosure[open] > summary .disclosure-caret { transform: rotate(90deg); }
+.disclosure[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }

@@ -34,23 +34,21 @@ npm run dev                   # http://localhost:3000
 
 Requires PostgreSQL 14+ and Node 20+.
 
-### Demo accounts
+### Local account
 
-Seeded with a realistic restaurant group (Mona, two locations, 19 assets, tags,
-service history, issues). Password for all: `password123`.
+`npm run seed` installs the starting dataset and one owner account —
+`panteli@bruphilly.com`, password `password123`, role Super Admin. The same
+dataset installs on a deployed environment through the guarded bootstrap
+endpoint, which generates a strong password instead (see `docs/DEPLOY.md`).
 
-| Email | Role | Lands on |
-| --- | --- | --- |
-| `admin@clearline.example` | Super Admin | Command center |
-| `manager@clearline.example` | Service Manager | Command center |
-| `tech@clearline.example` | Technician | Today |
-| `owner@monagroup.example` | Customer Org Owner | All locations |
-| `gm@monagroup.example` | Customer Location Manager | Mona only |
+The data is deliberately small: one restaurant group, one restaurant, and the
+twelve refrigeration units that have actually been serviced. Nothing is padded
+out to fill screens — empty states are real.
 
 ## Test
 
 ```bash
-npm test          # 106 tests: unit + integration against a real PostgreSQL database
+npm test          # 125 tests: unit + integration against a real PostgreSQL database
 npm run typecheck
 npm run build
 ```

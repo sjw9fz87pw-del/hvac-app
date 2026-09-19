@@ -37,6 +37,19 @@ export const createEquipmentSchema = z.object({
   photoBlobKeys: z.array(z.string().min(1)).max(10).default([]),
 });
 
+export const createLocationSchema = z.object({
+  organizationId: z.string().min(1),
+  name: z.string().min(1).max(120),
+  addressLine1: z.string().max(160).nullish(),
+  city: z.string().max(80).nullish(),
+  state: z.string().max(40).nullish(),
+  postalCode: z.string().max(20).nullish(),
+  phone: z.string().max(40).nullish(),
+  accessNotes: z.string().max(4000).nullish(),
+  /** Areas to create with the restaurant, e.g. Kitchen and Bar. */
+  areas: z.array(z.string().min(1).max(80)).max(30).default([]),
+});
+
 export const completeServiceSchema = z.object({
   visitTaskId: z.string().nullish(),
   equipmentId: z.string().min(1),

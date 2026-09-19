@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db/client";
 import { requireCapability } from "@/lib/auth/session";
 import { canAccessLocation } from "@/lib/auth/scope";
 import { scheduleStatus, urgencyRank } from "@/lib/maintenance/engine";
-import { Card, Stat, StatGrid, SectionTitle, List, Row, Divider, Pill, StatusPill, Button, formatDate } from "@/components/ui/primitives";
+import { Card, Stat, StatGrid, SectionTitle, List, Row, Divider, Pill, StatusPill, Button, Disclosure, EmptyState, formatDate } from "@/components/ui/primitives";
 import { GenerateVisit } from "./generate-visit";
 
 export default async function LocationDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -50,7 +50,10 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
             {location.addressLine1 ? ` · ${[location.addressLine1, location.city, location.state].filter(Boolean).join(", ")}` : ""}
           </div>
         </div>
-        <div style={{ width: 180 }}>
+        <div style={{ display: "grid", gap: 8, width: 160, flexShrink: 0 }}>
+          {actor.capabilities.has("equipment.create") ? (
+            <Button href={`/admin/locations/${location.id}/units/new`} size="sm">Add units</Button>
+          ) : null}
           <Button href={`/tech/inventory?locationId=${location.id}`} size="sm" variant="secondary">Rapid inventory</Button>
         </div>
       </div>
@@ -93,36 +96,58 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
         </>
       )}
 
-      <SectionTitle>Equipment by area</SectionTitle>
-      {location.areas.map((area) => {
-        const items = withStatus.filter((e) => e.item.areaId === area.id);
-        if (items.length === 0) return null;
-        return (
-          <section key={area.id} style={{ marginBottom: 18 }}>
-            <h3 style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--ink-faint)", fontWeight: 660, margin: "0 0 8px" }}>
-              {area.name} · {items.length}
-            </h3>
-            <List>
-              {items.map(({ item, status }, index) => (
-                <div key={item.id}>
-                  {index > 0 ? <Divider /> : null}
-                  <Row
-                    href={`/admin/equipment/${item.id}`}
-                    title={item.name}
-                    subtitle={`${item.internalAssetId}${item.model ? ` · ${item.model}` : ""}`}
-                    right={
-                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                        {item.tagAssignments.length === 0 ? <Pill tone="warn">No tag</Pill> : null}
-                        <StatusPill status={item.status === "PENDING_SETUP" ? "PENDING_SETUP" : status} />
-                      </div>
-                    }
-                  />
-                </div>
-              ))}
-            </List>
-          </section>
-        );
-      })}
+      <SectionTitle>Units by area</SectionTitle>
+      {location.equipment.length === 0 ? (
+        <EmptyState
+          title="No units yet"
+          body="Add the equipment you know about in this restaurant. You can add more any time."
+          action={
+            actor.capabilities.has("equipment.create") ? (
+              <div style={{ width: 170, marginInline: "auto" }}>
+                <Button href={`/admin/locations/${location.id}/units/new`} size="sm">Add units</Button>
+              </div>
+            ) : null
+          }
+        />
+      ) : (
+        location.areas.map((area) => {
+          const items = withStatus.filter((e) => e.item.areaId === area.id);
+          if (items.length === 0) return null;
+          const areaOverdue = items.filter((e) => e.status === "OVERDUE").length;
+          const areaDue = items.filter((e) => e.status === "DUE" || e.status === "SCHEDULE_NEEDED").length;
+          return (
+            <Disclosure
+              key={area.id}
+              title={area.name}
+              meta={`${items.length} unit${items.length === 1 ? "" : "s"}`}
+              right={
+                areaOverdue > 0 ? <Pill tone="bad">{areaOverdue} overdue</Pill>
+                : areaDue > 0 ? <Pill tone="warn">{areaDue} due</Pill>
+                : <Pill tone="good">On track</Pill>
+              }
+            >
+              <List>
+                {items.map(({ item, status }, index) => (
+                  <div key={item.id}>
+                    {index > 0 ? <Divider /> : null}
+                    <Row
+                      href={`/admin/equipment/${item.id}`}
+                      title={item.name}
+                      subtitle={`${item.internalAssetId}${item.model ? ` · ${item.model}` : ""}`}
+                      right={
+                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                          {item.tagAssignments.length === 0 ? <Pill tone="warn">No tag</Pill> : null}
+                          <StatusPill status={item.status === "PENDING_SETUP" ? "PENDING_SETUP" : status} />
+                        </div>
+                      }
+                    />
+                  </div>
+                ))}
+              </List>
+            </Disclosure>
+          );
+        })
+      )}
     </main>
   );
 }

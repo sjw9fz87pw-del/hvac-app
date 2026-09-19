@@ -264,3 +264,38 @@ export function relativeDays(value: string | Date | null | undefined): string {
   if (days === -1) return "Yesterday";
   return days > 0 ? `in ${days} days` : `${Math.abs(days)} days ago`;
 }
+
+/**
+ * A collapsible group — the units inside a restaurant's area, say. Built on
+ * native <details> so it works before hydration and stays keyboard- and
+ * screen-reader-navigable without any state of our own.
+ */
+export function Disclosure({ title, meta, right, defaultOpen = false, children }: {
+  title: ReactNode; meta?: ReactNode; right?: ReactNode; defaultOpen?: boolean; children: ReactNode;
+}) {
+  return (
+    <details open={defaultOpen} className="disclosure" style={{ marginBottom: 10 }}>
+      <summary
+        className="tap"
+        style={{
+          display: "flex", alignItems: "center", gap: 12, listStyle: "none", cursor: "pointer",
+          padding: "14px 16px", minHeight: 60,
+          background: "var(--surface)", border: "1px solid var(--line)",
+          borderRadius: "var(--radius-card)", boxShadow: "var(--shadow-card)",
+        }}
+      >
+        <svg className="disclosure-caret" width="16" height="16" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"
+             style={{ flexShrink: 0, color: "var(--accent)" }} aria-hidden>
+          <path d="M9 18l6-6-6-6" />
+        </svg>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 650, fontSize: 15 }}>{title}</div>
+          {meta ? <div style={{ color: "var(--ink-soft)", fontSize: 13.5, marginTop: 2 }}>{meta}</div> : null}
+        </div>
+        {right ? <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6 }}>{right}</div> : null}
+      </summary>
+      <div style={{ marginTop: 8 }}>{children}</div>
+    </details>
+  );
+}

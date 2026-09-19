@@ -36,17 +36,18 @@ Readiness at a glance: `GET /api/v1/health` → `{"ready": true, "missing": []}`
 
 ## Demo accounts
 
-One generated password, shared by all five. It was returned once by the
+One generated password for the owner account. It is returned once by the
 bootstrap endpoint and is not recoverable — re-run bootstrap with
-`{"reset": true}` to issue a new one.
+`{"reset": true}` to issue a new one, which also wipes and reinstalls the data.
 
-| Email | Role | Sees |
-| --- | --- | --- |
-| `admin@clearline.example` | Super Admin | Everything |
-| `manager@clearline.example` | Service Manager | Command center |
-| `tech@clearline.example` | Technician | Today / visits |
-| `owner@monagroup.example` | Customer Org Owner | Both locations |
-| `gm@monagroup.example` | Customer Location Manager | Mona only |
+```bash
+curl -X POST https://<host>/api/v1/jobs/bootstrap \
+  -H "x-job-token: $JOB_TOKEN" -H "content-type: application/json" \
+  -d '{"ownerEmail": "owner@example.com", "ownerName": "Owner", "reset": true}'
+```
+
+The owner lands with the `SUPER_ADMIN` role. Change the password from Account
+straight after the first sign-in; add the rest of the team from Technicians.
 
 ## Configuration
 

@@ -34,7 +34,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <TabBar
         items={[
           { href: "/admin", label: "Dashboard", icon: "home", exact: true },
-          { href: "/admin/equipment", label: "Equipment", icon: "grid" },
+          { href: "/admin/locations", label: "Restaurants", icon: "pin" },
           { href: "/admin/schedule", label: "Schedule", icon: "calendar" },
           { href: "/admin/issues", label: "Issues", icon: "alert" },
           { href: "/admin/more", label: "More", icon: "more", fallback: true },

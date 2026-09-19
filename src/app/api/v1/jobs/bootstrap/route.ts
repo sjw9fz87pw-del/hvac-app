@@ -1,19 +1,18 @@
 import { NextRequest } from "next/server";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/db/client";
-import { seedDemoData } from "@/lib/demo/seed";
+import { installInitialData } from "@/lib/setup/initial-data";
 import { ok, fail, route } from "@/lib/api/respond";
 
 /**
- * One-shot demo seeding for a deployed environment.
+ * One-shot setup for a deployed environment.
  *
  * Two things this must not do, both of which are easy to get wrong:
  *
- *   1. Put the well-known development password on a public URL. It generates a
- *      strong password instead and returns it exactly once, in this response.
- *      Nothing writes it to a log.
- *   2. Wipe real data. It refuses if the database already holds a service
- *      company, unless `reset: true` is sent deliberately.
+ *   1. Put a well-known password on a public URL. It generates a strong one
+ *      instead and returns it exactly once, in this response. Nothing logs it.
+ *   2. Wipe real data by accident. It refuses if the database already holds a
+ *      service company, unless `reset: true` is sent deliberately.
  *
  * Authenticated by the same shared token as the nightly job — there is no user
  * behind this call, and it has to work before any user exists.
@@ -42,24 +41,28 @@ export const POST = route(async (request: NextRequest) => {
 
   const body = await request.json().catch(() => ({}));
   const reset = body?.reset === true;
+  const ownerEmail = typeof body?.ownerEmail === "string" ? body.ownerEmail.trim() : "";
+  const ownerName = typeof body?.ownerName === "string" ? body.ownerName.trim() : undefined;
+
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ownerEmail)) {
+    return fail(422, "ownerEmail is required and must be an email address");
+  }
 
   const existing = await prisma.serviceCompany.count();
   if (existing > 0 && !reset) {
-    return fail(409, "Already bootstrapped", {
-      hint: "Send { \"reset\": true } to wipe and reseed. This destroys all data.",
+    return fail(409, "Already set up", {
+      hint: "Send { \"reset\": true } to wipe and reinstall. This destroys all data.",
     });
   }
 
   const password = generatePassword();
-  const result = await seedDemoData(prisma, password);
+  const result = await installInitialData(prisma, password, { ownerEmail, ownerName });
 
   return ok({
-    seeded: result.counts,
+    installed: result.counts,
+    owner: { email: result.ownerEmail, role: "SUPER_ADMIN" },
     // Returned once. There is no way to read it back afterwards.
     password,
-    accounts: result.accounts,
-    warning:
-      "This password is shown only once and is shared by all five demo accounts. " +
-      "Store it now. Rotate or delete the demo data before using this deployment for anything real.",
+    warning: "This password is shown only once. Store it now, then change it from Account.",
   }, 201);
 });

@@ -1,32 +1,32 @@
 /**
- * `npm run db:seed` — local demo data.
+ * Local development seed.
  *
- * Uses a well-known development password on purpose, and refuses to run against
- * anything that looks like production. Deployed environments seed through the
- * guarded bootstrap endpoint, which generates a strong password instead.
+ * Installs the same dataset a deployed environment gets, so what you click
+ * through locally matches production in shape. Uses a well-known development
+ * password on purpose, and refuses to run against a deployed database — there
+ * the guarded bootstrap endpoint generates a strong one instead.
  */
 import { PrismaClient } from "@prisma/client";
-import { seedDemoData } from "../src/lib/demo/seed";
+import { installInitialData } from "../src/lib/setup/initial-data";
 
 const DEV_PASSWORD = "password123";
+const DEV_OWNER = "panteli@bruphilly.com";
 
 async function main() {
-  if (process.env.NODE_ENV === "production" || process.env.NETLIFY) {
-    throw new Error(
-      "Refusing to seed a production environment with the development password. " +
-      "Use POST /api/v1/jobs/bootstrap instead — it generates a strong one.",
-    );
-  }
-
   const prisma = new PrismaClient();
-  console.log("Seeding…");
   try {
-    const result = await seedDemoData(prisma, DEV_PASSWORD);
-    console.log("Seeded:", result.counts);
-    console.log(`\nSign in with any of these (password: ${DEV_PASSWORD}):`);
-    for (const account of result.accounts) {
-      console.log(`  ${account.email.padEnd(28)} ${account.role} — ${account.sees}`);
+    if (process.env.NETLIFY || process.env.NODE_ENV === "production") {
+      throw new Error(
+        "Refusing to seed a production environment with the development password. " +
+        "Use the guarded bootstrap endpoint instead.",
+      );
     }
+    const result = await installInitialData(prisma, DEV_PASSWORD, {
+      ownerEmail: DEV_OWNER,
+      ownerName: "Owner",
+    });
+    console.log(`\nInstalled: ${JSON.stringify(result.counts)}`);
+    console.log(`Sign in as ${result.ownerEmail} (password: ${DEV_PASSWORD})\n`);
   } finally {
     await prisma.$disconnect();
   }

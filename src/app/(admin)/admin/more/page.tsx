@@ -16,11 +16,11 @@ export default async function MorePage() {
   const scope = organizationScope(actor);
   const orgFilter = scope ? { organizationId: { in: scope.length ? scope : ["__none__"] } } : {};
 
-  const [customers, locations, technicians, untagged, openIssues] = await Promise.all([
+  const [customers, units, technicians, untagged, openIssues] = await Promise.all([
     scope
       ? prisma.customerOrganization.count({ where: { id: { in: scope } } })
       : prisma.customerOrganization.count({ where: { serviceCompanyId: actor.serviceCompanyId } }),
-    prisma.restaurantLocation.count({ where: { ...orgFilter, active: true } }),
+    prisma.equipment.count({ where: { ...orgFilter, archivedAt: null } }),
     prisma.user.count({ where: { serviceCompanyId: actor.serviceCompanyId, memberships: { some: { role: "TECHNICIAN" } } } }),
     prisma.tag.count({ where: { ...orgFilter, state: "ACTIVE", lockedAt: null } }),
     prisma.issue.count({ where: { ...orgFilter, status: { in: ["OPEN", "TRIAGED", "ASSIGNED", "IN_PROGRESS"] } } }),
@@ -30,8 +30,8 @@ export default async function MorePage() {
     {
       title: "Customers",
       items: [
-        { href: "/admin/customers", icon: "building", label: "Customers", hint: "Restaurant groups under management", badge: { text: `${customers}`, tone: "neutral" } },
-        { href: "/admin/locations", icon: "pin", label: "Locations", hint: "Every restaurant, with areas and access notes", badge: { text: `${locations}`, tone: "neutral" } },
+        { href: "/admin/customers", icon: "building", label: "Groups", hint: "Restaurant groups under management", badge: { text: `${customers}`, tone: "neutral" } },
+        { href: "/admin/equipment", icon: "grid", label: "All units", hint: "Every unit across every restaurant, in one list", badge: { text: `${units}`, tone: "neutral" } },
       ],
     },
     {
