@@ -34,7 +34,7 @@ export function SignInForm({ next }: { next: string | null }) {
   };
 
   return (
-    <main style={{ minHeight: "100dvh", display: "grid", placeItems: "center", padding: 20 }}>
+    <main className="page-scroll" style={{ height: "100%", display: "grid", placeItems: "center", padding: 20 }}>
       <Card style={{ width: "100%", maxWidth: 400, padding: 28 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
           <div style={{ width: 34, height: 34, borderRadius: 10, background: "var(--accent)", display: "grid", placeItems: "center", color: "#1a0f04", fontWeight: 700 }}>E</div>

@@ -41,7 +41,10 @@ export function TabBar({ items }: { items: NavItem[] }) {
   return (
     <nav
       style={{
-        position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 40,
+        // A flex item in the pinned shell rather than a fixed overlay: it is
+        // already immovable, and fixed positioning inside a fixed ancestor is
+        // where phone browsers start disagreeing with each other.
+        flexShrink: 0, zIndex: 40,
         background: "color-mix(in srgb, var(--surface) 88%, transparent)",
         backdropFilter: "blur(18px)", borderTop: "1px solid var(--line)",
         paddingBottom: "env(safe-area-inset-bottom)",

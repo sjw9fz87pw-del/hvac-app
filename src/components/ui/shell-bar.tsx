@@ -42,7 +42,8 @@ export function ShellBar({
   return (
     <div
       style={{
-        position: "sticky", top: 0, zIndex: 35,
+        // A flex item of the pinned shell; it does not need to stick to anything.
+        flexShrink: 0, zIndex: 35,
         background: "color-mix(in srgb, var(--surface) 92%, transparent)",
         backdropFilter: "blur(18px)",
         borderBottom: `1px solid ${crossShell ? "var(--accent-line)" : "var(--line)"}`,

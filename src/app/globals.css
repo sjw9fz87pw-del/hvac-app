@@ -46,6 +46,27 @@
 
 * { box-sizing: border-box; }
 
+/**
+ * The app is a fixed frame, not a document.
+ *
+ * Left as an ordinary page, a phone browser treats it like one: dragging past
+ * the top rubber-bands the whole thing, a downward pull triggers
+ * pull-to-refresh, and the address bar slides in and out as you scroll, which
+ * resizes the viewport and makes the layout jump. None of that belongs in
+ * something being used one-handed in a kitchen.
+ *
+ * So the page itself never scrolls. The shell is pinned to the viewport and a
+ * single element inside it scrolls, which keeps the tab bar and the back bar
+ * genuinely still.
+ */
+html, body {
+  height: 100%;
+  overflow: hidden;
+  /* Kills pull-to-refresh and the bounce, and stops a scroll that reaches the
+     end of the content from being handed to the browser. */
+  overscroll-behavior: none;
+}
+
 body {
   margin: 0;
   background: var(--canvas);
@@ -118,3 +139,32 @@ button, [role="button"], a.tap { min-height: 44px; }
 .disclosure > summary .disclosure-caret { transition: transform 160ms ease; }
 .disclosure[open] > summary .disclosure-caret { transform: rotate(90deg); }
 .disclosure[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+
+/* The pinned frame: back bar, scrolling content, tab bar. */
+.app-shell {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* The only thing that scrolls. */
+.app-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* Nothing should ever drift sideways; wide tables opt back in themselves. */
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Pages that sit outside a shell — sign in, accepting an invitation — still
+   need to scroll when the keyboard takes half the screen. */
+.page-scroll {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}

@@ -7,7 +7,7 @@
  */
 export default function ErrorBoundary({ reset }: { error: Error; reset: () => void }) {
   return (
-    <main style={{ minHeight: "100dvh", display: "grid", placeItems: "center", padding: 20 }}>
+    <main className="page-scroll" style={{ height: "100%", display: "grid", placeItems: "center", padding: 20 }}>
       <div style={{ maxWidth: 420, textAlign: "center", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 16, padding: 30 }}>
         <div style={{ fontSize: 32 }}>⚠️</div>
         <h1 style={{ fontSize: 20, marginTop: 10 }}>Something went wrong</h1>

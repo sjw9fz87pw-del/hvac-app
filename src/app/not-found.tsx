@@ -4,7 +4,7 @@
  */
 export default function NotFound() {
   return (
-    <main style={{ minHeight: "100dvh", display: "grid", placeItems: "center", padding: 20 }}>
+    <main className="page-scroll" style={{ height: "100%", display: "grid", placeItems: "center", padding: 20 }}>
       <div style={{ maxWidth: 400, textAlign: "center", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 16, padding: 30 }}>
         <h1 style={{ fontSize: 20 }}>Not found</h1>
         <p style={{ color: "var(--ink-soft)", fontSize: 14.5, marginTop: 8 }}>

@@ -59,12 +59,12 @@ export function AcceptInviteForm({ token, valid, firstName, email, companyName }
   }
 
   const shell: React.CSSProperties = {
-    minHeight: "100dvh", display: "grid", placeItems: "center", padding: "24px 18px",
+    height: "100%", display: "grid", placeItems: "center", padding: "24px 18px",
   };
 
   if (!valid) {
     return (
-      <main style={shell}>
+      <main className="page-scroll" style={shell}>
         <div style={{ width: "100%", maxWidth: 400 }}>
           <Card style={{ textAlign: "center", padding: 30 }}>
             <div style={{ fontSize: 38, color: "var(--warn)" }}>!</div>
@@ -83,7 +83,7 @@ export function AcceptInviteForm({ token, valid, firstName, email, companyName }
   }
 
   return (
-    <main style={shell}>
+    <main className="page-scroll" style={shell}>
       <div style={{ width: "100%", maxWidth: 400 }}>
         <div style={{ textAlign: "center", marginBottom: 22 }}>
           <div style={{

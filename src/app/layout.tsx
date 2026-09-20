@@ -10,6 +10,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  // The keyboard shrinks the content instead of sliding a fixed layout around.
+  interactiveWidget: "resizes-content",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f6f7f9" },
     { media: "(prefers-color-scheme: dark)", color: "#0b0d10" },
