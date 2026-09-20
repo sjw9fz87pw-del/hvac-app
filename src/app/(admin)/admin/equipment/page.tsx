@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db/client";
 import { organizationScope } from "@/lib/auth/scope";
 import { scheduleStatus, urgencyRank } from "@/lib/maintenance/engine";
 import { PageHeader, List, Row, Divider, Pill, StatusPill, EmptyState, formatDate } from "@/components/ui/primitives";
-import { photoThumb } from "@/components/ui/equipment-bits";
+import { UnitPhoto } from "@/components/ui/unit-photo";
 
 /** Every asset across every tenant the caller can see, filterable by exception. */
 export default async function AdminEquipment({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
@@ -21,7 +21,7 @@ export default async function AdminEquipment({ searchParams }: { searchParams: P
       area: true,
       location: { select: { name: true } },
       organization: { select: { name: true } },
-      photos: { where: { kind: "IDENTIFICATION" }, take: 1 },
+      photos: { where: { kind: "IDENTIFICATION" }, orderBy: { capturedAt: "desc" }, take: 1 },
       schedules: true,
       tagAssignments: { where: { unassignedAt: null } },
     },
@@ -70,7 +70,14 @@ export default async function AdminEquipment({ searchParams }: { searchParams: P
                 {index > 0 ? <Divider /> : null}
                 <Row
                   href={`/admin/equipment/${item.id}`}
-                  leading={photoThumb(item.photos[0]?.blobKey ?? null, item.name)}
+                  leading={
+                    <UnitPhoto
+                      equipmentId={item.id}
+                      blobKey={item.photos[0]?.blobKey ?? null}
+                      name={item.name}
+                      canEdit={actor.capabilities.has("equipment.update")}
+                    />
+                  }
                   title={item.name}
                   subtitle={`${item.organization.name} · ${item.location.name}${item.area ? ` · ${item.area.name}` : ""} · ${item.internalAssetId}`}
                   right={

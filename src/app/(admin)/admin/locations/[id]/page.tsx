@@ -7,6 +7,7 @@ import { Card, Stat, StatGrid, SectionTitle, List, Row, Divider, Pill, StatusPil
 import { GenerateVisit } from "./generate-visit";
 import { ManageLocation } from "./manage-location";
 import { IntervalEditor, type IntervalRow } from "@/components/ui/interval-editor";
+import { UnitPhoto } from "@/components/ui/unit-photo";
 
 export default async function LocationDetail({ params }: { params: Promise<{ id: string }> }) {
   const actor = await requireCapability("org.read");
@@ -19,7 +20,12 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
       areas: { orderBy: { sortOrder: "asc" } },
       equipment: {
         where: { archivedAt: null },
-        include: { area: true, schedules: { include: { serviceType: true } }, tagAssignments: { where: { unassignedAt: null } } },
+        include: {
+          area: true,
+          schedules: { include: { serviceType: true } },
+          tagAssignments: { where: { unassignedAt: null } },
+          photos: { where: { kind: "IDENTIFICATION" }, orderBy: { capturedAt: "desc" }, take: 1 },
+        },
         orderBy: [{ area: { sortOrder: "asc" } }, { name: "asc" }],
       },
       visits: {
@@ -161,6 +167,14 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
                     {index > 0 ? <Divider /> : null}
                     <Row
                       href={`/admin/equipment/${item.id}`}
+                      leading={
+                        <UnitPhoto
+                          equipmentId={item.id}
+                          blobKey={item.photos[0]?.blobKey ?? null}
+                          name={item.name}
+                          canEdit={actor.capabilities.has("equipment.update")}
+                        />
+                      }
                       title={item.name}
                       subtitle={`${item.internalAssetId}${item.model ? ` · ${item.model}` : ""}`}
                       right={
