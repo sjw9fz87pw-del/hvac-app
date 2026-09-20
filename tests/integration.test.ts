@@ -16,6 +16,7 @@ import { capabilitiesFor } from "@/lib/auth/permissions";
 import { withIdempotency, IdempotencyConflict } from "@/lib/sync/idempotency";
 import { completeService, ProofIncompleteError } from "@/lib/maintenance/completion";
 import { pairTag, unpairTag, replaceTag, resolveTap, mintTag, recordTagLock, TagOperationError } from "@/lib/nfc/service";
+import { setIntervalOverride, setNextDue } from "@/lib/maintenance/planning";
 
 const prisma = new PrismaClient();
 const SECRET = process.env.NFC_TAG_SECRET!;
@@ -489,5 +490,86 @@ describe("seeded demo data", () => {
   it("mints a token whose macPrefix matches what was stored", () => {
     const token = mintTagToken(SECRET, { tenantId: ctx.orgA });
     expect(macPrefix(token)).toBe(token.mac.slice(0, 8));
+  });
+});
+
+describe("editing schedules", () => {
+  // Its own asset, so these do not fight the shared fixture over the one
+  // schedule allowed per equipment and service type.
+  async function freshSchedule(intervalDays = 30) {
+    const equipment = await prisma.equipment.create({
+      data: {
+        organizationId: ctx.orgA, locationId: ctx.locA, areaId: ctx.areaA,
+        name: `Sched ${Math.random().toString(36).slice(2, 8)}`,
+        category: "REFRIGERATION", equipmentType: "Refrigerator",
+        internalAssetId: `SCH-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+      },
+    });
+    const schedule = await prisma.maintenanceSchedule.create({
+      data: {
+        equipmentId: equipment.id, serviceTypeId: ctx.serviceTypeId,
+        intervalDays, intervalSource: "SYSTEM",
+        lastServiceAt: new Date("2026-01-01T10:00:00Z"),
+        nextDueAt: new Date("2026-01-31T00:00:00Z"), status: "UPCOMING",
+      },
+    });
+    return { equipment, schedule };
+  }
+
+  async function cleanUp(equipmentId: string, scheduleId: string) {
+    await prisma.maintenancePlan.deleteMany({ where: { OR: [{ equipmentId }, { locationId: ctx.locA }] } });
+    await prisma.maintenanceSchedule.delete({ where: { id: scheduleId } });
+    await prisma.equipment.delete({ where: { id: equipmentId } });
+  }
+
+  it("recomputes due dates down the override chain", async () => {
+    const { equipment, schedule } = await freshSchedule();
+
+    const day = (d: Date) => d.toISOString().slice(0, 10);
+    const read = async () =>
+      prisma.maintenanceSchedule.findUniqueOrThrow({ where: { id: schedule.id } });
+
+    // The restaurant decides: every unit there follows it.
+    await setIntervalOverride(
+      { scope: "LOCATION", serviceTypeId: ctx.serviceTypeId, locationId: ctx.locA },
+      90, { userId: ctx.techId },
+    );
+    let now = await read();
+    expect(now.intervalDays).toBe(90);
+    expect(now.intervalSource).toBe("LOCATION");
+    // Counted from the last service, not from whatever it used to be due.
+    expect(day(now.nextDueAt)).toBe("2026-04-01");
+
+    // One unit differs: the asset override wins.
+    await setIntervalOverride(
+      { scope: "ASSET", serviceTypeId: ctx.serviceTypeId, equipmentId: equipment.id },
+      7, { userId: ctx.techId },
+    );
+    now = await read();
+    expect(now.intervalDays).toBe(7);
+    expect(now.intervalSource).toBe("ASSET");
+    expect(day(now.nextDueAt)).toBe("2026-01-08");
+
+    // Clearing it hands the decision back, rather than stranding the unit.
+    await setIntervalOverride(
+      { scope: "ASSET", serviceTypeId: ctx.serviceTypeId, equipmentId: equipment.id },
+      null, { userId: ctx.techId },
+    );
+    now = await read();
+    expect(now.intervalDays).toBe(90);
+    expect(now.intervalSource).toBe("LOCATION");
+
+    await cleanUp(equipment.id, schedule.id);
+  });
+
+  it("moves one visit without changing the cadence", async () => {
+    const { equipment, schedule } = await freshSchedule();
+
+    await setNextDue(schedule.id, new Date("2026-03-15T00:00:00Z"), { userId: ctx.techId });
+    const now = await prisma.maintenanceSchedule.findUniqueOrThrow({ where: { id: schedule.id } });
+    expect(now.nextDueAt.toISOString().slice(0, 10)).toBe("2026-03-15");
+    expect(now.intervalDays).toBe(30);
+
+    await cleanUp(equipment.id, schedule.id);
   });
 });

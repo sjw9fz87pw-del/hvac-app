@@ -4,6 +4,7 @@ import { requireCapability } from "@/lib/auth/session";
 import { canAccessAsset } from "@/lib/auth/scope";
 import { Card, SectionTitle, StatusPill, Pill, List, Row, Divider, Button, formatDate } from "@/components/ui/primitives";
 import { VerifyEquipment } from "./verify";
+import { EditSchedule } from "./edit-schedule";
 
 /** The internal view of an asset: passport, tag state, audit trail, verification. */
 export default async function AdminEquipmentDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -115,18 +116,22 @@ export default async function AdminEquipmentDetail({ params }: { params: Promise
           No schedule yet — this asset is not generating preventive work.
         </Card>
       ) : (
-        <List>
-          {equipment.schedules.map((schedule, index) => (
-            <div key={schedule.id}>
-              {index > 0 ? <Divider /> : null}
-              <Row
-                title={schedule.serviceType.name}
-                subtitle={`Every ${schedule.intervalDays} days (from ${schedule.intervalSource.toLowerCase()} plan) · last ${formatDate(schedule.lastServiceAt)}`}
-                right={<StatusPill status={schedule.status} />}
-              />
-            </div>
-          ))}
-        </List>
+        equipment.schedules.map((schedule) => (
+          <EditSchedule
+            key={schedule.id}
+            canEdit={actor.capabilities.has("schedule.manage")}
+            schedule={{
+              id: schedule.id,
+              serviceTypeName: schedule.serviceType.name,
+              intervalDays: schedule.intervalDays,
+              intervalSource: schedule.intervalSource,
+              nextDueAt: schedule.nextDueAt.toISOString(),
+              lastServiceAt: schedule.lastServiceAt?.toISOString() ?? null,
+              status: schedule.status,
+              paused: schedule.paused,
+            }}
+          />
+        ))
       )}
 
       <SectionTitle>Service history</SectionTitle>

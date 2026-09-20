@@ -1,5 +1,6 @@
 import { requireActor } from "@/lib/auth/session";
 import { RequirementsEditor } from "./requirements";
+import { IntervalEditor, type IntervalRow } from "@/components/ui/interval-editor";
 import { prisma } from "@/lib/db/client";
 import { PageHeader, SectionTitle, List, Row, Divider, Card, Pill, titleCase } from "@/components/ui/primitives";
 
@@ -32,7 +33,25 @@ export default async function SettingsPage() {
     <main className="rise">
       <PageHeader title="Settings" subtitle="What each job must prove before it counts as done" />
 
-      <SectionTitle>Service types</SectionTitle>
+      <SectionTitle>How often each job is done</SectionTitle>
+      <Card style={{ marginBottom: 12, background: "var(--surface-2)", borderStyle: "dashed", fontSize: 13.5, color: "var(--ink-soft)" }}>
+        The company default for every unit of that kind. A restaurant or an individual
+        unit can be set differently, and those win over this.
+      </Card>
+      {canEdit ? (
+        <IntervalEditor
+          scope="SYSTEM"
+          rows={serviceTypes.map((t): IntervalRow => ({
+            serviceTypeId: t.id,
+            name: t.name,
+            effectiveDays: t.defaultIntervalDays,
+            overridden: false,
+            inheritedFrom: "SYSTEM",
+          }))}
+        />
+      ) : null}
+
+      <SectionTitle>What each job must prove</SectionTitle>
       <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
         {serviceTypes.map((serviceType) => (
           <Card key={serviceType.id}>

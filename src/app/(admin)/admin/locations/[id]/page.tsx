@@ -6,6 +6,7 @@ import { scheduleStatus, urgencyRank } from "@/lib/maintenance/engine";
 import { Card, Stat, StatGrid, SectionTitle, List, Row, Divider, Pill, StatusPill, Button, Disclosure, EmptyState, formatDate } from "@/components/ui/primitives";
 import { GenerateVisit } from "./generate-visit";
 import { ManageLocation } from "./manage-location";
+import { IntervalEditor, type IntervalRow } from "@/components/ui/interval-editor";
 
 export default async function LocationDetail({ params }: { params: Promise<{ id: string }> }) {
   const actor = await requireCapability("org.read");
@@ -30,6 +31,33 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
   });
 
   if (!location || !canAccessLocation(actor, location.id, location.organizationId)) notFound();
+
+  // What each job's cadence is here, and whether that was decided at this
+  // restaurant or inherited from the level above.
+  const serviceTypes = await prisma.serviceType.findMany({
+    where: { serviceCompanyId: actor.serviceCompanyId, active: true },
+    select: { id: true, name: true, defaultIntervalDays: true },
+    orderBy: { name: "asc" },
+  });
+  const locationPlans = await prisma.maintenancePlan.findMany({
+    where: { scope: "LOCATION", locationId: location.id, active: true },
+    select: { serviceTypeId: true, intervalDays: true },
+  });
+  const orgPlans = await prisma.maintenancePlan.findMany({
+    where: { scope: "CUSTOMER", organizationId: location.organizationId, active: true },
+    select: { serviceTypeId: true, intervalDays: true },
+  });
+  const intervalRows: IntervalRow[] = serviceTypes.map((type) => {
+    const here = locationPlans.find((p) => p.serviceTypeId === type.id);
+    const group = orgPlans.find((p) => p.serviceTypeId === type.id);
+    return {
+      serviceTypeId: type.id,
+      name: type.name,
+      effectiveDays: here?.intervalDays ?? group?.intervalDays ?? type.defaultIntervalDays,
+      overridden: Boolean(here),
+      inheritedFrom: group ? "GROUP" : "COMPANY",
+    };
+  });
 
   const withStatus = location.equipment.map((item) => {
     const statuses = item.schedules.map((s) => scheduleStatus({ nextDueAt: s.nextDueAt, paused: s.paused }));
@@ -149,6 +177,13 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
           );
         })
       )}
+      {actor.capabilities.has("plan.manage") ? (
+        <>
+          <SectionTitle>How often work happens here</SectionTitle>
+          <IntervalEditor scope="LOCATION" locationId={location.id} rows={intervalRows} />
+        </>
+      ) : null}
+
       {actor.capabilities.has("location.manage") ? (
         <ManageLocation
           id={location.id}
