@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db/client";
 import { organizationScope } from "@/lib/auth/scope";
 import {
   Card, Stat, StatGrid, SectionTitle, List, Row, Divider, Pill, HealthRing,
-  EmptyState, Button, formatDate, relativeDays, StatusPill,
+  EmptyState, Button, formatDate, relativeDays, StatusPill, formatDateTime
 } from "@/components/ui/primitives";
 import { LocationSwitcher } from "./switcher";
 
@@ -86,7 +86,7 @@ export default async function CustomerHome({ searchParams }: { searchParams: Pro
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 640 }}>Next scheduled service</div>
             <div style={{ color: "var(--ink-soft)", fontSize: 13.5 }}>
-              {formatDate(dashboard.nextVisit.scheduledFor)} · {dashboard.nextVisit.taskCount} units · {dashboard.nextVisit.locationName}
+              {formatDateTime(dashboard.nextVisit.scheduledFor, dashboard.nextVisit.timezone)} · {dashboard.nextVisit.taskCount} units · {dashboard.nextVisit.locationName}
             </div>
           </div>
           <Pill tone="accent">{relativeDays(dashboard.nextVisit.scheduledFor)}</Pill>

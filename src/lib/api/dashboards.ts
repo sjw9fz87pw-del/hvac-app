@@ -16,7 +16,7 @@ export interface CustomerDashboard {
   totals: { assets: number; current: number; dueSoon: number; overdue: number; openIssues: number };
   health: ReturnType<typeof maintenanceHealth>;
   recentlyServiced: { id: string; equipmentName: string; serviceType: string; performedAt: string; technician: string }[];
-  nextVisit: { id: string; scheduledFor: string; taskCount: number; locationName: string } | null;
+  nextVisit: { id: string; scheduledFor: string; taskCount: number; locationName: string; timezone: string } | null;
   areas: { id: string; name: string; assetCount: number; overdue: number; dueSoon: number }[];
   yearToDate: { servicesCompleted: number; issuesIdentified: number };
 }
@@ -86,7 +86,7 @@ export async function customerDashboard(
         ...(filter.locationId ? { locationId: filter.locationId } : {}),
         ...(filter.organizationId ? { organizationId: filter.organizationId } : orgScope ? { organizationId: { in: orgScope.length ? orgScope : ["__none__"] } } : {}),
       },
-      include: { tasks: { select: { id: true } }, location: { select: { name: true } } },
+      include: { tasks: { select: { id: true } }, location: { select: { name: true, timezone: true } } },
       orderBy: { scheduledFor: "asc" },
     }),
     prisma.serviceRecord.count({ where: { equipmentId: { in: assetIds }, performedAt: { gte: yearStart } } }),
@@ -118,7 +118,14 @@ export async function customerDashboard(
       performedAt: r.performedAt.toISOString(), technician: r.technician.name,
     })),
     nextVisit: nextVisit
-      ? { id: nextVisit.id, scheduledFor: nextVisit.scheduledFor.toISOString(), taskCount: nextVisit.tasks.length, locationName: nextVisit.location.name }
+      ? {
+          id: nextVisit.id,
+          scheduledFor: nextVisit.scheduledFor.toISOString(),
+          taskCount: nextVisit.tasks.length,
+          locationName: nextVisit.location.name,
+          // The restaurant's wall clock, not the reader's or the server's.
+          timezone: nextVisit.location.timezone,
+        }
       : null,
     areas: [...areaMap.values()].sort((a, b) => b.overdue - a.overdue || a.name.localeCompare(b.name)),
     yearToDate: { servicesCompleted: ytdServices, issuesIdentified: ytdIssues },

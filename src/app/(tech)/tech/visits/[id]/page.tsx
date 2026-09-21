@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db/client";
 import { requireActor } from "@/lib/auth/session";
 import { canAccessAsset } from "@/lib/auth/scope";
-import { Card, Pill, Button, StatusPill, formatDate } from "@/components/ui/primitives";
+import { Card, Pill, Button, StatusPill, formatDate, formatDateTime } from "@/components/ui/primitives";
 import { photoThumb } from "@/components/ui/equipment-bits";
 
 /**
@@ -51,7 +51,7 @@ export default async function VisitPage({ params }: { params: Promise<{ id: stri
       <div style={{ margin: "12px 0 16px" }}>
         <h1 style={{ fontSize: 25 }}>{visit.location.name}</h1>
         <div style={{ color: "var(--ink-soft)", fontSize: 14.5, marginTop: 3 }}>
-          {visit.organization.name} · {formatDate(visit.scheduledFor)} · {visit.tasks.length} units
+          {visit.organization.name} · {formatDateTime(visit.scheduledFor, visit.location.timezone)} · {visit.tasks.length} units
         </div>
       </div>
 

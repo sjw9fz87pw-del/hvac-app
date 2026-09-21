@@ -1,6 +1,6 @@
 import { requireActor } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
-import { PageHeader, List, Row, Divider, StatusPill, EmptyState, formatDate, relativeDays, Pill } from "@/components/ui/primitives";
+import { PageHeader, List, Row, Divider, StatusPill, EmptyState, formatDate, relativeDays, Pill, formatDateTime } from "@/components/ui/primitives";
 
 export default async function TechVisits() {
   const actor = await requireActor();
@@ -8,7 +8,7 @@ export default async function TechVisits() {
   const visits = await prisma.visit.findMany({
     where: { technicianId: actor.userId, status: { in: ["SCHEDULED", "IN_PROGRESS", "COMPLETED"] } },
     include: {
-      location: { select: { name: true, city: true } },
+      location: { select: { name: true, city: true, timezone: true } },
       organization: { select: { name: true } },
       tasks: { select: { status: true } },
     },
@@ -35,7 +35,7 @@ export default async function TechVisits() {
               <Row
                 href={`/tech/visits/${visit.id}`}
                 title={visit.location.name}
-                subtitle={`${visit.organization.name} · ${visit.tasks.length} units · ${formatDate(visit.scheduledFor)}`}
+                subtitle={`${visit.organization.name} · ${visit.tasks.length} units · ${formatDateTime(visit.scheduledFor, visit.location.timezone)}`}
                 right={<Pill tone={visit.status === "IN_PROGRESS" ? "warn" : "accent"}>{relativeDays(visit.scheduledFor)}</Pill>}
               />
             </div>

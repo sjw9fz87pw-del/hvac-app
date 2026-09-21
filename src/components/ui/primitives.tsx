@@ -265,6 +265,31 @@ export function formatDate(value: string | Date | null | undefined): string {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
+/**
+ * Date plus time of day, for anything with an appointment attached.
+ *
+ * A visit at 07:00 and one at 17:00 are very different plans, so a screen that
+ * shows only the date is asking someone to guess — or to ring and ask.
+ *
+ * The timezone must be passed in, and it is the restaurant's, not the
+ * reader's. These strings are rendered on the server, where the local zone is
+ * UTC — so a two o'clock visit silently displayed as six o'clock. It is also
+ * the right answer regardless: a visit happens at the restaurant's wall clock,
+ * whoever is looking and from wherever.
+ */
+export function formatDateTime(
+  value: string | Date | null | undefined,
+  timeZone?: string,
+): string {
+  if (!value) return "—";
+  const date = typeof value === "string" ? new Date(value) : value;
+  const zone = timeZone ? { timeZone } : {};
+  return [
+    date.toLocaleDateString(undefined, { month: "short", day: "numeric", ...zone }),
+    date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", ...zone }),
+  ].join(" · ");
+}
+
 export function relativeDays(value: string | Date | null | undefined): string {
   if (!value) return "—";
   const date = typeof value === "string" ? new Date(value) : value;
