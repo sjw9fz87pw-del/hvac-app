@@ -1,6 +1,8 @@
 import { requireActor } from "@/lib/auth/session";
 import { RequirementsEditor } from "./requirements";
 import { IntervalEditor, type IntervalRow } from "@/components/ui/interval-editor";
+import { EmailStatus } from "./email-status";
+import { emailConfigured, emailProvider } from "@/lib/email/send";
 import { prisma } from "@/lib/db/client";
 import { PageHeader, SectionTitle, List, Row, Divider, Card, Pill, titleCase } from "@/components/ui/primitives";
 
@@ -32,6 +34,9 @@ export default async function SettingsPage() {
   return (
     <main className="rise">
       <PageHeader title="Settings" subtitle="What each job must prove before it counts as done" />
+
+      <SectionTitle>Email</SectionTitle>
+      <EmailStatus configured={emailConfigured()} provider={emailProvider()} ownEmail={actor.email} />
 
       <SectionTitle>How often each job is done</SectionTitle>
       <Card style={{ marginBottom: 12, background: "var(--surface-2)", borderStyle: "dashed", fontSize: 13.5, color: "var(--ink-soft)" }}>

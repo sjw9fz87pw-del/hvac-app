@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/client";
+import { emailConfigured, emailProvider } from "@/lib/email/send";
 import { ok, route } from "@/lib/api/respond";
 
 /**
@@ -37,6 +38,9 @@ export const GET = route(async () => {
     // A too-short secret is as good as missing, so check usability not presence.
     nfcTagSecret: Boolean(tagSecret && tagSecret.length >= 32),
     jobToken: Boolean(process.env.JOB_TOKEN),
+    // Which route invitations take, if any. Never the credentials themselves.
+    email: emailConfigured(),
+    emailProvider: emailProvider(),
     // Not secret, so the resolved value is useful to see: a wrong base URL
     // silently bakes the wrong address into every tag written.
     appBaseUrl: process.env.APP_BASE_URL ?? process.env.URL ?? null,
