@@ -193,7 +193,15 @@ export function Row({ title, subtitle, right, href, leading }: {
       </div>
       {/* Status pills must never be squeezed: they are nowrap, so a flex shrink
           pushes their content straight out past the clipped card edge. */}
-      {right ? <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6 }}>{right}</div> : null}
+      {right ? (
+        <div style={{
+          flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "flex-end",
+          gap: 6,
+          // Two pills plus a long name do not fit a narrow phone in one line;
+          // wrapping keeps them on screen instead of pushing the row off it.
+          flexWrap: "wrap", maxWidth: "52%",
+        }}>{right}</div>
+      ) : null}
     </div>
   );
   return href ? <a href={href} className="tap" style={{ display: "block" }}>{inner}</a> : inner;
@@ -202,7 +210,11 @@ export function Row({ title, subtitle, right, href, leading }: {
 export function List({ children }: { children: ReactNode }) {
   return (
     <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--radius-card)", overflow: "hidden", boxShadow: "var(--shadow-card)" }}>
-      <div style={{ display: "grid" }}>{children}</div>
+      {/* minmax(0, 1fr), not the default. A grid item's min-width is `auto`,
+          meaning it refuses to shrink below its content — so a row with a long
+          name and two status pills grows past the card and off the screen
+          instead of the name ellipsising. */}
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)" }}>{children}</div>
     </div>
   );
 }
@@ -293,7 +305,15 @@ export function Disclosure({ title, meta, right, defaultOpen = false, children }
           <div style={{ fontWeight: 650, fontSize: 15 }}>{title}</div>
           {meta ? <div style={{ color: "var(--ink-soft)", fontSize: 13.5, marginTop: 2 }}>{meta}</div> : null}
         </div>
-        {right ? <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6 }}>{right}</div> : null}
+        {right ? (
+        <div style={{
+          flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "flex-end",
+          gap: 6,
+          // Two pills plus a long name do not fit a narrow phone in one line;
+          // wrapping keeps them on screen instead of pushing the row off it.
+          flexWrap: "wrap", maxWidth: "52%",
+        }}>{right}</div>
+      ) : null}
       </summary>
       <div style={{ marginTop: 8 }}>{children}</div>
     </details>

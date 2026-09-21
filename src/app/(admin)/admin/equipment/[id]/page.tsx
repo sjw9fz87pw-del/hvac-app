@@ -5,6 +5,7 @@ import { canAccessAsset } from "@/lib/auth/scope";
 import { Card, SectionTitle, StatusPill, Pill, List, Row, Divider, Button, formatDate } from "@/components/ui/primitives";
 import { VerifyEquipment } from "./verify";
 import { EditSchedule } from "./edit-schedule";
+import { EditCondition } from "./edit-condition";
 
 /** The internal view of an asset: passport, tag state, audit trail, verification. */
 export default async function AdminEquipmentDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -109,6 +110,12 @@ export default async function AdminEquipmentDetail({ params }: { params: Promise
           </Card>
         </>
       ) : null}
+
+      <EditCondition
+        equipmentId={equipment.id}
+        condition={equipment.condition}
+        canEdit={actor.capabilities.has("equipment.update")}
+      />
 
       <SectionTitle>Maintenance schedules</SectionTitle>
       {equipment.schedules.length === 0 ? (

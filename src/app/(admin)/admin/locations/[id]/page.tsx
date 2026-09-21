@@ -7,7 +7,7 @@ import { Card, Stat, StatGrid, SectionTitle, List, Row, Divider, Pill, StatusPil
 import { GenerateVisit } from "./generate-visit";
 import { ManageLocation } from "./manage-location";
 import { IntervalEditor, type IntervalRow } from "@/components/ui/interval-editor";
-import { UnitPhoto } from "@/components/ui/unit-photo";
+import { UnitList, type UnitRow } from "./unit-list";
 
 export default async function LocationDetail({ params }: { params: Promise<{ id: string }> }) {
   const actor = await requireCapability("org.read");
@@ -161,32 +161,20 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
                 : <Pill tone="good">On track</Pill>
               }
             >
-              <List>
-                {items.map(({ item, status }, index) => (
-                  <div key={item.id}>
-                    {index > 0 ? <Divider /> : null}
-                    <Row
-                      href={`/admin/equipment/${item.id}`}
-                      leading={
-                        <UnitPhoto
-                          equipmentId={item.id}
-                          blobKey={item.photos[0]?.blobKey ?? null}
-                          name={item.name}
-                          canEdit={actor.capabilities.has("equipment.update")}
-                        />
-                      }
-                      title={item.name}
-                      subtitle={`${item.internalAssetId}${item.model ? ` · ${item.model}` : ""}`}
-                      right={
-                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                          {item.tagAssignments.length === 0 ? <Pill tone="warn">No tag</Pill> : null}
-                          <StatusPill status={item.status === "PENDING_SETUP" ? "PENDING_SETUP" : status} />
-                        </div>
-                      }
-                    />
-                  </div>
-                ))}
-              </List>
+              <UnitList
+                canEdit={actor.capabilities.has("equipment.update")}
+                units={items.map(({ item, status }): UnitRow => ({
+                  id: item.id,
+                  name: item.name,
+                  assetId: item.internalAssetId,
+                  model: item.model,
+                  status,
+                  pendingSetup: item.status === "PENDING_SETUP",
+                  tagged: item.tagAssignments.length > 0,
+                  condition: item.condition,
+                  photoBlobKey: item.photos[0]?.blobKey ?? null,
+                }))}
+              />
             </Disclosure>
           );
         })
