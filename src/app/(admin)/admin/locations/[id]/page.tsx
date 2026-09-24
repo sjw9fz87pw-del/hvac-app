@@ -109,7 +109,7 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
 
       <SectionTitle>Upcoming visits</SectionTitle>
       {location.visits.length === 0 ? (
-        <GenerateVisit locationId={location.id} dueCount={due + overdue} />
+        <GenerateVisit locationId={location.id} dueCount={due + overdue} unitCount={location.equipment.length} />
       ) : (
         <>
           <List>
@@ -126,7 +126,7 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
             ))}
           </List>
           <div style={{ marginTop: 12 }}>
-            <GenerateVisit locationId={location.id} dueCount={due + overdue} />
+            <GenerateVisit locationId={location.id} dueCount={due + overdue} unitCount={location.equipment.length} />
           </div>
         </>
       )}

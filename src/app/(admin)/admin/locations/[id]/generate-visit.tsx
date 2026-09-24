@@ -24,16 +24,47 @@ function slotLabel(value: string): string {
   return m === 0 ? `${hour}${suffix}` : `${hour}:${String(m).padStart(2, "0")}${suffix}`;
 }
 
+/** Shared look for the pill choices: time slots and coverage alike. */
+function Pill({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button" onClick={onClick} aria-pressed={on}
+      style={{
+        padding: "8px 13px", borderRadius: 999, fontSize: 13.5, fontWeight: 620,
+        minHeight: 38, cursor: "pointer",
+        border: `1px solid ${on ? "transparent" : "var(--line)"}`,
+        background: on ? "var(--accent)" : "var(--surface-2)",
+        color: on ? "#1a0f04" : "var(--ink-soft)",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
 /**
- * Visits are generated from what is actually due, not hand-picked. The operator
- * chooses when; the engine decides which assets it covers.
+ * Book a visit.
+ *
+ * The engine decides what a visit *should* cover, but the person booking it
+ * often knows better: a visit gets made for reasons no schedule can see. So
+ * coverage is a choice — what is due, or everything in the building — and
+ * "nothing is due" never blocks a booking.
  */
-export function GenerateVisit({ locationId, dueCount }: { locationId: string; dueCount: number }) {
+export function GenerateVisit({ locationId, dueCount, unitCount }: {
+  locationId: string;
+  dueCount: number;
+  unitCount: number;
+}) {
   const router = useRouter();
   const [date, setDate] = useState(() => new Date(Date.now() + 86_400_000).toISOString().slice(0, 10));
   const [time, setTime] = useState("09:00");
+  // Nothing due is the normal state between services, so default to the option
+  // that can actually produce a visit rather than to a dead end.
+  const [include, setInclude] = useState<"due" | "all">(dueCount > 0 ? "due" : "all");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const covers = include === "due" ? dueCount : unitCount;
 
   async function generate() {
     setBusy(true);
@@ -50,7 +81,7 @@ export function GenerateVisit({ locationId, dueCount }: { locationId: string; du
     const response = await fetch("/api/v1/visits", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ locationId, scheduledFor: at.toISOString(), horizonDays: 14 }),
+      body: JSON.stringify({ locationId, scheduledFor: at.toISOString(), horizonDays: 14, include }),
     });
     setBusy(false);
     if (response.ok) { router.refresh(); return; }
@@ -61,12 +92,26 @@ export function GenerateVisit({ locationId, dueCount }: { locationId: string; du
     <Card>
       <div style={{ fontWeight: 640 }}>Schedule a visit</div>
       <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 3 }}>
-        {dueCount > 0
-          ? `${dueCount} asset${dueCount === 1 ? " is" : "s are"} due or overdue. A visit covers everything due within 14 days, grouped by area.`
-          : "Nothing is currently due here."}
+        {covers > 0
+          ? `Covers ${covers} unit${covers === 1 ? "" : "s"}${include === "due" ? ", grouped by area" : " — everything here, grouped by area"}.`
+          : include === "due"
+            ? "Nothing is due here right now. Switch to “Everything here” to book a visit anyway."
+            : "There are no units here yet. Add some first."}
       </p>
 
-      <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
+      <div style={{ marginTop: 12 }}>
+        <span style={labelStyle}>What to cover</span>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          <Pill on={include === "due"} onClick={() => setInclude("due")}>
+            Due soon · {dueCount}
+          </Pill>
+          <Pill on={include === "all"} onClick={() => setInclude("all")}>
+            Everything here · {unitCount}
+          </Pill>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
         <div>
           <label style={labelStyle} htmlFor="visit-date">Date</label>
           <input id="visit-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} style={fieldStyle} />
@@ -78,27 +123,15 @@ export function GenerateVisit({ locationId, dueCount }: { locationId: string; du
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-        {SLOTS.map((slot) => {
-          const on = slot === time;
-          return (
-            <button
-              key={slot} type="button" onClick={() => setTime(slot)} aria-pressed={on}
-              style={{
-                padding: "8px 13px", borderRadius: 999, fontSize: 13.5, fontWeight: 620,
-                minHeight: 38, cursor: "pointer",
-                border: `1px solid ${on ? "transparent" : "var(--line)"}`,
-                background: on ? "var(--accent)" : "var(--surface-2)",
-                color: on ? "#1a0f04" : "var(--ink-soft)",
-              }}
-            >
-              {slotLabel(slot)}
-            </button>
-          );
-        })}
+        {SLOTS.map((slot) => (
+          <Pill key={slot} on={slot === time} onClick={() => setTime(slot)}>{slotLabel(slot)}</Pill>
+        ))}
       </div>
 
       <div style={{ marginTop: 14, maxWidth: 200 }}>
-        <Button onClick={generate} disabled={busy}>{busy ? "Generating…" : "Generate visit"}</Button>
+        <Button onClick={generate} disabled={busy || covers === 0}>
+          {busy ? "Generating…" : "Generate visit"}
+        </Button>
       </div>
 
       {error ? <div style={{ color: "var(--bad)", fontSize: 13.5, marginTop: 10 }}>{error}</div> : null}

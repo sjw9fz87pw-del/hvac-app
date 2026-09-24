@@ -54,6 +54,8 @@ const createSchema = z.object({
   scheduledFor: z.string().datetime(),
   technicianId: z.string().nullish(),
   horizonDays: z.number().int().min(0).max(90).default(7),
+  /** "all" books every active unit at the location, due or not. */
+  include: z.enum(["due", "all"]).default("due"),
 });
 
 /**
@@ -71,9 +73,19 @@ export const POST = route(async (request: NextRequest) => {
     scheduledFor: new Date(input.scheduledFor),
     technicianId: input.technicianId ?? null,
     horizonDays: input.horizonDays,
+    include: input.include,
   });
 
-  if (!visit) return fail(422, "Nothing is due at this location within the selected window");
+  // Two different dead ends, and saying which one it is saves a guess: nothing
+  // due is fixed by covering everything; no units at all is fixed by adding some.
+  if (!visit) {
+    return fail(
+      422,
+      input.include === "all"
+        ? "This restaurant has no active units to visit yet"
+        : "Nothing is due at this location within the selected window. Choose \u201cEverything here\u201d to book a visit anyway.",
+    );
+  }
 
   await recordAudit({
     action: "visit.created", entityType: "Visit", entityId: visit.id,

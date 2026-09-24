@@ -105,11 +105,21 @@ export interface GenerateVisitInput {
   technicianId?: string | null;
   /** Include work coming due within this many days, not only what is due today. */
   horizonDays?: number;
+  /**
+   * "due" builds the visit the engine thinks is needed. "all" covers every
+   * active unit at the location whatever its due date, because a real visit is
+   * often booked for a reason the schedule knows nothing about - an inspection,
+   * a new technician walking the site, a complaint about one cooler that is
+   * worth checking the rest while there. Paused units stay out either way:
+   * pausing is a deliberate "leave this alone".
+   */
+  include?: "due" | "all";
 }
 
 /**
- * Build a visit covering everything due (or coming due) at a location, grouped
- * by area and ordered so the walk-through is sensible.
+ * Build a visit at a location, grouped by area and ordered so the walk-through
+ * is sensible. By default it covers what is due or coming due; with
+ * `include: "all"` it covers every active unit there.
  */
 export async function generateVisit(input: GenerateVisitInput) {
   const location = await prisma.restaurantLocation.findUnique({ where: { id: input.locationId } });
@@ -118,10 +128,12 @@ export async function generateVisit(input: GenerateVisitInput) {
   const horizon = new Date(input.scheduledFor);
   horizon.setDate(horizon.getDate() + (input.horizonDays ?? 7));
 
+  const everything = input.include === "all";
+
   const due = await prisma.maintenanceSchedule.findMany({
     where: {
       paused: false,
-      nextDueAt: { lte: horizon },
+      ...(everything ? {} : { nextDueAt: { lte: horizon } }),
       equipment: { locationId: input.locationId, archivedAt: null, status: { in: ["ACTIVE", "NEEDS_ATTENTION"] } },
     },
     include: {

@@ -17,6 +17,7 @@ import { withIdempotency, IdempotencyConflict } from "@/lib/sync/idempotency";
 import { completeService, ProofIncompleteError } from "@/lib/maintenance/completion";
 import { pairTag, unpairTag, replaceTag, resolveTap, mintTag, recordTagLock, TagOperationError } from "@/lib/nfc/service";
 import { setIntervalOverride, setNextDue } from "@/lib/maintenance/planning";
+import { generateVisit } from "@/lib/maintenance/scheduling";
 
 const prisma = new PrismaClient();
 const SECRET = process.env.NFC_TAG_SECRET!;
@@ -571,5 +572,70 @@ describe("editing schedules", () => {
     expect(now.intervalDays).toBe(30);
 
     await cleanUp(equipment.id, schedule.id);
+  });
+});
+
+describe("generating a visit", () => {
+  // Its own restaurant, so the shared fixture's assets cannot wander into the
+  // visit and make "everything here" mean something other than what it says.
+  async function quietRestaurant() {
+    const location = await prisma.restaurantLocation.create({
+      data: {
+        organizationId: ctx.orgA,
+        name: `Quiet ${Math.random().toString(36).slice(2, 8)}`,
+        areas: { create: [{ name: "Kitchen" }] },
+      },
+      include: { areas: true },
+    });
+    const equipment = await prisma.equipment.create({
+      data: {
+        organizationId: ctx.orgA, locationId: location.id, areaId: location.areas[0].id,
+        name: "Walk-in", category: "REFRIGERATION", equipmentType: "Walk-in cooler",
+        internalAssetId: `QR-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+      },
+    });
+    // Serviced recently, so nothing is due for a long time - the state a
+    // restaurant is in for most of the year.
+    await prisma.maintenanceSchedule.create({
+      data: {
+        equipmentId: equipment.id, serviceTypeId: ctx.serviceTypeId,
+        intervalDays: 60, intervalSource: "SYSTEM",
+        lastServiceAt: new Date(),
+        nextDueAt: new Date(Date.now() + 60 * 86_400_000), status: "UPCOMING",
+      },
+    });
+    return { locationId: location.id, equipmentId: equipment.id };
+  }
+
+  it("books everything at a restaurant even when nothing is due", async () => {
+    const { locationId, equipmentId } = await quietRestaurant();
+    const scheduledFor = new Date(Date.now() + 86_400_000);
+
+    // The engine's own answer: nothing needs doing in the next fortnight.
+    expect(await generateVisit({ locationId, scheduledFor, horizonDays: 14 })).toBeNull();
+
+    // The person booking it knows better, and is allowed to say so.
+    const visit = await generateVisit({ locationId, scheduledFor, horizonDays: 14, include: "all" });
+    expect(visit).not.toBeNull();
+    expect(visit!.tasks).toHaveLength(1);
+    expect(visit!.tasks[0].equipmentId).toBe(equipmentId);
+
+    await prisma.visitTask.deleteMany({ where: { visitId: visit!.id } });
+    await prisma.visit.delete({ where: { id: visit!.id } });
+    await prisma.maintenanceSchedule.deleteMany({ where: { equipmentId } });
+    await prisma.equipment.delete({ where: { id: equipmentId } });
+  });
+
+  it("leaves paused units out of everything", async () => {
+    const { locationId, equipmentId } = await quietRestaurant();
+    await prisma.maintenanceSchedule.updateMany({ where: { equipmentId }, data: { paused: true } });
+
+    // Pausing is a deliberate "leave this alone", so "everything" respects it.
+    expect(
+      await generateVisit({ locationId, scheduledFor: new Date(), include: "all" }),
+    ).toBeNull();
+
+    await prisma.maintenanceSchedule.deleteMany({ where: { equipmentId } });
+    await prisma.equipment.delete({ where: { id: equipmentId } });
   });
 });
