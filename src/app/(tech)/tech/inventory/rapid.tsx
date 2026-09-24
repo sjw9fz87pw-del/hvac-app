@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card, Button, Pill } from "@/components/ui/primitives";
 import { compressImage, uploadPhoto } from "@/lib/photos/client";
-import { isNfcSupported, writeTag, readTagOnce, lockTag, canLockTags } from "@/lib/nfc/web-nfc";
+import { isNfcSupported, canLockTags } from "@/lib/nfc/web-nfc";
+import { mintWriteVerifyPair, type PairPhase } from "@/lib/nfc/pairing";
 
 interface LocationOption {
   id: string; name: string; organizationId: string; organizationName: string;
@@ -127,61 +128,25 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
   }
 
   /**
-   * Mint, write, read back, verify, then pair. Pairing only happens after the
-   * read-back matches - an unverified write would leave a tag in the field that
-   * resolves to nothing.
+   * The same mint-write-verify-pair sequence used when tagging a unit that
+   * already exists, so a tag written here and a tag written there are
+   * indistinguishable afterwards.
    */
   async function assignTag() {
     if (!createdId || !location) return;
-    setTagState("writing");
     setTagMessage(null);
+    const shown: Record<PairPhase, TagState> = {
+      minting: "writing", writing: "writing", verifying: "verifying",
+      pairing: "verifying", locking: "locking",
+    };
     try {
-      const mint = await fetch("/api/v1/tags/mint", {
-        method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ organizationId: location.organizationId }),
+      const outcome = await mintWriteVerifyPair({
+        organizationId: location.organizationId,
+        equipmentId: createdId,
+        lock: lockTags,
+        onPhase: (phase) => setTagState(shown[phase]),
       });
-      const minted = await mint.json();
-      if (!mint.ok) throw new Error(minted.error ?? "Could not mint a tag");
-
-      await writeTag(minted.url);
-
-      setTagState("verifying");
-      const readBack = await readTagOnce(15_000);
-
-      const verify = await fetch("/api/v1/tags/verify", {
-        method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tagId: minted.tagId, readBackPayload: readBack.split("/t/").pop() ?? readBack }),
-      });
-      const verified = await verify.json();
-      if (!verified.verified) throw new Error(verified.reason ?? "The tag did not verify");
-
-      const pair = await fetch("/api/v1/tags/pair", {
-        method: "POST",
-        headers: { "content-type": "application/json", "idempotency-key": crypto.randomUUID() },
-        body: JSON.stringify({ tagId: minted.tagId, equipmentId: createdId, verified: true }),
-      });
-      if (!pair.ok) throw new Error((await pair.json()).error ?? "Pairing failed");
-
-      // Locking is irreversible and comes last, after the write is verified and
-      // the pairing is committed — a locked tag pointing at nothing is scrap.
-      // The asset is already working at this point, so a lock that fails is
-      // recorded and reported, never allowed to undo the pairing.
-      if (lockTags) {
-        setTagState("locking");
-        const outcome = await lockTag();
-        await fetch("/api/v1/tags/lock", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            tagId: minted.tagId,
-            locked: outcome.locked,
-            reason: outcome.locked ? null : outcome.reason,
-            unsupported: outcome.locked ? false : Boolean(outcome.unsupported),
-          }),
-        }).catch(() => {});
-        setLockNote(outcome.locked ? null : outcome.reason);
-      }
-
+      setLockNote(outcome.lockNote);
       setTagState("paired");
     } catch (e) {
       setTagState("failed");

@@ -3,7 +3,7 @@ import QRCode from "qrcode";
 import { prisma } from "@/lib/db/client";
 import { requireCapability } from "@/lib/auth/session";
 import { canAccessOrganization } from "@/lib/auth/scope";
-import { appBaseUrl } from "@/lib/nfc/service";
+import { tagUrl } from "@/lib/nfc/service";
 import { Card, SectionTitle, StatusPill, Pill, List, Row, Divider, formatDate } from "@/components/ui/primitives";
 import { TagActions } from "./actions";
 
@@ -34,9 +34,11 @@ export default async function TagDetail({ params }: { params: Promise<{ id: stri
 
   const current = tag.assignments.find((a) => a.unassignedAt === null);
 
-  // The QR encodes the same token the chip carries, so both paths resolve identically.
-  const qrPayload = `${appBaseUrl()}/t/v1.${tag.tenantHint}.${tag.tokenId}.${tag.macPrefix}`;
-  const qrSvg = current ? await QRCode.toString(qrPayload, { type: "svg", margin: 1, width: 180 }) : null;
+  // The QR encodes the same token the chip carries, so both paths resolve
+  // identically. It is re-derived, not assembled from the stored MAC prefix:
+  // the prefix is half a MAC, and a QR built from it fails on every scan.
+  const qrPayload = tagUrl(tag);
+  const qrSvg = current && qrPayload ? await QRCode.toString(qrPayload, { type: "svg", margin: 1, width: 180 }) : null;
 
   return (
     <main className="rise">

@@ -156,6 +156,23 @@ export async function mintTag(opts: MintOptions) {
   return { tag, payload: token.payload, url: buildTagUrl(appBaseUrl(), token.payload) };
 }
 
+/**
+ * Rebuild the exact URL a tag carries, for an already-minted tag.
+ *
+ * The token is not stored - only its id, the tenant hint and the first half of
+ * the MAC, which is a spot-check value and not enough to reconstruct a working
+ * token. The full MAC is a pure function of the secret, the version, the hint
+ * and the token id, so it is re-derived here rather than kept in the database.
+ *
+ * This is what the QR fallback must encode. A QR built from the stored MAC
+ * prefix looks right and fails BAD_SIGNATURE on every scan.
+ */
+export function tagUrl(tag: { tokenId: string; organizationId: string | null }): string | null {
+  if (!tag.organizationId) return null;
+  const token = mintTagToken(tagSecret(), { tenantId: tag.organizationId, tokenId: tag.tokenId });
+  return buildTagUrl(appBaseUrl(), token.payload);
+}
+
 export class TagOperationError extends Error {
   constructor(message: string, public code: string = "TAG_OPERATION_FAILED") {
     super(message);

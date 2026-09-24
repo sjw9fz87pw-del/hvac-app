@@ -6,6 +6,7 @@ import { Card, SectionTitle, StatusPill, Pill, List, Row, Divider, Button, forma
 import { VerifyEquipment } from "./verify";
 import { EditSchedule } from "./edit-schedule";
 import { EditCondition } from "./edit-condition";
+import { PairTag } from "./pair-tag";
 
 /** The internal view of an asset: passport, tag state, audit trail, verification. */
 export default async function AdminEquipmentDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -86,12 +87,20 @@ export default async function AdminEquipmentDetail({ params }: { params: Promise
               </div>
             </>
           ) : (
-            <>
-              <Pill tone="warn">No tag paired</Pill>
-              <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 8 }}>
-                Pair one on the next visit. The asset still has a working QR fallback once a tag is minted.
-              </p>
-            </>
+            actor.capabilities.has("tag.pair") ? (
+              <PairTag
+                equipmentId={equipment.id}
+                organizationId={equipment.organizationId}
+                unitName={equipment.name}
+              />
+            ) : (
+              <>
+                <Pill tone="warn">No tag paired</Pill>
+                <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 8 }}>
+                  A tag gets paired on the next visit.
+                </p>
+              </>
+            )
           )}
           {equipment.tagAssignments.length > 1 ? (
             <div style={{ marginTop: 14, fontSize: 13, color: "var(--ink-faint)" }}>

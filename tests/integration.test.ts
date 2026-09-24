@@ -8,14 +8,14 @@
  */
 import { beforeAll, afterAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "@prisma/client";
-import { mintTagToken, macPrefix } from "@pmops/nfc-core";
+import { mintTagToken, macPrefix, verifyTagToken } from "@pmops/nfc-core";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { tenantWhere, canAccessOrganization, canAccessAsset, canAccessLocation, assertOrganization } from "@/lib/auth/scope";
 import { AuthError, type Actor } from "@/lib/auth/session";
 import { capabilitiesFor } from "@/lib/auth/permissions";
 import { withIdempotency, IdempotencyConflict } from "@/lib/sync/idempotency";
 import { completeService, ProofIncompleteError } from "@/lib/maintenance/completion";
-import { pairTag, unpairTag, replaceTag, resolveTap, mintTag, recordTagLock, TagOperationError } from "@/lib/nfc/service";
+import { pairTag, unpairTag, replaceTag, resolveTap, mintTag, recordTagLock, tagUrl, TagOperationError } from "@/lib/nfc/service";
 import { setIntervalOverride, setNextDue } from "@/lib/maintenance/planning";
 import { generateVisit } from "@/lib/maintenance/scheduling";
 
@@ -478,6 +478,21 @@ describe("tag operations", () => {
     const first = await recordTagLock({ tagId: tag.id, actor: staff(), locked: true });
     const second = await recordTagLock({ tagId: tag.id, actor: staff(), locked: true });
     expect(second.lockedAt?.toISOString()).toBe(first.lockedAt?.toISOString());
+  });
+
+  it("rebuilds a scannable QR payload from what is stored", async () => {
+    const { tag } = await mintTag({ organizationId: ctx.orgA, actor: staff() });
+
+    // The QR fallback is the path an iPhone and a damaged chip both take, so a
+    // QR that cannot be scanned is a silent outage. The stored macPrefix is
+    // half a MAC and looks close enough to be tempting: it is not.
+    const stored = await prisma.tag.findUniqueOrThrow({ where: { id: tag.id } });
+    const fromPrefix = `v1.${stored.tenantHint}.${stored.tokenId}.${stored.macPrefix}`;
+    expect(verifyTagToken(SECRET, fromPrefix).ok).toBe(false);
+
+    const url = tagUrl(stored);
+    expect(url).not.toBeNull();
+    expect(verifyTagToken(SECRET, url!.split("/t/")[1]).ok).toBe(true);
   });
 
   it("mints tokens that carry no tenant id", async () => {
