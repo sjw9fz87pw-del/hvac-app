@@ -39,7 +39,7 @@ export function detectBlocker(facts: BrowserFacts): NfcBlocker {
 export function blockerMessage(blocker: NfcBlocker): string {
   switch (blocker) {
     case "ios":
-      return "iPhones cannot write NFC tags from a browser — Apple does not allow it, in Safari or any other iOS browser. Use the Android phone, or prepare the tag here and write it with a free NFC app.";
+      return "iPhones cannot write NFC tags from a browser — Apple does not allow it, in Safari or any other iOS browser. Use the Clearline iPhone app, the Android phone, or prepare the tag here and write it with a free NFC app.";
     case "android-browser":
       return "This browser cannot write NFC tags. Open the same page in Chrome on this phone and the button appears.";
     case "android-nfc-off":
