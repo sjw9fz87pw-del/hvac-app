@@ -17,6 +17,9 @@ final class DeskReader {
 
     // MARK: - Operations
 
+    /// Is the reader/writer plugged in, and is a tag on it? Never opens a
+    /// session with the tag, so it answers instantly even while a write is in
+    /// progress or a tag is misbehaving: this is what the page polls.
     func status() -> JSON {
         guard let manager = TKSmartCardSlotManager.default else {
             return ["reader": NSNull(), "tag": NSNull(), "hint": "This app cannot reach the NFC reader/writer."]
@@ -24,17 +27,10 @@ final class DeskReader {
         guard let name = manager.slotNames.first, let slot = manager.slotNamed(name) else {
             return ["reader": NSNull(), "tag": NSNull(), "hint": "No NFC reader/writer is plugged in."]
         }
-        guard slot.state == .validCard, let card = slot.makeSmartCard() else {
+        guard slot.state == .validCard else {
             return ["reader": name, "tag": NSNull(), "hint": "Put a tag on the reader."]
         }
-        do {
-            let info = try Session(card).run { try identify($0) }
-            return ["reader": name, "tag": ["uid": info.uid, "type": info.type], "hint": NSNull()]
-        } catch let e as TagError {
-            return ["reader": name, "tag": NSNull(), "hint": e.message]
-        } catch {
-            return ["reader": name, "tag": NSNull(), "hint": "\(error)"]
-        }
+        return ["reader": name, "tag": ["uid": "", "type": "tag"], "hint": NSNull()]
     }
 
     func write(url: String, waitMs: Int) -> JSON {
@@ -245,7 +241,10 @@ final class Session {
         let sem = DispatchSemaphore(value: 0)
         var began = false, failure: Error?
         card.beginSession { ok, error in began = ok; failure = error; sem.signal() }
-        sem.wait()
+        // A session that never opens must not hang the reader/writer for good.
+        if sem.wait(timeout: .now() + 5) == .timedOut {
+            throw TagError(message: "The tag did not answer. Take it off the reader, put it back, and try again.")
+        }
         guard began else {
             throw TagError(message: "Could not talk to the tag\(failure.map { ": \($0.localizedDescription)" } ?? ""). Move it and try again.")
         }
