@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { isInMacApp } from "@pmops/nfc-writer";
 import { deskReader, rememberDeskReader, rememberedDeskReader } from "./writer";
 
@@ -53,6 +53,8 @@ async function look(quiet: boolean) {
 }
 
 function shouldWatch() {
+  // Safari on a Mac can never reach the reader/writer; do not keep trying.
+  if (readerPlace() === "mac-browser") return false;
   return isInMacApp() || rememberedDeskReader();
 }
 
@@ -100,4 +102,40 @@ export function useReaderStatus(): ReaderState {
     else schedule();
   }, []);
   return state;
+}
+
+/**
+ * Where this page is open, as far as the NFC reader/writer is concerned.
+ *
+ * - "app": the Clearline Mac app, which has the reader/writer built in.
+ * - "mac-browser": Safari or Chrome on a Mac. Safari cannot reach anything
+ *   on this computer from a secure page at all, so the only thing that works
+ *   is handing the page over to the Clearline app.
+ * - "touch": a phone or tablet, which tags with its own radio instead.
+ * - "other": any other computer's browser, which can use the local helper.
+ *
+ * Null until mounted, since the server cannot know.
+ */
+export type ReaderPlace = "app" | "mac-browser" | "touch" | "other";
+
+export function readerPlace(): ReaderPlace | null {
+  if (typeof navigator === "undefined") return null;
+  if (isInMacApp()) return "app";
+  const ua = navigator.userAgent;
+  const touch = (navigator.maxTouchPoints ?? 0) > 1 || /iPhone|iPad|iPod|Android/.test(ua);
+  if (touch) return "touch";
+  if (/Macintosh/.test(ua)) return "mac-browser";
+  return "other";
+}
+
+export function useReaderPlace(): ReaderPlace | null {
+  const [place, setPlace] = useState<ReaderPlace | null>(null);
+  useEffect(() => setPlace(readerPlace()), []);
+  return place;
+}
+
+/** Opens the page being looked at in the Clearline Mac app, signed in there. */
+export function openInAppHref(): string {
+  const path = typeof location === "undefined" ? "/admin/nfc" : location.pathname + location.search;
+  return `clearline://open?path=${encodeURIComponent(path)}`;
 }

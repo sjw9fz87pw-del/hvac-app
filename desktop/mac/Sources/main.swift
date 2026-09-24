@@ -22,6 +22,8 @@ func appURL() -> URL {
 final class ReaderBridge: NSObject, WKScriptMessageHandlerWithReply {
     private let reader = DeskReader()
     private let queue = DispatchQueue(label: "clearline.desk-reader")
+    /// Status checks never wait behind a write that is waiting for a tag.
+    private let statusQueue = DispatchQueue(label: "clearline.desk-reader.status")
     private let allowedHost: String
 
     init(allowedHost: String) { self.allowedHost = allowedHost }
@@ -38,7 +40,7 @@ final class ReaderBridge: NSObject, WKScriptMessageHandlerWithReply {
         }
         let wait = (body["waitMs"] as? NSNumber)?.intValue ?? 0
         let uid = body["uid"] as? String
-        queue.async { [reader] in
+        (op == "status" ? statusQueue : queue).async { [reader] in
             let result: [String: Any]
             switch op {
             case "status": result = reader.status()
@@ -54,8 +56,10 @@ final class ReaderBridge: NSObject, WKScriptMessageHandlerWithReply {
 
 final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDelegate {
     var window: NSWindow!
-    var web: WKWebView!
+    var web: WKWebView?
     let home = appURL()
+    /// A page asked for through clearline:// before the window existed.
+    var pending: URL?
 
     func applicationDidFinishLaunching(_ note: Notification) {
         let config = WKWebViewConfiguration()
@@ -64,7 +68,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
             ReaderBridge(allowedHost: home.host ?? ""), contentWorld: .page, name: "deskReader")
         config.applicationNameForUserAgent = "ClearlineDesk/1.0"
 
-        web = WKWebView(frame: .zero, configuration: config)
+        let web = WKWebView(frame: .zero, configuration: config)
+        self.web = web
         web.navigationDelegate = self
         web.uiDelegate = self
         web.allowsBackForwardNavigationGestures = true
@@ -78,11 +83,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         window.makeKeyAndOrderFront(nil)
 
         buildMenu()
-        web.load(URLRequest(url: home))
+        web.load(URLRequest(url: pending ?? home))
+        pending = nil
         NSApp.activate(ignoringOtherApps: true)
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ app: NSApplication) -> Bool { true }
+
+    /// clearline://open?path=/admin/nfc — only ever a page of the app's own site.
+    func application(_ application: NSApplication, open urls: [URL]) {
+        guard let url = urls.first(where: { $0.scheme == "clearline" }) else { return }
+        let path = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+            .queryItems?.first(where: { $0.name == "path" })?.value ?? home.path
+        var target = home
+        if path.hasPrefix("/"), !path.hasPrefix("//"),
+           let resolved = URL(string: path, relativeTo: home)?.absoluteURL, resolved.host == home.host {
+            target = resolved
+        }
+        if let web {
+            web.load(URLRequest(url: target))
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        } else {
+            pending = target
+        }
+    }
 
     // Links to the site stay in the app; anything else opens in the default browser.
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction,
@@ -126,10 +151,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         panel.beginSheetModal(for: window) { completionHandler($0 == .OK ? panel.urls : nil) }
     }
 
-    @objc func goHome() { web.load(URLRequest(url: home)) }
-    @objc func reload() { web.reload() }
-    @objc func back() { web.goBack() }
-    @objc func forward() { web.goForward() }
+    @objc func goHome() { web?.load(URLRequest(url: home)) }
+    @objc func reload() { web?.reload() }
+    @objc func back() { web?.goBack() }
+    @objc func forward() { web?.goForward() }
 
     private func buildMenu() {
         let main = NSMenu()

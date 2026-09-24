@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { Button, Pill } from "@/components/ui/primitives";
 import { blockerMessage, pairTagToUnit, pairPhaseLabel, type NfcBlocker, type PairPhase } from "@pmops/nfc-writer";
 import { pairingWriter, pairWithReader, tagApi } from "@/lib/nfc/writer";
-import { connectReader, READER_NAME, useReaderStatus, withReader } from "@/lib/nfc/reader-status";
+import {
+  connectReader, openInAppHref, READER_NAME, useReaderPlace, useReaderStatus, withReader,
+} from "@/lib/nfc/reader-status";
 import { PrepareTag } from "./prepare-tag";
 
 /**
@@ -40,6 +42,7 @@ export function PairTag({ equipmentId, organizationId, unitName }: {
   // Watched continuously: plugging the NFC reader/writer in switches this
   // panel over to it without anyone pressing anything.
   const reader = useReaderStatus();
+  const place = useReaderPlace();
 
   // Detected after mount: the server cannot know what the phone can do.
   useEffect(() => {
@@ -91,7 +94,14 @@ export function PairTag({ equipmentId, organizationId, unitName }: {
             {blockerMessage(blocker)}
           </p>
           {blocker === "ios" ? <PrepareTag equipmentId={equipmentId} organizationId={organizationId} /> : null}
-          {blocker === "desktop" ? (
+          {blocker === "desktop" && place === "mac-browser" ? (
+            <div style={{ marginTop: 10, maxWidth: 260 }}>
+              <Button size="sm" href={openInAppHref()}>Open in Clearline app</Button>
+              <p style={{ fontSize: 13, color: "var(--ink-faint)", marginTop: 8, lineHeight: 1.5 }}>
+                The {READER_NAME} works in the Clearline app on this Mac, not in Safari or Chrome.
+              </p>
+            </div>
+          ) : blocker === "desktop" ? (
             <div style={{ marginTop: 10, maxWidth: 260 }}>
               <Button variant="secondary" size="sm" onClick={connectReader} disabled={reader.state === "connecting"}>
                 {reader.state === "connecting" ? `Looking for the ${READER_NAME}…` : `Use the ${READER_NAME}`}
