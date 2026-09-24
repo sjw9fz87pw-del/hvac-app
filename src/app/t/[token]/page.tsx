@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import { currentActor, requestMeta } from "@/lib/auth/session";
-import { resolveTap } from "@/lib/nfc/service";
+import { resolveTap, pendingTagForPairing } from "@/lib/nfc/service";
 import { prisma } from "@/lib/db/client";
 import { denialMessage } from "@pmops/nfc-core";
 import { Card, Button } from "@/components/ui/primitives";
+import { ClaimTag } from "./claim";
 
 /**
  * Where a tapped tag or scanned QR code lands.
@@ -23,6 +24,39 @@ export default async function TagLanding({ params }: { params: Promise<{ token: 
   const outcome = await resolveTap(token, { actor, ...meta });
 
   if (!outcome.ok) {
+    // A tag written in another app lands here on its first tap: valid
+    // signature, no unit yet. For whoever is doing the tagging that is the
+    // next step, not a failure; for everyone else nothing below runs and the
+    // generic denial stands.
+    const pending = await pendingTagForPairing(token, actor);
+    if (pending) {
+      const units = await prisma.equipment.findMany({
+        where: { organizationId: pending.organizationId, archivedAt: null, status: { in: ["ACTIVE", "NEEDS_ATTENTION"] } },
+        select: {
+          id: true, name: true,
+          location: { select: { name: true } },
+          area: { select: { name: true } },
+          tagAssignments: { where: { unassignedAt: null }, select: { id: true } },
+        },
+        orderBy: [{ location: { name: "asc" } }, { name: "asc" }],
+      });
+
+      return (
+        <main className="page-scroll" style={{ height: "100%", display: "grid", placeItems: "center", padding: 20 }}>
+          <ClaimTag
+            payload={token}
+            units={units.map((u) => ({
+              id: u.id,
+              name: u.name,
+              locationName: u.location.name,
+              areaName: u.area?.name ?? null,
+              tagged: u.tagAssignments.length > 0,
+            }))}
+          />
+        </main>
+      );
+    }
+
     return (
       <main className="page-scroll" style={{ height: "100%", display: "grid", placeItems: "center", padding: 20 }}>
         <Card style={{ maxWidth: 420, textAlign: "center", padding: 30 }}>

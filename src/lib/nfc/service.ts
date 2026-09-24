@@ -8,7 +8,7 @@
  */
 import type { Prisma } from "@prisma/client";
 import {
-  mintTagToken, macPrefix, buildTagUrl, resolveTagPayload, transition,
+  mintTagToken, macPrefix, buildTagUrl, resolveTagPayload, transition, verifyTagToken,
   type TagState, type TagStore, type TagAuditSink, type TagAuditType,
 } from "@pmops/nfc-core";
 import { prisma } from "@/lib/db/client";
@@ -171,6 +171,56 @@ export function tagUrl(tag: { tokenId: string; organizationId: string | null }):
   if (!tag.organizationId) return null;
   const token = mintTagToken(tagSecret(), { tenantId: tag.organizationId, tokenId: tag.tokenId });
   return buildTagUrl(appBaseUrl(), token.payload);
+}
+
+/**
+ * A tag that has been written but never linked to a unit.
+ *
+ * Resolution refuses an unpaired tag, as it should: to anyone else this is
+ * unassigned stock and must stay indistinguishable from a tag that does not
+ * exist. But to the person who just wrote it — who holds the pairing
+ * capability and access to that customer — the tap is the last step of
+ * tagging, not a dead end. So this answers only for that person, and returns
+ * null for everyone else, leaving the generic denial intact.
+ *
+ * The tap is stronger evidence than the browser read-back it replaces: the
+ * server verifies the signature itself here, rather than trusting a client
+ * that says it checked.
+ */
+export async function pendingTagForPairing(payload: string, actor: Actor) {
+  if (!actor.capabilities.has("tag.pair")) return null;
+
+  const verified = verifyTagToken(tagSecret(), payload);
+  if (!verified.ok) return null;
+
+  const tag = await prisma.tag.findUnique({ where: { tokenId: verified.token.tokenId } });
+  if (!tag || tag.state !== "UNASSIGNED" || !tag.organizationId) return null;
+  if (!canAccessOrganization(actor, tag.organizationId)) return null;
+
+  return { tagId: tag.id, organizationId: tag.organizationId };
+}
+
+/**
+ * Pair a tag that the phone has just physically read.
+ *
+ * The write happened in another app, so there is no read-back to check.
+ * Instead the payload arrives from the tap itself and is verified here, on the
+ * server, against the secret — then recorded as a VERIFIED event noting that a
+ * tap is what proved it, so the history says how each tag came to be trusted.
+ */
+export async function pairTagByTap(opts: { payload: string; equipmentId: string; actor: Actor }) {
+  const pending = await pendingTagForPairing(opts.payload, opts.actor);
+  if (!pending) throw new TagOperationError("That tag is not waiting to be paired", "TAG_NOT_PENDING");
+
+  await prisma.tag.update({ where: { id: pending.tagId }, data: { verifiedAt: new Date() } });
+  await tagAuditSink().record({
+    type: "VERIFIED",
+    tagId: pending.tagId,
+    actorId: opts.actor.userId,
+    detail: { via: "TAP" },
+  });
+
+  return pairTag({ tagId: pending.tagId, equipmentId: opts.equipmentId, verified: true, actor: opts.actor });
 }
 
 export class TagOperationError extends Error {

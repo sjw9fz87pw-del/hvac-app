@@ -163,6 +163,7 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
             >
               <UnitList
                 canEdit={actor.capabilities.has("equipment.update")}
+                canRemove={actor.capabilities.has("equipment.archive")}
                 units={items.map(({ item, status }): UnitRow => ({
                   id: item.id,
                   name: item.name,

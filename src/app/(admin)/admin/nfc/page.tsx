@@ -55,7 +55,11 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
             Tags carry only a signed identifier. Everything else resolves server-side.
           </p>
         </div>
-        <div style={{ width: 170 }}><Button href="/tech/inventory" size="sm">Pair new tags</Button></div>
+        {/* Tagging what is already inventoried is the common case; adding a unit
+            and tagging it in one go is the rarer one and lives in rapid inventory. */}
+        <div style={{ width: 180 }}>
+          <Button href="/admin/nfc?filter=untagged" size="sm">Units needing tags</Button>
+        </div>
       </div>
 
       <StatGrid min={150}>
@@ -92,6 +96,9 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
       {filter === "untagged" ? (
         <>
           <SectionTitle>Assets without a tag</SectionTitle>
+          <p style={{ fontSize: 13.5, color: "var(--ink-soft)", margin: "-4px 0 10px" }}>
+            Open one to pair a tag to it. Nothing here needs re-entering — these units already exist.
+          </p>
           {untagged.length === 0 ? (
             <EmptyState title="Every active asset is tagged" />
           ) : (
@@ -103,7 +110,7 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
                     href={`/admin/equipment/${asset.id}`}
                     title={asset.name}
                     subtitle={`${asset.location.name}${asset.area ? ` · ${asset.area.name}` : ""} · ${asset.internalAssetId}`}
-                    right={<Pill tone="warn">Needs tag</Pill>}
+                    right={<Pill tone="warn">Pair a tag →</Pill>}
                   />
                 </div>
               ))}

@@ -7,6 +7,7 @@ import { VerifyEquipment } from "./verify";
 import { EditSchedule } from "./edit-schedule";
 import { EditCondition } from "./edit-condition";
 import { PairTag } from "./pair-tag";
+import { RemoveUnit } from "./remove-unit";
 
 /** The internal view of an asset: passport, tag state, audit trail, verification. */
 export default async function AdminEquipmentDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -181,6 +182,16 @@ export default async function AdminEquipmentDetail({ params }: { params: Promise
           </div>
         ))}
       </List>
+      {actor.capabilities.has("equipment.archive") && !equipment.archivedAt ? (
+        <div style={{ marginTop: 22 }}>
+          <RemoveUnit
+            equipmentId={equipment.id}
+            unitName={equipment.name}
+            locationId={equipment.locationId}
+          />
+        </div>
+      ) : null}
+
       <div style={{ height: 30 }} />
     </main>
   );

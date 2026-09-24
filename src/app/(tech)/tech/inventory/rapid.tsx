@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card, Button, Pill } from "@/components/ui/primitives";
 import { compressImage, uploadPhoto } from "@/lib/photos/client";
-import { isNfcSupported, canLockTags } from "@/lib/nfc/web-nfc";
+import { isNfcSupported, canLockTags, nfcBlocker, nfcBlockerMessage, type NfcBlocker } from "@/lib/nfc/web-nfc";
 import { mintWriteVerifyPair, type PairPhase } from "@/lib/nfc/pairing";
 
 interface LocationOption {
@@ -71,8 +71,12 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
   const [error, setError] = useState<string | null>(null);
   const [sessionCount, setSessionCount] = useState(0);
   const [nfcAvailable, setNfcAvailable] = useState(false);
+  const [blocker, setBlocker] = useState<NfcBlocker>(null);
 
-  useEffect(() => setNfcAvailable(isNfcSupported()), []);
+  useEffect(() => {
+    setNfcAvailable(isNfcSupported());
+    setBlocker(nfcBlocker());
+  }, []);
 
   const field: React.CSSProperties = {
     width: "100%", padding: "12px 13px", borderRadius: 11,
@@ -201,9 +205,13 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
                   {tagState === "failed" ? "Try again" : "Assign NFC tag"}
                 </Button>
               ) : (
-                <Card style={{ background: "var(--warn-soft)", borderColor: "transparent", fontSize: 13.5, textAlign: "left" }}>
-                  This browser cannot write NFC tags. The asset is saved and will appear in
-                  <strong> Assets without tags</strong> for tagging on a supported device — its QR code works in the meantime.
+                <Card style={{ background: "var(--warn-soft)", borderColor: "transparent", fontSize: 13.5, textAlign: "left", lineHeight: 1.5 }}>
+                  {nfcBlockerMessage(blocker)}
+                  <div style={{ marginTop: 8 }}>
+                    The unit is saved either way. Open it from{" "}
+                    <strong>Assets without tags</strong> to tag it — on an iPhone that page
+                    hands you a link to write with a free NFC app.
+                  </div>
                 </Card>
               )
             ) : null}

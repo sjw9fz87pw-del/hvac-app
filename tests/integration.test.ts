@@ -15,7 +15,8 @@ import { AuthError, type Actor } from "@/lib/auth/session";
 import { capabilitiesFor } from "@/lib/auth/permissions";
 import { withIdempotency, IdempotencyConflict } from "@/lib/sync/idempotency";
 import { completeService, ProofIncompleteError } from "@/lib/maintenance/completion";
-import { pairTag, unpairTag, replaceTag, resolveTap, mintTag, recordTagLock, tagUrl, TagOperationError } from "@/lib/nfc/service";
+import { pairTag, unpairTag, replaceTag, resolveTap, mintTag, recordTagLock, tagUrl, pairTagByTap, pendingTagForPairing, TagOperationError } from "@/lib/nfc/service";
+import { equipmentDeletionCheck, deleteEquipment } from "@/lib/api/equipment-removal";
 import { setIntervalOverride, setNextDue } from "@/lib/maintenance/planning";
 import { generateVisit } from "@/lib/maintenance/scheduling";
 
@@ -652,5 +653,126 @@ describe("generating a visit", () => {
 
     await prisma.maintenanceSchedule.deleteMany({ where: { equipmentId } });
     await prisma.equipment.delete({ where: { id: equipmentId } });
+  });
+});
+
+describe("tagging from a phone that cannot write", () => {
+  const staff = () => actor({ userId: ctx.techId, roles: ["OPERATIONS_ADMIN"], internal: true });
+
+  // The iPhone route: the chip is written by another app, so the tap itself is
+  // what proves the chip carries this token.
+  async function preparedTag() {
+    const { tag, payload } = await mintTag({ organizationId: ctx.orgA, actor: staff() });
+    return { tag, payload };
+  }
+
+  it("lets whoever is tagging claim a written tag, and nobody else", async () => {
+    const { tag, payload } = await preparedTag();
+
+    const tagger = actor({ userId: ctx.techId, roles: ["SERVICE_MANAGER"], internal: true });
+    expect(await pendingTagForPairing(payload, tagger)).toMatchObject({ tagId: tag.id });
+
+    // A customer holds no pairing right, so to them this stays unassigned
+    // stock and the generic denial is all they ever see.
+    const customer = actor({ userId: ctx.ownerA, organizationIds: new Set([ctx.orgA]) });
+    expect(await pendingTagForPairing(payload, customer)).toBeNull();
+
+    // Neither does someone from another tenant, even holding the capability.
+    const outsider = actor({ userId: ctx.ownerB, roles: ["SERVICE_MANAGER"], organizationIds: new Set([ctx.orgB]) });
+    expect(await pendingTagForPairing(payload, outsider)).toBeNull();
+
+    await prisma.tagEvent.deleteMany({ where: { tagId: tag.id } });
+    await prisma.tag.delete({ where: { id: tag.id } });
+  });
+
+  it("pairs on the tap and records that a tap is what verified it", async () => {
+    const { tag, payload } = await preparedTag();
+    const tagger = actor({ userId: ctx.techId, roles: ["SERVICE_MANAGER"], internal: true });
+
+    await pairTagByTap({ payload, equipmentId: ctx.assetA, actor: tagger });
+
+    const stored = await prisma.tag.findUniqueOrThrow({ where: { id: tag.id } });
+    expect(stored.state).toBe("ACTIVE");
+    expect(stored.verifiedAt).not.toBeNull();
+
+    const verifiedEvent = await prisma.tagEvent.findFirst({
+      where: { tagId: tag.id, type: "VERIFIED" },
+    });
+    expect((verifiedEvent?.detail as { via?: string } | null)?.via).toBe("TAP");
+
+    // And a forged payload gets nowhere near the database.
+    await expect(
+      pairTagByTap({ payload: `${payload}x`, equipmentId: ctx.assetA, actor: tagger }),
+    ).rejects.toThrow();
+
+    await unpairTag({ equipmentId: ctx.assetA, actor: tagger, reason: "test" });
+    await prisma.tagAssignment.deleteMany({ where: { tagId: tag.id } });
+    await prisma.tagEvent.deleteMany({ where: { tagId: tag.id } });
+    await prisma.tag.delete({ where: { id: tag.id } });
+  });
+});
+
+describe("removing units", () => {
+  const staff = () => actor({ userId: ctx.techId, roles: ["OPERATIONS_ADMIN"], internal: true });
+
+  async function spareUnit() {
+    return prisma.equipment.create({
+      data: {
+        organizationId: ctx.orgA, locationId: ctx.locA, areaId: ctx.areaA,
+        name: `Spare ${Math.random().toString(36).slice(2, 8)}`,
+        category: "REFRIGERATION", equipmentType: "Reach-in refrigerator",
+        internalAssetId: `SP-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+      },
+    });
+  }
+
+  it("deletes a unit that never recorded anything", async () => {
+    const unit = await spareUnit();
+    await prisma.maintenanceSchedule.create({
+      data: {
+        equipmentId: unit.id, serviceTypeId: ctx.serviceTypeId, intervalDays: 30,
+        intervalSource: "SYSTEM", nextDueAt: new Date(), status: "UPCOMING",
+      },
+    });
+
+    expect((await equipmentDeletionCheck(unit.id)).blockers).toEqual([]);
+    await deleteEquipment(unit.id, { userId: ctx.techId });
+
+    expect(await prisma.equipment.findUnique({ where: { id: unit.id } })).toBeNull();
+    // The schedule goes with it rather than being left pointing at nothing.
+    expect(await prisma.maintenanceSchedule.count({ where: { equipmentId: unit.id } })).toBe(0);
+  });
+
+  it("refuses a unit that has been serviced, and names why", async () => {
+    const unit = await spareUnit();
+    await prisma.serviceRecord.create({
+      data: {
+        organizationId: ctx.orgA, locationId: ctx.locA, equipmentId: unit.id,
+        serviceTypeId: ctx.serviceTypeId, technicianId: ctx.techId,
+        performedAt: new Date(), contentHash: `hash-${Math.random()}`,
+      },
+    });
+
+    const check = await equipmentDeletionCheck(unit.id);
+    expect(check.blockers).toContain("1 service record");
+
+    await prisma.serviceRecord.deleteMany({ where: { equipmentId: unit.id } });
+    await prisma.equipment.delete({ where: { id: unit.id } });
+  });
+
+  it("returns the tag to stock instead of destroying it", async () => {
+    const unit = await spareUnit();
+    const { tag } = await mintTag({ organizationId: ctx.orgA, actor: staff() });
+    await pairTag({ tagId: tag.id, equipmentId: unit.id, verified: true, actor: staff() });
+
+    await deleteEquipment(unit.id, { userId: ctx.techId });
+
+    // The chip still exists on somebody's shelf; the record of it should too.
+    const after = await prisma.tag.findUniqueOrThrow({ where: { id: tag.id } });
+    expect(after.state).toBe("UNASSIGNED");
+    expect(after.organizationId).toBeNull();
+
+    await prisma.tagEvent.deleteMany({ where: { tagId: tag.id } });
+    await prisma.tag.delete({ where: { id: tag.id } });
   });
 });

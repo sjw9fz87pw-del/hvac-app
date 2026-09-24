@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Pill } from "@/components/ui/primitives";
-import { isNfcSupported } from "@/lib/nfc/web-nfc";
+import { isNfcSupported, nfcBlocker, nfcBlockerMessage, type NfcBlocker } from "@/lib/nfc/web-nfc";
 import { mintWriteVerifyPair, pairPhaseLabel, type PairPhase } from "@/lib/nfc/pairing";
+import { PrepareTag } from "./prepare-tag";
 
 /**
  * Pair a blank tag to a unit that already exists.
@@ -23,6 +24,7 @@ export function PairTag({ equipmentId, organizationId, unitName }: {
 }) {
   const router = useRouter();
   const [capable, setCapable] = useState<boolean | null>(null);
+  const [blocker, setBlocker] = useState<NfcBlocker>(null);
   const [phase, setPhase] = useState<PairPhase | null>(null);
   const [lock, setLock] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +32,10 @@ export function PairTag({ equipmentId, organizationId, unitName }: {
   const [done, setDone] = useState(false);
 
   // Detected after mount: the server cannot know what the phone can do.
-  useEffect(() => setCapable(isNfcSupported()), []);
+  useEffect(() => {
+    setCapable(isNfcSupported());
+    setBlocker(nfcBlocker());
+  }, []);
 
   async function pair() {
     setError(null);
@@ -63,12 +68,12 @@ export function PairTag({ equipmentId, organizationId, unitName }: {
       <Pill tone="warn">No tag paired</Pill>
 
       {capable === false ? (
-        <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 8, lineHeight: 1.5 }}>
-          This phone can tap a tag to open a unit, but no browser on iPhone can
-          write one. Do the tagging round on the Android phone — open this same
-          page there and the button appears. Every tag it writes is readable from
-          any phone afterwards, iPhone included.
-        </p>
+        <>
+          <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 8, lineHeight: 1.5 }}>
+            {nfcBlockerMessage(blocker)}
+          </p>
+          {blocker === "ios" ? <PrepareTag equipmentId={equipmentId} organizationId={organizationId} /> : null}
+        </>
       ) : (
         <>
           <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 8, lineHeight: 1.5 }}>

@@ -9,7 +9,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/client";
 
 export type AuditAction =
-  | "asset.created" | "asset.updated" | "asset.archived" | "asset.verified"
+  | "asset.created" | "asset.updated" | "asset.archived" | "asset.verified" | "asset.deleted"
   | "asset.replaced" | "asset.frequency_changed"
   | "tag.minted" | "tag.assigned" | "tag.replaced" | "tag.unpaired"
   | "tag.reassigned" | "tag.revoked" | "tag.verified"

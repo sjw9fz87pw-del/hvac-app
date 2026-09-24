@@ -3,7 +3,8 @@ import { prisma } from "@/lib/db/client";
 import { requireCapability, AuthError } from "@/lib/auth/session";
 import { canAccessAsset, canSeeInternalNotes } from "@/lib/auth/scope";
 import { toCustomerEquipment, toCustomerServiceRecord } from "@/lib/api/serializers";
-import { ok, route } from "@/lib/api/respond";
+import { ok, fail, route } from "@/lib/api/respond";
+import { equipmentDeletionCheck, deleteEquipment } from "@/lib/api/equipment-removal";
 
 /**
  * The Equipment Passport. Service history is loaded alongside the asset and is
@@ -66,4 +67,30 @@ export const GET = route(async (_request: NextRequest, ctx: { params: Promise<{ 
       severity: i.severity, createdAt: i.createdAt.toISOString(),
     })),
   });
+});
+
+/**
+ * Delete a unit outright.
+ *
+ * Only a unit with nothing recorded against it. Anything that has been
+ * serviced, had an issue raised, or appeared on a completed visit is refused
+ * with what is holding it — those units get archived instead, which keeps the
+ * history and stops the schedule.
+ */
+export const DELETE = route(async (_request: NextRequest, ctx: { params: Promise<{ id: string }> }) => {
+  const actor = await requireCapability("equipment.archive");
+  const { id } = await ctx.params;
+
+  const equipment = await prisma.equipment.findUnique({ where: { id } });
+  if (!equipment || !canAccessAsset(actor, equipment)) throw new AuthError(404, "Not found");
+
+  const check = await equipmentDeletionCheck(id);
+  if (check.blockers.length > 0) {
+    return fail(409, `This unit has ${check.blockers.join(", ")}. Archive it instead so the history is kept.`, {
+      blockers: check.blockers,
+    });
+  }
+
+  const removed = await deleteEquipment(id, { userId: actor.userId });
+  return ok({ deleted: true, name: removed.name, releasedTag: check.hasTag, cancelledTasks: check.pendingTasks });
 });

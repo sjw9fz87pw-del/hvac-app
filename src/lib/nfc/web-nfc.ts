@@ -32,6 +32,51 @@ export function isNfcSupported(): boolean {
   return typeof window !== "undefined" && reader() !== null;
 }
 
+/**
+ * Why this particular browser cannot write a tag.
+ *
+ * "Unsupported" covers four different situations with four different
+ * remedies, and one generic sentence leaves the person with no idea which one
+ * they are in. Web NFC is Chrome and Edge on Android only: Apple does not
+ * expose NFC writing to web pages at all, so on iOS this is not a setting that
+ * can be turned on — Safari, Chrome for iOS and every other iOS browser are the
+ * same engine underneath, and none of them can do it.
+ */
+export type NfcBlocker = "ios" | "android-browser" | "android-nfc-off" | "desktop" | null;
+
+export function nfcBlocker(): NfcBlocker {
+  if (typeof window === "undefined") return null;
+  if (reader()) return null;
+
+  const ua = navigator.userAgent;
+  // iPadOS reports itself as a Mac, so touch support is what distinguishes it.
+  const iOS = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  if (iOS) return "ios";
+
+  if (!/Android/.test(ua)) return "desktop";
+
+  // Chrome's token appears in Edge and most Chromium shells too; a webview
+  // inside another app (wv) has no Web NFC even when Chrome does.
+  const chromium = /Chrome\/\d+/.test(ua) && !/\bwv\b/.test(ua);
+  return chromium ? "android-nfc-off" : "android-browser";
+}
+
+/** What to tell someone, and what they can actually do about it. */
+export function nfcBlockerMessage(blocker: NfcBlocker): string {
+  switch (blocker) {
+    case "ios":
+      return "iPhones cannot write NFC tags from a browser — Apple does not allow it, in Safari or any other iOS browser. Use the Android phone, or prepare the tag here and write it with a free NFC app.";
+    case "android-browser":
+      return "This browser cannot write NFC tags. Open the same page in Chrome on this phone and the button appears.";
+    case "android-nfc-off":
+      return "Chrome can write tags on this phone, but NFC looks switched off. Turn on NFC in Settings → Connected devices, then reload this page.";
+    case "desktop":
+      return "This computer has no NFC reader. Tagging is done on the phone.";
+    default:
+      return "";
+  }
+}
+
 export class NfcUnsupportedError extends Error {
   constructor() {
     super("This device cannot read NFC tags in the browser. Use the QR code instead.");
