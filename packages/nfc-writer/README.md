@@ -58,11 +58,25 @@ Each row has a test in `tests/pair.test.ts`.
 ```
 src/writer.ts    TagWriter interface, pickTagWriter, NfcUnsupportedError
 src/web-nfc.ts   TagWriter for Web NFC (Chrome on Android)
+src/desk-reader.ts TagWriter for a USB reader, through the local bridge
+desk-reader/     The bridge: python3 desk_reader.py, no install
 src/blocker.ts   Why a browser cannot write, and what to tell the person
 src/tag-api.ts   TagApi interface, and the HTTP version for /api/v1/tags/*
 src/pair.ts      pairTagToUnit, replaceUnitTag, payloadFromReadBack
 tests/           Fakes for the radio, the browser and the server
 ```
+
+## Pairing from a computer with a USB reader
+
+`createDeskReaderWriter()` is a `TagWriter` for a USB NFC reader (an ACR122U,
+say) plugged into the computer the app is open on. Inside the Clearline Mac
+app (`desktop/mac`) it uses the reader the app has built in; in an ordinary
+browser it talks to `desk-reader/desk_reader.py` on `127.0.0.1:8766`.
+
+Its `isSupported()` is whatever the last `probe()` found. The app offers it in
+the NFC console (pair each of "Assets without a tag", scan a tag) and on a
+unit's own page, through `pairingWriter()` in `src/lib/nfc/writer.ts`, so tags
+are always attached to units that already exist, never in rapid inventory.
 
 ## Adding an iPhone writer later
 

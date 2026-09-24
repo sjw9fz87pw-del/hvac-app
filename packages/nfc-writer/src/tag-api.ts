@@ -28,6 +28,12 @@ export interface TagApi {
   reportWriteFailure(tagId: string, error: string): Promise<void>;
   /** Link a verified tag to a unit that already exists. */
   pair(tagId: string, unitId: string): Promise<void>;
+  /**
+   * Link a tag that was created earlier (written and verified, never linked)
+   * to a unit, from what was just read off it. The server checks the
+   * signature itself, so this takes the payload rather than a tag id.
+   */
+  pairScanned(payload: string, unitId: string): Promise<{ tagId: string }>;
   /** Revoke the unit's current tag and pair the new one, in one step on the server. */
   replace(unitId: string, newTagId: string, reason: string): Promise<void>;
   /** Remember whether the chip was locked, either way. */
@@ -86,6 +92,17 @@ export function createHttpTagApi(opts: HttpTagApiOptions = {}): TagApi {
         { "idempotency-key": newKey() },
       );
       if (!response.ok) throw await errorFrom(response, "Pairing failed");
+    },
+
+    async pairScanned(payload, unitId) {
+      const response = await post(
+        "pair-by-tap",
+        { payload, equipmentId: unitId },
+        { "idempotency-key": newKey() },
+      );
+      if (!response.ok) throw await errorFrom(response, "Pairing failed");
+      const body = (await response.json()) as { tagId: string };
+      return { tagId: body.tagId };
     },
 
     async replace(unitId, newTagId, reason) {

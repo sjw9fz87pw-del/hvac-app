@@ -143,7 +143,7 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
     if (!createdId || !location) return;
     setTagMessage(null);
     const shown: Record<PairPhase, TagState> = {
-      minting: "writing", writing: "writing", verifying: "verifying",
+      minting: "writing", writing: "writing", verifying: "verifying", reading: "verifying",
       pairing: "verifying", locking: "locking",
     };
     try {
