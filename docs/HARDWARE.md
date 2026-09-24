@@ -192,9 +192,10 @@ point. The QR fallback covers every one of these cases and needs no explanation.
 
 A USB PC/SC reader — **ACR122U** (~$35–45, ubiquitous, somewhat dated) or
 **Identiv uTrust 3700F** (~$50–60, better behaved) — lets you encode a batch of
-tags at a desk instead of one at a time on site. The local bridge is
-`packages/nfc-writer/desk-reader/desk_reader.py`; pair from a unit's page with
-**Use the USB reader on this computer**.
+tags at a desk instead of one at a time on site. Use the Clearline Mac app
+(`desktop/mac`), which has the reader built in, and pair from **NFC → Assets
+without tags**. In a plain browser, `packages/nfc-writer/desk-reader/desk_reader.py`
+does the same job.
 
 ---
 

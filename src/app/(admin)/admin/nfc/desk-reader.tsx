@@ -3,7 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Card, Divider, List, Pill, Row } from "@/components/ui/primitives";
-import { pairTagToUnit, pairPhaseLabel, type PairPhase } from "@pmops/nfc-writer";
+import { isInMacApp, pairTagToUnit, pairPhaseLabel, type PairPhase } from "@pmops/nfc-writer";
 import { deskReader, pairingWriter, rememberDeskReader, rememberedDeskReader, tagApi } from "@/lib/nfc/writer";
 
 /**
@@ -55,9 +55,10 @@ export function DeskReaderBar() {
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
 
-  // A computer that has used its reader before reconnects without being asked.
+  // The Mac app always has its reader; a browser that has used the reader
+  // before reconnects without being asked.
   useEffect(() => {
-    if (current.state === "idle" && rememberedDeskReader()) void connect();
+    if (current.state === "idle" && (isInMacApp() || rememberedDeskReader())) void connect();
   }, []);
 
   async function scan() {

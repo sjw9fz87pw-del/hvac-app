@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createDeskReaderWriter, pairTagToUnit, pairPhaseLabel, pickTagWriter, createWebNfcWriter, DESK_READER_URL } from "../src";
+import {
+  createDeskReaderWriter, pairTagToUnit, pairPhaseLabel, pickTagWriter, createWebNfcWriter, DESK_READER_URL,
+  macAppTransport, isInMacApp,
+} from "../src";
 import { fakeApi, type Log } from "./fakes";
 
 interface Call { method: string; path: string; body: Record<string, unknown> | null }
@@ -181,5 +184,47 @@ describe("pairing through the desk reader", () => {
     expect(pairPhaseLabel("writing", "desk-reader")).not.toMatch(/phone|tap/i);
     expect(pairPhaseLabel("verifying", "desk-reader")).not.toMatch(/phone|tap/i);
     expect(pairPhaseLabel("writing")).toMatch(/phone/);
+  });
+});
+
+describe("inside the Clearline Mac app", () => {
+  it("sends each operation to the app's message handler and returns its answer", async () => {
+    const sent: unknown[] = [];
+    const handler = {
+      async postMessage(message: unknown) {
+        sent.push(message);
+        const op = (message as { op: string }).op;
+        if (op === "status") return { reader: "ACS ACR122U PICC Interface", tag: null, hint: null };
+        if (op === "write") return { ok: true, uid: "04AA", type: "NTAG213" };
+        if (op === "read") return { ok: true, uid: "04AA", url: "https://a.co/t/x" };
+        return { locked: true };
+      },
+    };
+    const desk = createDeskReaderWriter({ transport: macAppTransport(() => handler) });
+    expect((await desk.probe()).reader).toBe("ACS ACR122U PICC Interface");
+    await desk.write("https://a.co/t/x", 3_000);
+    expect(await desk.readOnce()).toBe("https://a.co/t/x");
+    expect(await desk.lock()).toEqual({ locked: true });
+    expect(sent).toEqual([
+      { op: "status" },
+      { op: "write", url: "https://a.co/t/x", waitMs: 3_000 },
+      { op: "read", waitMs: 20_000, uid: "04AA" },
+      { op: "lock", uid: "04AA" },
+    ]);
+  });
+
+  it("is not supported outside the app", async () => {
+    expect(isInMacApp()).toBe(false);
+    const desk = createDeskReaderWriter({ transport: macAppTransport(() => null) });
+    expect((await desk.probe()).bridge).toBe(false);
+    expect(desk.isSupported()).toBe(false);
+  });
+
+  it("gives up on an app that never answers", async () => {
+    const desk = createDeskReaderWriter({
+      transport: macAppTransport(() => ({ postMessage: () => new Promise(() => {}) })),
+      probeTimeoutMs: 20,
+    });
+    expect((await desk.probe()).bridge).toBe(false);
   });
 });

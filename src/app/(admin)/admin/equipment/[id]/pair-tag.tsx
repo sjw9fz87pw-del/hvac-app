@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Pill } from "@/components/ui/primitives";
-import { blockerMessage, pairTagToUnit, pairPhaseLabel, type NfcBlocker, type PairPhase } from "@pmops/nfc-writer";
+import { blockerMessage, isInMacApp, pairTagToUnit, pairPhaseLabel, type NfcBlocker, type PairPhase } from "@pmops/nfc-writer";
 import { deskReader, pairingWriter, rememberDeskReader, rememberedDeskReader, tagApi } from "@/lib/nfc/writer";
 import { PrepareTag } from "./prepare-tag";
 
@@ -56,10 +56,10 @@ export function PairTag({ equipmentId, organizationId, unitName }: {
   }
 
   // Detected after mount: the server cannot know what the phone can do. A
-  // computer that has used its desk reader before reconnects to it quietly.
+  // Mac app, or a browser that has used the desk reader before, connects quietly.
   useEffect(() => {
     refreshWriter();
-    if (pairingWriter().blocker() === "desktop" && rememberedDeskReader()) void connectDeskReader();
+    if (pairingWriter().blocker() === "desktop" && (isInMacApp() || rememberedDeskReader())) void connectDeskReader();
   }, []);
 
   const desk = writerKind === "desk-reader";
