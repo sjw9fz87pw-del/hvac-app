@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Pill } from "@/components/ui/primitives";
-import { blockerMessage, isInMacApp, pairTagToUnit, pairPhaseLabel, type NfcBlocker, type PairPhase } from "@pmops/nfc-writer";
-import { deskReader, pairingWriter, pairWithReader, rememberDeskReader, rememberedDeskReader, tagApi } from "@/lib/nfc/writer";
+import { blockerMessage, pairTagToUnit, pairPhaseLabel, type NfcBlocker, type PairPhase } from "@pmops/nfc-writer";
+import { pairingWriter, pairWithReader, tagApi } from "@/lib/nfc/writer";
+import { connectReader, READER_NAME, useReaderStatus, withReader } from "@/lib/nfc/reader-status";
 import { PrepareTag } from "./prepare-tag";
 
 /**
@@ -36,31 +37,17 @@ export function PairTag({ equipmentId, organizationId, unitName }: {
   const [lockNote, setLockNote] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [writerKind, setWriterKind] = useState<string | null>(null);
-  const [deskHint, setDeskHint] = useState<string | null>(null);
-  const [probing, setProbing] = useState(false);
+  // Watched continuously: plugging the NFC reader/writer in switches this
+  // panel over to it without anyone pressing anything.
+  const reader = useReaderStatus();
 
-  function refreshWriter() {
+  // Detected after mount: the server cannot know what the phone can do.
+  useEffect(() => {
     const writer = pairingWriter();
     setCapable(writer.isSupported());
     setBlocker(writer.blocker());
     setWriterKind(writer.kind);
-  }
-
-  async function connectDeskReader() {
-    setProbing(true);
-    const status = await deskReader.probe();
-    setProbing(false);
-    if (deskReader.isSupported()) rememberDeskReader();
-    setDeskHint(deskReader.isSupported() ? null : status.hint);
-    refreshWriter();
-  }
-
-  // Detected after mount: the server cannot know what the phone can do. A
-  // Mac app, or a browser that has used the desk reader before, connects quietly.
-  useEffect(() => {
-    refreshWriter();
-    if (pairingWriter().blocker() === "desktop" && (isInMacApp() || rememberedDeskReader())) void connectDeskReader();
-  }, []);
+  }, [reader.state]);
 
   const desk = writerKind === "desk-reader";
 
@@ -69,7 +56,7 @@ export function PairTag({ equipmentId, organizationId, unitName }: {
     setLockNote(null);
     try {
       const outcome = desk
-        ? await pairWithReader({ organizationId, unitId: equipmentId, lock, onPhase: setPhase })
+        ? await withReader(() => pairWithReader({ organizationId, unitId: equipmentId, lock, onPhase: setPhase }))
         : await pairTagToUnit({
           organizationId, unitId: equipmentId, lock, writer: pairingWriter(), api: tagApi, onPhase: setPhase,
         });
@@ -106,11 +93,11 @@ export function PairTag({ equipmentId, organizationId, unitName }: {
           {blocker === "ios" ? <PrepareTag equipmentId={equipmentId} organizationId={organizationId} /> : null}
           {blocker === "desktop" ? (
             <div style={{ marginTop: 10, maxWidth: 260 }}>
-              <Button variant="secondary" size="sm" onClick={connectDeskReader} disabled={probing}>
-                {probing ? "Looking for the reader…" : "Use the USB reader on this computer"}
+              <Button variant="secondary" size="sm" onClick={connectReader} disabled={reader.state === "connecting"}>
+                {reader.state === "connecting" ? `Looking for the ${READER_NAME}…` : `Use the ${READER_NAME}`}
               </Button>
-              {deskHint ? (
-                <p style={{ fontSize: 13, color: "var(--ink-faint)", marginTop: 8, lineHeight: 1.5 }}>{deskHint}</p>
+              {reader.state === "unavailable" ? (
+                <p style={{ fontSize: 13, color: "var(--ink-faint)", marginTop: 8, lineHeight: 1.5 }}>{reader.hint}</p>
               ) : null}
             </div>
           ) : null}
@@ -119,7 +106,7 @@ export function PairTag({ equipmentId, organizationId, unitName }: {
         <>
           <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 8, lineHeight: 1.5 }}>
             {desk
-              ? "Put a blank tag, or one made with Create tag, flat on the USB reader and leave it there. A blank tag is written and checked by reading it back; either way it is only then linked to this unit."
+              ? "Put a blank tag, or one made with Create tag, flat on the NFC reader/writer and leave it there. A blank tag is written and checked by reading it back; either way it is only then linked to this unit."
               : "Hold a blank tag against the back of the phone. It gets written, checked by reading it back, and only then linked to this unit."}
           </p>
 

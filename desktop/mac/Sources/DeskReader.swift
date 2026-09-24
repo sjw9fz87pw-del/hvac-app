@@ -19,10 +19,10 @@ final class DeskReader {
 
     func status() -> JSON {
         guard let manager = TKSmartCardSlotManager.default else {
-            return ["reader": NSNull(), "tag": NSNull(), "hint": "This app cannot reach smart-card readers."]
+            return ["reader": NSNull(), "tag": NSNull(), "hint": "This app cannot reach the NFC reader/writer."]
         }
         guard let name = manager.slotNames.first, let slot = manager.slotNamed(name) else {
-            return ["reader": NSNull(), "tag": NSNull(), "hint": "No NFC reader is plugged in."]
+            return ["reader": NSNull(), "tag": NSNull(), "hint": "No NFC reader/writer is plugged in."]
         }
         guard slot.state == .validCard, let card = slot.makeSmartCard() else {
             return ["reader": name, "tag": NSNull(), "hint": "Put a tag on the reader."]
@@ -107,11 +107,11 @@ final class DeskReader {
     }
 
     private func withTag(waitMs: Int, uid: String?, _ op: (Session) throws -> JSON) throws -> JSON {
-        guard let manager = TKSmartCardSlotManager.default else { throw TagError(message: "This app cannot reach smart-card readers.") }
+        guard let manager = TKSmartCardSlotManager.default else { throw TagError(message: "This app cannot reach the NFC reader/writer.") }
         let deadline = Date().addingTimeInterval(Double(min(max(waitMs, 0), 60_000)) / 1000)
         while true {
             guard let name = manager.slotNames.first, let slot = manager.slotNamed(name) else {
-                throw TagError(message: "No NFC reader is plugged in.")
+                throw TagError(message: "No NFC reader/writer is plugged in.")
             }
             if slot.state == .validCard, let card = slot.makeSmartCard() {
                 return try Session(card).run { s in

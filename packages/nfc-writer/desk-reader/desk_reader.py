@@ -318,7 +318,7 @@ def with_tag(op, wait_ms: int = 0, uid: str | None = None) -> dict:
         while True:
             readers = pcsc.readers()
             if not readers:
-                raise TagError("No NFC reader is plugged in.")
+                raise TagError("No NFC reader/writer is plugged in.")
             try:
                 with pcsc.connect(readers[0]) as card:
                     if uid and get_uid(card) not in ("", uid):
@@ -337,7 +337,7 @@ def status() -> dict:
         with reader_lock, PCSC() as pcsc:
             readers = pcsc.readers()
             if not readers:
-                return {"reader": None, "tag": None, "hint": "No NFC reader is plugged in."}
+                return {"reader": None, "tag": None, "hint": "No NFC reader/writer is plugged in."}
             try:
                 with pcsc.connect(readers[0]) as card:
                     info = identify(card)

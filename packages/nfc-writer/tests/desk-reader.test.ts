@@ -80,7 +80,7 @@ describe("desk reader writer", () => {
     const desk = createDeskReaderWriter({ fetch: fakeBridge({ down: true }).fetch });
     const status = await desk.probe();
     expect(status.bridge).toBe(false);
-    expect(status.hint).toMatch(/desk_reader\.py/);
+    expect(status.hint).toMatch(/Clearline app/);
     expect(desk.isSupported()).toBe(false);
     expect(desk.blocker()).toBe("desktop");
   });
