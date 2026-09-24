@@ -42,6 +42,10 @@ describe("why a browser cannot write a tag", () => {
     for (const m of messages) expect(m.length).toBeGreaterThan(0);
     expect(blockerMessage(null)).toBe("");
   });
+
+  it("points an iPhone in a browser at the iPhone app, which can write tags", () => {
+    expect(blockerMessage("ios")).toContain("Clearline iPhone app");
+  });
 });
 
 describe("choosing a writer", () => {

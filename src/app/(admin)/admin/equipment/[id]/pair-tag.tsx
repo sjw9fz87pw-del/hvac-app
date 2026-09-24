@@ -117,7 +117,9 @@ export function PairTag({ equipmentId, organizationId, unitName }: {
           <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 8, lineHeight: 1.5 }}>
             {desk
               ? "Put a blank tag, or one made with Create tag, flat on the NFC reader/writer and leave it there. A blank tag is written and checked by reading it back; either way it is only then linked to this unit."
-              : "Hold a blank tag against the back of the phone. It gets written, checked by reading it back, and only then linked to this unit."}
+              : writerKind === "native-ios"
+                ? "Hold the top of the iPhone against a blank tag and keep it there. It gets written, checked by reading it back, and only then linked to this unit."
+                : "Hold a blank tag against the back of the phone. It gets written, checked by reading it back, and only then linked to this unit."}
           </p>
 
           <label style={{ display: "flex", alignItems: "center", gap: 9, marginTop: 10, fontSize: 13.5, cursor: "pointer" }}>

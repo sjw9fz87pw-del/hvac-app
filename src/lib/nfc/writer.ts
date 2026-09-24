@@ -4,17 +4,20 @@ import {
   createDeskReaderWriter, createHttpTagApi, createWebNfcWriter, pairCreatedTag, pairTagToUnit, pickTagWriter,
   type PairPhase, type TagOutcome, type TagWriter,
 } from "@pmops/nfc-writer";
+import { capacitorEnvironment } from "./capacitor";
+import { createNativeIosWriter } from "./native-ios";
 
 /**
  * The app's one way to reach an NFC radio. Everything about writing, reading
  * back and locking tags lives in `@pmops/nfc-writer`; this file only decides
  * which writers this app offers, most capable first.
  *
- * A native iPhone writer, when there is one, goes ahead of Web NFC in this list
- * and every tagging screen picks it up without changing.
+ * The iPhone app's Core NFC writer goes first: it is only supported inside
+ * that app, so in every browser the list falls through to Web NFC.
  */
+const nativeIos = createNativeIosWriter(capacitorEnvironment);
 const webNfc = createWebNfcWriter();
-const writers: TagWriter[] = [webNfc];
+const writers: TagWriter[] = [nativeIos, webNfc];
 
 export function tagWriter(): TagWriter {
   return pickTagWriter(writers);
@@ -27,9 +30,12 @@ export function tagWriter(): TagWriter {
  */
 export const deskReader = createDeskReaderWriter();
 
-/** For pairing from a unit's page: the NFC reader/writer once found, else the phone. */
+/**
+ * For pairing from a unit's page: the NFC reader/writer once found, else the
+ * phone (the iPhone app's writer inside that app, Web NFC otherwise).
+ */
 export function pairingWriter(): TagWriter {
-  return pickTagWriter([deskReader, webNfc]);
+  return pickTagWriter([deskReader, nativeIos, webNfc]);
 }
 
 /**

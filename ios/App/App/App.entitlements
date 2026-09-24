@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Core NFC: write, read back and lock NDEF tags (TagNfcPlugin.swift). -->
+	<key>com.apple.developer.nfc.readersession.formats</key>
+	<array>
+		<string>TAG</string>
+	</array>
+	<!-- Tapping a tag opens the app instead of Safari. The host must match the
+	     one written on the tags (APP_BASE_URL) and serve
+	     /.well-known/apple-app-site-association (see docs/IOS-APP.md). -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:clearline-equipment-care.netlify.app</string>
+	</array>
+</dict>
+</plist>
