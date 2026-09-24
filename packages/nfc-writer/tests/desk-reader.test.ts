@@ -115,6 +115,18 @@ describe("desk reader writer", () => {
     expect(bridge.calls.find((c) => c.path === "/lock")?.body).toEqual({ uid: "04A1B2C3D4E5F6" });
   });
 
+  it("scans whatever tag is on the reader when it is not reading back a write", async () => {
+    const bridge = fakeBridge();
+    const desk = createDeskReaderWriter({ fetch: bridge.fetch });
+    await desk.probe();
+    await desk.write("https://a.co/t/x");
+    await desk.readOnce();
+    await desk.readOnce();
+    const reads = bridge.calls.filter((c) => c.path.startsWith("/read")).map((c) => c.path);
+    expect(reads[0]).toContain("uid=");
+    expect(reads[1]).not.toContain("uid=");
+  });
+
   it("reports a lock failure instead of throwing", async () => {
     const desk = createDeskReaderWriter({ fetch: fakeBridge({ lock: { locked: false, reason: "Locking is only supported on NTAG213/215/216", unsupported: true } }).fetch });
     await desk.probe();

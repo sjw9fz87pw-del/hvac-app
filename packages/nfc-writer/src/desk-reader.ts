@@ -14,8 +14,10 @@
  * screen decides when to probe.
  *
  * The tag sits still on the reader for the whole pairing, so the uid seen at
- * write time is passed back on the read-back and the lock. If someone swaps
- * tags in between, the bridge refuses instead of locking the wrong one.
+ * write time is passed back on the read-back that follows it and on the lock.
+ * If someone swaps tags in between, the bridge refuses instead of verifying or
+ * locking the wrong one. A read that does not follow a write (scanning a tag
+ * to look it up) takes whatever tag is there.
  */
 import { NfcUnsupportedError, type LockOutcome, type NfcBlocker, type TagWriter } from "./writer";
 
@@ -71,8 +73,10 @@ export function createDeskReaderWriter(opts: DeskReaderOptions = {}): DeskReader
   const probeTimeoutMs = opts.probeTimeoutMs ?? 1_500;
 
   let available = false;
-  /** The tag the last successful write went to. */
+  /** The tag the last successful write went to, until it is locked. */
   let writtenUid: string | null = null;
+  /** The next read is the read-back of that write. */
+  let readBackPending = false;
 
   async function call(path: string, init: RequestInit, timeoutMs: number): Promise<BridgeResult> {
     const controller = new AbortController();
@@ -131,15 +135,18 @@ export function createDeskReaderWriter(opts: DeskReaderOptions = {}): DeskReader
     async write(url, timeoutMs = WRITE_WAIT_MS) {
       if (!available) throw new NfcUnsupportedError(NOT_RUNNING);
       writtenUid = null;
+      readBackPending = false;
       const result = await post("/write", { url, waitMs: timeoutMs }, timeoutMs + HTTP_SLACK_MS);
       if (!result.ok) throw new Error(result.error ?? "The desk reader could not write the tag.");
       writtenUid = result.uid ?? null;
+      readBackPending = true;
     },
 
     async readOnce(timeoutMs = WRITE_WAIT_MS) {
       if (!available) throw new NfcUnsupportedError(NOT_RUNNING);
       const params = new URLSearchParams({ waitMs: String(timeoutMs) });
-      if (writtenUid) params.set("uid", writtenUid);
+      if (readBackPending && writtenUid) params.set("uid", writtenUid);
+      readBackPending = false;
       const result = await call(`/read?${params}`, { method: "GET" }, timeoutMs + HTTP_SLACK_MS);
       if (!result.ok || !result.url) throw new Error(result.error ?? "No tag on the reader.");
       return result.url;
@@ -150,7 +157,9 @@ export function createDeskReaderWriter(opts: DeskReaderOptions = {}): DeskReader
     async lock(timeoutMs = 15_000): Promise<LockOutcome> {
       if (!available) return { locked: false, reason: NOT_RUNNING, unsupported: true };
       try {
-        const result = await post("/lock", { uid: writtenUid }, timeoutMs);
+        const uid = writtenUid;
+        writtenUid = null;
+        const result = await post("/lock", { uid }, timeoutMs);
         if (result.locked) return { locked: true };
         return {
           locked: false,
