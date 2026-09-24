@@ -91,7 +91,7 @@ const WRITE_WAIT_MS = 20_000;
 const SLACK_MS = 5_000;
 
 const NOT_RUNNING =
-  "No USB reader connection on this computer. Open this page in the Clearline Mac app, or start the desk reader (`python3 packages/nfc-writer/desk-reader/desk_reader.py`), then try again.";
+  "No NFC reader/writer connection here. This page is open in a web browser: open the Clearline app on this computer instead (Applications → Clearline), where the reader/writer connects on its own.";
 
 class Unreachable extends Error {}
 
@@ -157,7 +157,7 @@ export function httpTransport(opts: { baseUrl?: string; fetch?: Fetch } = {}): D
       clearTimeout(timer);
     }
     const result = (await response.json().catch(() => ({}))) as DeskReaderResult;
-    if (!response.ok && !result.error) result.error = `The desk reader answered ${response.status}.`;
+    if (!response.ok && !result.error) result.error = `The NFC reader/writer answered ${response.status}.`;
     return result;
   };
 }
@@ -215,7 +215,7 @@ export function createDeskReaderWriter(opts: DeskReaderOptions = {}): DeskReader
       writtenUid = null;
       readBackPending = false;
       const result = await call("write", { url, waitMs: timeoutMs }, timeoutMs + SLACK_MS);
-      if (!result.ok) throw new Error(result.error ?? "The desk reader could not write the tag.");
+      if (!result.ok) throw new Error(result.error ?? "The NFC reader/writer could not write the tag.");
       writtenUid = result.uid ?? null;
       readBackPending = true;
     },
