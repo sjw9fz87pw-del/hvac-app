@@ -116,6 +116,7 @@ describe("native iOS writer: full pairing flow", () => {
         async verify(_tagId, readBack) { const ok = url.endsWith(`/t/${readBack}`); log.push(`api:verify ${ok}`); return { verified: ok }; },
         async reportWriteFailure() { log.push("api:failure"); },
         async pair() { log.push("api:pair"); },
+        async pairScanned() { throw new Error("not used"); },
         async replace() { throw new Error("not used"); },
         async recordLock(_tagId, outcome) { log.push(`api:lock ${outcome.locked}`); },
       },

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pairTagToUnit, replaceUnitTag, payloadFromReadBack, pairPhaseLabel, type PairPhase } from "../src";
+import { pairTagToUnit, replaceUnitTag, createTag, pairCreatedTag, payloadFromReadBack, pairPhaseLabel, type PairPhase } from "../src";
 import { fakeApi, fakeWriter, BASE, type Log } from "./fakes";
 
 const ORG = "org_1";
@@ -166,5 +166,54 @@ describe("payloadFromReadBack", () => {
     ["app.example.com/t/v1.abc.def.ghi", "v1.abc.def.ghi"],
   ])("%s -> %s", (input, expected) => {
     expect(payloadFromReadBack(input)).toBe(expected);
+  });
+});
+
+describe("creating a tag ahead of time", () => {
+  it("mints, writes, reads back and verifies, and links and locks nothing", async () => {
+    const { log, writer, api } = setup();
+    const out = await createTag({ organizationId: ORG, writer, api });
+    expect(out).toEqual({ tagId: "tag_1" });
+    expect(log).toEqual([
+      `server:mint ${ORG}`,
+      `radio:write ${BASE}/t/v1.hint.token1.mac`,
+      "radio:read",
+      "server:verify tag_1",
+    ]);
+  });
+
+  it("mints nothing on a device that cannot write", async () => {
+    const { log, writer, api } = setup({ supported: false });
+    await expect(createTag({ organizationId: ORG, writer, api })).rejects.toThrow();
+    expect(log).toEqual([]);
+  });
+
+  it("reports a failed read-back so the tag is not phantom stock", async () => {
+    const { writer, api } = setup({ readBack: () => `${BASE}/t/v1.hint.other.mac` }, { verifyFails: "mismatch" });
+    await expect(createTag({ organizationId: ORG, writer, api })).rejects.toThrow("mismatch");
+  });
+});
+
+describe("pairing a created tag", () => {
+  it("reads it, lets the server link it from the payload, then locks it, writing nothing", async () => {
+    const { log, writer, api } = setup({ readBack: () => `${BASE}/t/v1.hint.stock7.mac` });
+    const phases: PairPhase[] = [];
+    const out = await pairCreatedTag({ unitId: UNIT, writer, api, lock: true, onPhase: (p) => phases.push(p) });
+    expect(out).toEqual({ tagId: "tag_for_v1.hint.stock7.mac", lockNote: null });
+    expect(log).toEqual([
+      "radio:read",
+      `server:pair-scanned v1.hint.stock7.mac -> ${UNIT}`,
+      "radio:lock",
+      "server:record-lock tag_for_v1.hint.stock7.mac locked",
+    ]);
+    expect(log.some((l) => l.startsWith("radio:write"))).toBe(false);
+    expect(phases).toEqual(["reading", "pairing", "locking"]);
+    for (const p of phases) expect(pairPhaseLabel(p, "desk-reader")).not.toBe("");
+  });
+
+  it("never locks a tag the server would not link", async () => {
+    const { log, writer, api } = setup({ readBack: () => `${BASE}/t/v1.hint.taken.mac` }, { pairFails: "That tag is not waiting to be paired" });
+    await expect(pairCreatedTag({ unitId: UNIT, writer, api, lock: true })).rejects.toThrow("not waiting");
+    expect(log).not.toContain("radio:lock");
   });
 });

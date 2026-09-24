@@ -45,7 +45,7 @@ export function blockerMessage(blocker: NfcBlocker): string {
     case "android-nfc-off":
       return "Chrome can write tags on this phone, but NFC looks switched off. Turn on NFC in Settings → Connected devices, then reload this page.";
     case "desktop":
-      return "This computer has no NFC reader. Tagging is done on the phone.";
+      return "This browser cannot reach an NFC reader on this computer. Tag from the Android phone, or use the USB desk reader if one is plugged in here.";
     default:
       return "";
   }

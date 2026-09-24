@@ -79,6 +79,11 @@ export function fakeApi(log: Log, opts: FakeApiOptions = {}): TagApi & {
       log.push(`server:pair ${tagId} -> ${unitId}`);
       if (opts.pairFails) throw new Error(opts.pairFails);
     },
+    async pairScanned(payload: string, unitId: string) {
+      log.push(`server:pair-scanned ${payload} -> ${unitId}`);
+      if (opts.pairFails) throw new Error(opts.pairFails);
+      return { tagId: `tag_for_${payload}` };
+    },
     async replace(unitId: string, newTagId: string, reason: string) {
       log.push(`server:replace ${unitId} with ${newTagId} (${reason})`);
       if (opts.replaceFails) throw new Error(opts.replaceFails);
