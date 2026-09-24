@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { Button, Card, Divider, List, Pill, Row } from "@/components/ui/primitives";
 import { createTag, pairPhaseLabel, type CreatePhase, type PairPhase } from "@pmops/nfc-writer";
 import { deskReader, pairWithReader, tagApi } from "@/lib/nfc/writer";
-import { connectReader, READER_NAME, useReaderStatus, withReader } from "@/lib/nfc/reader-status";
+import {
+  connectReader, openInAppHref, READER_NAME, useReaderPlace, useReaderStatus, withReader,
+} from "@/lib/nfc/reader-status";
 
 /**
  * The NFC reader/writer on the office computer, inside the NFC console. It
@@ -31,6 +33,7 @@ export function DeskReaderBar({ customers }: { customers: CustomerOption[] }) {
   const [creating, setCreating] = useState<CreatePhase | "starting" | null>(null);
   const [created, setCreated] = useState(0);
   const [createNote, setCreateNote] = useState<{ ok: boolean; text: string } | null>(null);
+  const place = useReaderPlace();
 
   async function create() {
     setCreateNote(null);
@@ -69,6 +72,31 @@ export function DeskReaderBar({ customers }: { customers: CustomerOption[] }) {
     } finally {
       setScanning(false);
     }
+  }
+
+  // Phones tag with their own radio; the reader/writer bar is for the Mac.
+  if (place === null || place === "touch") return null;
+
+  // Safari (and Chrome) on the Mac cannot reach the reader/writer. The
+  // Clearline app can, so hand the page straight over to it.
+  if (place === "mac-browser") {
+    return (
+      <Card style={{ marginTop: 18, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontWeight: 650, fontSize: 14.5 }}>{READER_NAME}</span>
+            <Pill tone="warn">Use the Clearline app</Pill>
+          </div>
+          <p style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 4, lineHeight: 1.5 }}>
+            This page is open in a web browser, which cannot reach the {READER_NAME}. The Clearline app on
+            this Mac can. Sign in there once and it stays signed in.
+          </p>
+        </div>
+        <div style={{ width: 210 }}>
+          <Button size="sm" href={openInAppHref()}>Open in Clearline app</Button>
+        </div>
+      </Card>
+    );
   }
 
   return (
