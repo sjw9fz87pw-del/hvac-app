@@ -13,5 +13,14 @@
   <key>NSHighResolutionCapable</key><true/>
   <key>NSPrincipalClass</key><string>NSApplication</string>
   <key>LSApplicationCategoryType</key><string>public.app-category.business</string>
+  <!-- clearline://open?path=/admin/nfc opens that page here: the site's
+       "Open in Clearline app" button, for when it is open in Safari. -->
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleURLName</key><string>com.clearline.desk</string>
+      <key>CFBundleURLSchemes</key><array><string>clearline</string></array>
+    </dict>
+  </array>
 </dict>
 </plist>
