@@ -18,7 +18,8 @@
 import type { TagApi } from "./tag-api";
 import { NfcUnsupportedError, type TagWriter } from "./writer";
 
-export type PairPhase = "minting" | "writing" | "verifying" | "pairing" | "locking";
+export type PairPhase = "minting" | "writing" | "verifying" | "reading" | "pairing" | "locking";
+export type CreatePhase = "minting" | "writing" | "verifying";
 export type ReplacePhase = "minting" | "writing" | "verifying" | "replacing" | "locking";
 
 export interface TagOutcome {
@@ -147,6 +148,58 @@ export async function replaceUnitTag(opts: FlowOptions<ReplacePhase> & { reason:
 }
 
 /**
+ * Write and verify a tag without putting it on anything yet: blank stock for
+ * one customer, created ahead of time and paired later with
+ * `pairCreatedTag`. The server keeps it unassigned until then, and an
+ * unassigned tag resolves to nothing for anyone who taps it.
+ *
+ * Never locked here. Locking comes last, once the tag is on a unit.
+ */
+export async function createTag(opts: {
+  organizationId: string;
+  writer: TagWriter;
+  api: TagApi;
+  onPhase?: (phase: CreatePhase) => void;
+}): Promise<{ tagId: string }> {
+  if (!opts.organizationId) throw new Error("No customer was given for this tag.");
+  if (!opts.writer.isSupported()) throw new NfcUnsupportedError("This device cannot write NFC tags.");
+  const tagId = await mintWriteVerify(opts, opts.onPhase ?? (() => {}));
+  return { tagId };
+}
+
+/**
+ * Put a tag made with `createTag` on a unit that already exists: read it, let
+ * the server check its signature and link it, then lock it.
+ *
+ * Nothing is written to the chip. A tag that is already on another unit, or
+ * belongs to another customer, is refused by the server and left untouched.
+ */
+export async function pairCreatedTag(opts: {
+  unitId: string;
+  writer: TagWriter;
+  api: TagApi;
+  lock: boolean;
+  onPhase?: (phase: PairPhase) => void;
+}): Promise<TagOutcome> {
+  if (!opts.unitId) throw new Error("A tag can only be put on a unit that already exists.");
+  if (!opts.writer.isSupported()) throw new NfcUnsupportedError("This device cannot read NFC tags.");
+  const phase = opts.onPhase ?? (() => {});
+
+  phase("reading");
+  const read = await opts.writer.readOnce(READ_BACK_TIMEOUT_MS);
+
+  phase("pairing");
+  const { tagId } = await opts.api.pairScanned(payloadFromReadBack(read), opts.unitId);
+
+  let lockNote: string | null = null;
+  if (opts.lock) {
+    phase("locking");
+    lockNote = await lockAfterCommit(opts, tagId);
+  }
+  return { tagId, lockNote };
+}
+
+/**
  * What the person should be told is happening, per step. Pass the writer's
  * `kind` so a tag sitting on a desk reader is not described as a phone tap.
  */
@@ -156,6 +209,7 @@ export function pairPhaseLabel(phase: PairPhase, writerKind?: string): string {
     minting: "Preparing a tag…",
     writing: desk ? "Writing the tag on the reader…" : "Hold the phone against the tag…",
     verifying: desk ? "Reading it back to check…" : "Tap it once more to check what was written…",
+    reading: desk ? "Reading the tag…" : "Hold the phone against the tag…",
     pairing: "Linking it to this unit…",
     locking: "Locking the tag…",
   }[phase];

@@ -3,17 +3,19 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Card, Divider, List, Pill, Row } from "@/components/ui/primitives";
-import { isInMacApp, pairTagToUnit, pairPhaseLabel, type PairPhase } from "@pmops/nfc-writer";
-import { deskReader, pairingWriter, rememberDeskReader, rememberedDeskReader, tagApi } from "@/lib/nfc/writer";
+import { createTag, isInMacApp, pairPhaseLabel, type CreatePhase, type PairPhase } from "@pmops/nfc-writer";
+import { deskReader, pairWithReader, rememberDeskReader, rememberedDeskReader, tagApi } from "@/lib/nfc/writer";
 
 /**
  * The USB reader on the office computer, inside the NFC console.
  *
- * Tagging what is already inventoried is done at a desk: go down "Assets
- * without a tag", put a blank tag on the reader, press Pair. Each tag goes on
- * a unit that already exists; nothing here creates one. "Scan a tag" reads
- * whatever tag is on the reader and opens it, the same as tapping it with a
- * phone.
+ * - "Create tag" writes and verifies a blank tag as stock for one customer,
+ *   linked to nothing yet, so a batch can be made ahead of time.
+ * - "Assets without a tag" pairs each unit in place: a blank tag is written
+ *   first, a created one is just read and linked. Every tag goes on a unit
+ *   that already exists; nothing here creates units.
+ * - "Scan a tag" reads whatever tag is on the reader and opens it, the same as
+ *   tapping it with a phone.
  */
 
 type ReaderState =
@@ -49,11 +51,33 @@ function useReader(): ReaderState {
   return useSyncExternalStore(subscribe, () => current, () => current);
 }
 
-export function DeskReaderBar() {
+export interface CustomerOption { id: string; name: string }
+
+export function DeskReaderBar({ customers }: { customers: CustomerOption[] }) {
   const router = useRouter();
   const reader = useReader();
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [customerId, setCustomerId] = useState(customers[0]?.id ?? "");
+  const [creating, setCreating] = useState<CreatePhase | "starting" | null>(null);
+  const [created, setCreated] = useState(0);
+  const [createNote, setCreateNote] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function create() {
+    setCreateNote(null);
+    setScanError(null);
+    setCreating("starting");
+    try {
+      await createTag({ organizationId: customerId, writer: deskReader, api: tagApi, onPhase: setCreating });
+      setCreated((n) => n + 1);
+      const name = customers.find((c) => c.id === customerId)?.name ?? "this customer";
+      setCreateNote({ ok: true, text: `Tag created for ${name}. Take it off and put the next blank tag on, or pair it to a unit below.` });
+    } catch (e) {
+      setCreateNote({ ok: false, text: `${e instanceof Error ? e.message : "Could not create the tag."} Nothing was saved as usable.` });
+    } finally {
+      setCreating(null);
+    }
+  }
 
   // The Mac app always has its reader; a browser that has used the reader
   // before reconnects without being asked.
@@ -86,18 +110,38 @@ export function DeskReaderBar() {
         </div>
         <p style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 4, lineHeight: 1.5 }}>
           {reader.state === "ready"
-            ? `${reader.reader}. Put a tag flat on it to pair or scan.`
+            ? `${reader.reader}. Put a tag flat on it to create, pair or scan.`
             : reader.state === "unavailable"
               ? reader.hint
-              : "Pair and scan tags with the reader plugged into this computer."}
+              : "Create, pair and scan tags with the reader plugged into this computer."}
         </p>
         {scanError ? <p style={{ fontSize: 13, color: "var(--bad)", marginTop: 4 }}>{scanError}</p> : null}
+        {createNote ? (
+          <p style={{ fontSize: 13, color: createNote.ok ? "var(--ink-soft)" : "var(--bad)", marginTop: 4 }}>
+            {createNote.text}{createNote.ok && created > 1 ? ` ${created} created so far.` : ""}
+          </p>
+        ) : null}
       </div>
-      <div style={{ display: "flex", gap: 8 }}>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         {reader.state === "ready" ? (
-          <Button size="sm" variant="secondary" onClick={scan} disabled={scanning}>
-            {scanning ? "Reading…" : "Scan a tag"}
-          </Button>
+          <>
+            {customers.length > 1 ? (
+              <select
+                value={customerId}
+                onChange={(e) => setCustomerId(e.target.value)}
+                aria-label="Customer the new tag is for"
+                style={{ minHeight: 38, borderRadius: 11, padding: "0 10px", background: "var(--surface-2)", color: "var(--ink)", border: "1px solid var(--line-strong)", fontSize: 13.5 }}
+              >
+                {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            ) : null}
+            <Button size="sm" onClick={create} disabled={creating !== null || scanning || !customerId}>
+              {creating === null ? "Create tag" : creating === "starting" ? "Starting…" : pairPhaseLabel(creating, "desk-reader")}
+            </Button>
+            <Button size="sm" variant="secondary" onClick={scan} disabled={scanning || creating !== null}>
+              {scanning ? "Reading…" : "Scan a tag"}
+            </Button>
+          </>
         ) : (
           <Button size="sm" variant="secondary" onClick={connect} disabled={reader.state === "connecting"}>
             {reader.state === "connecting" ? "Looking…" : reader.state === "unavailable" ? "Try again" : "Connect reader"}
@@ -127,12 +171,10 @@ export function UntaggedPairList({ units }: { units: UntaggedUnit[] }) {
     setErrors(({ [unit.id]: _, ...rest }) => rest);
     setBusy({ id: unit.id, phase: null });
     try {
-      const outcome = await pairTagToUnit({
+      const outcome = await pairWithReader({
         organizationId: unit.organizationId,
         unitId: unit.id,
         lock,
-        writer: pairingWriter(),
-        api: tagApi,
         onPhase: (phase) => setBusy({ id: unit.id, phase }),
       });
       setPaired((p) => ({ ...p, [unit.id]: outcome.lockNote }));

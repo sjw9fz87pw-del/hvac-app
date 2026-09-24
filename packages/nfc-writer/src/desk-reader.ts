@@ -171,7 +171,7 @@ export function createDeskReaderWriter(opts: DeskReaderOptions = {}): DeskReader
   const probeTimeoutMs = opts.probeTimeoutMs ?? 1_500;
 
   let available = false;
-  /** The tag the last successful write went to, until it is locked. */
+  /** The tag the last write or read went to, until it is locked. */
   let writtenUid: string | null = null;
   /** The next read is the read-back of that write. */
   let readBackPending = false;
@@ -226,6 +226,8 @@ export function createDeskReaderWriter(opts: DeskReaderOptions = {}): DeskReader
       readBackPending = false;
       const result = await call("read", { waitMs: timeoutMs, uid }, timeoutMs + SLACK_MS);
       if (!result.ok || !result.url) throw new Error(result.error ?? "No tag on the reader.");
+      // A lock that follows goes to this tag and no other.
+      writtenUid = result.uid ?? writtenUid;
       return result.url;
     },
 

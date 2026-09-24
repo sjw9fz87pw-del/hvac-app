@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Pill } from "@/components/ui/primitives";
 import { blockerMessage, isInMacApp, pairTagToUnit, pairPhaseLabel, type NfcBlocker, type PairPhase } from "@pmops/nfc-writer";
-import { deskReader, pairingWriter, rememberDeskReader, rememberedDeskReader, tagApi } from "@/lib/nfc/writer";
+import { deskReader, pairingWriter, pairWithReader, rememberDeskReader, rememberedDeskReader, tagApi } from "@/lib/nfc/writer";
 import { PrepareTag } from "./prepare-tag";
 
 /**
@@ -68,9 +68,11 @@ export function PairTag({ equipmentId, organizationId, unitName }: {
     setError(null);
     setLockNote(null);
     try {
-      const outcome = await pairTagToUnit({
-        organizationId, unitId: equipmentId, lock, writer: pairingWriter(), api: tagApi, onPhase: setPhase,
-      });
+      const outcome = desk
+        ? await pairWithReader({ organizationId, unitId: equipmentId, lock, onPhase: setPhase })
+        : await pairTagToUnit({
+          organizationId, unitId: equipmentId, lock, writer: pairingWriter(), api: tagApi, onPhase: setPhase,
+        });
       setLockNote(outcome.lockNote);
       setDone(true);
       router.refresh();
@@ -117,7 +119,7 @@ export function PairTag({ equipmentId, organizationId, unitName }: {
         <>
           <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 8, lineHeight: 1.5 }}>
             {desk
-              ? "Put a blank tag flat on the USB reader and leave it there. It gets written, checked by reading it back, and only then linked to this unit."
+              ? "Put a blank tag, or one made with Create tag, flat on the USB reader and leave it there. A blank tag is written and checked by reading it back; either way it is only then linked to this unit."
               : "Hold a blank tag against the back of the phone. It gets written, checked by reading it back, and only then linked to this unit."}
           </p>
 

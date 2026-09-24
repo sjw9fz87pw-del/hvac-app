@@ -16,7 +16,7 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
   const scope = organizationScope(actor);
   const orgFilter = scope ? { organizationId: { in: scope.length ? scope : ["__none__"] } } : {};
 
-  const [tags, counts, untagged, unlocked, failures] = await Promise.all([
+  const [tags, counts, untagged, unlocked, failures, customers] = await Promise.all([
     prisma.tag.findMany({
       where: {
         ...orgFilter,
@@ -43,6 +43,14 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
       orderBy: { createdAt: "desc" },
       take: 15,
     }),
+    // Who a new tag can be created for, with the USB reader.
+    actor.capabilities.has("tag.mint")
+      ? prisma.customerOrganization.findMany({
+        where: scope ? { id: { in: scope.length ? scope : ["__none__"] } } : {},
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      })
+      : Promise.resolve([]),
   ]);
 
   const byState = Object.fromEntries(counts.map((c) => [c.state, c._count]));
@@ -71,7 +79,7 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
         <Stat label="Unlocked" value={unlocked} tone={unlocked > 0 ? "warn" : "good"} hint="Can still be rewritten" />
       </StatGrid>
 
-      <DeskReaderBar />
+      <DeskReaderBar customers={customers} />
 
       <div style={{ display: "flex", gap: 8, marginTop: 18, flexWrap: "wrap" }}>
         {[

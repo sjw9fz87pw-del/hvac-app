@@ -5,7 +5,7 @@ export default defineConfig({
   // tsconfig sets jsx: "preserve" because Next requires it, which leaves JSX
   // unparsed for Vitest. Transform it here so component modules are importable
   // from tests.
-  esbuild: { jsx: "automatic" },
+  oxc: { jsx: { runtime: "automatic" } },
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts", "packages/nfc-writer/tests/**/*.test.ts"],

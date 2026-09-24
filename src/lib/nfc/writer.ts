@@ -1,7 +1,8 @@
 "use client";
 
 import {
-  createDeskReaderWriter, createHttpTagApi, createWebNfcWriter, pickTagWriter, type TagWriter,
+  createDeskReaderWriter, createHttpTagApi, createWebNfcWriter, pairCreatedTag, pairTagToUnit, pickTagWriter,
+  type PairPhase, type TagOutcome, type TagWriter,
 } from "@pmops/nfc-writer";
 
 /**
@@ -56,3 +57,42 @@ export function rememberDeskReader(): void {
 
 /** The app's `/api/v1/tags/*` endpoints, same origin. */
 export const tagApi = createHttpTagApi();
+
+/**
+ * Pair whatever tag is on the USB reader to an existing unit.
+ *
+ * A tag made earlier with "Create tag" already carries one of our links, so it
+ * is read and linked without being rewritten. Anything else (a blank sticker)
+ * is written, read back and verified first. Either way it is locked last.
+ */
+export async function pairWithReader(opts: {
+  organizationId: string;
+  unitId: string;
+  lock: boolean;
+  onPhase?: (phase: PairPhase) => void;
+}): Promise<TagOutcome> {
+  const status = await deskReader.probe();
+  if (!deskReader.isSupported()) throw new Error(status.hint ?? "The USB reader is not connected.");
+  if (!status.tag) throw new Error("Put a tag flat on the reader first.");
+
+  let existing: string | null = null;
+  try {
+    const url = await deskReader.readOnce(0);
+    if (new URL(url).pathname.startsWith("/t/")) existing = url;
+  } catch {
+    // Blank, or not one of ours: it gets written.
+  }
+
+  const common = { unitId: opts.unitId, lock: opts.lock, writer: deskReader, api: tagApi, onPhase: opts.onPhase };
+  if (existing) {
+    try {
+      return await pairCreatedTag(common);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "";
+      throw new Error(/not waiting/i.test(message)
+        ? "This tag is already on a unit, or belongs to another customer. Use a blank tag or one made with Create tag."
+        : message || "Pairing failed");
+    }
+  }
+  return pairTagToUnit({ ...common, organizationId: opts.organizationId });
+}
