@@ -74,6 +74,12 @@ in the list in `src/lib/nfc/writer.ts`:
 const writers: TagWriter[] = [createNativeWriter(), createWebNfcWriter()];
 ```
 
+For a Capacitor NFC plugin the mapping is direct: `isSupported` is
+`Capacitor.isNativePlatform() && Capacitor.isPluginAvailable(...)` (both
+synchronous), `blocker` returns `null`, `write`/`readOnce` each open one
+system NFC sheet, and `canLock`/`lock` wrap the plugin's make-read-only call.
+`lock` must return a `LockOutcome` rather than throw.
+
 `pickTagWriter` uses the first one that works on the device, so every tagging
 screen picks it up without changing. The flow tests already run against a fake
 writer, so a native writer only needs tests for its own bridge.
