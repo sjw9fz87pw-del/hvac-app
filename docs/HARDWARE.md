@@ -192,8 +192,9 @@ point. The QR fallback covers every one of these cases and needs no explanation.
 
 A USB PC/SC reader — **ACR122U** (~$35–45, ubiquitous, somewhat dated) or
 **Identiv uTrust 3700F** (~$50–60, better behaved) — lets you encode a batch of
-tags at a desk before a survey instead of one at a time on site. Requires a small
-local bridge, which is not built (see *Not built* below).
+tags at a desk instead of one at a time on site. The local bridge is
+`packages/nfc-writer/desk-reader/desk_reader.py`; pair from a unit's page with
+**Use the USB reader on this computer**.
 
 ---
 
@@ -280,8 +281,6 @@ restaurant. Specifically confirm, on your own equipment:
 
 Stated plainly, so nobody discovers it mid-deployment:
 
-- **No USB reader bridge.** Bulk desk encoding needs a local helper that does not
-  exist yet.
 - **No UID capture**, since Web NFC cannot provide it.
 - **Physical read/write has never been exercised on a real tag** in this build —
   no NFC hardware was available. The Web NFC paths are unit-tested against a

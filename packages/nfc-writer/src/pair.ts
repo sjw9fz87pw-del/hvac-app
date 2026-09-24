@@ -146,12 +146,16 @@ export async function replaceUnitTag(opts: FlowOptions<ReplacePhase> & { reason:
   return { tagId, lockNote };
 }
 
-/** What the person should be told is happening, per step. */
-export function pairPhaseLabel(phase: PairPhase): string {
+/**
+ * What the person should be told is happening, per step. Pass the writer's
+ * `kind` so a tag sitting on a desk reader is not described as a phone tap.
+ */
+export function pairPhaseLabel(phase: PairPhase, writerKind?: string): string {
+  const desk = writerKind === "desk-reader";
   return {
     minting: "Preparing a tag…",
-    writing: "Hold the phone against the tag…",
-    verifying: "Tap it once more to check what was written…",
+    writing: desk ? "Writing the tag on the reader…" : "Hold the phone against the tag…",
+    verifying: desk ? "Reading it back to check…" : "Tap it once more to check what was written…",
     pairing: "Linking it to this unit…",
     locking: "Locking the tag…",
   }[phase];

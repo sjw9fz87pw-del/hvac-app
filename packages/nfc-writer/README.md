@@ -58,11 +58,24 @@ Each row has a test in `tests/pair.test.ts`.
 ```
 src/writer.ts    TagWriter interface, pickTagWriter, NfcUnsupportedError
 src/web-nfc.ts   TagWriter for Web NFC (Chrome on Android)
+src/desk-reader.ts TagWriter for a USB reader, through the local bridge
+desk-reader/     The bridge: python3 desk_reader.py, no install
 src/blocker.ts   Why a browser cannot write, and what to tell the person
 src/tag-api.ts   TagApi interface, and the HTTP version for /api/v1/tags/*
 src/pair.ts      pairTagToUnit, replaceUnitTag, payloadFromReadBack
 tests/           Fakes for the radio, the browser and the server
 ```
+
+## Pairing from a computer with a USB reader
+
+`createDeskReaderWriter()` is a `TagWriter` for a USB NFC reader (an ACR122U,
+say) plugged into the computer the app is open on. It talks to
+`desk-reader/desk_reader.py` on `127.0.0.1:8766`; see its README to run it.
+
+Its `isSupported()` is whatever the last `probe()` found, because reaching the
+bridge is a network call and Chrome asks permission first. The app only offers
+it on a unit's own page (`pairingWriter()` in `src/lib/nfc/writer.ts`), so
+tags are always attached to units that already exist, never in rapid inventory.
 
 ## Adding an iPhone writer later
 

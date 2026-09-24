@@ -12,5 +12,6 @@
 export * from "./writer";
 export * from "./blocker";
 export * from "./web-nfc";
+export * from "./desk-reader";
 export * from "./tag-api";
 export * from "./pair";

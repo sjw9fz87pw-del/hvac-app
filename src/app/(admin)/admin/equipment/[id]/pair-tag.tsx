@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Pill } from "@/components/ui/primitives";
 import { blockerMessage, pairTagToUnit, pairPhaseLabel, type NfcBlocker, type PairPhase } from "@pmops/nfc-writer";
-import { tagApi, tagWriter } from "@/lib/nfc/writer";
+import { deskReader, pairingWriter, rememberDeskReader, rememberedDeskReader, tagApi } from "@/lib/nfc/writer";
 import { PrepareTag } from "./prepare-tag";
 
 /**
@@ -16,6 +16,11 @@ import { PrepareTag } from "./prepare-tag";
  * Writing a chip from a browser is Chrome-on-Android only — no iOS browser can
  * write NFC at all. Rather than show a button that cannot work on the phone
  * looking at it, an iPhone is told plainly what to do instead.
+ *
+ * On a computer with a USB reader and the desk-reader bridge running, the same
+ * flow runs through that reader instead: put the tag on the reader, press the
+ * button. The first time is opt-in, because reaching the reader means the
+ * browser asking to access this computer.
  */
 export function PairTag({ equipmentId, organizationId, unitName }: {
   equipmentId: string;
@@ -30,20 +35,41 @@ export function PairTag({ equipmentId, organizationId, unitName }: {
   const [error, setError] = useState<string | null>(null);
   const [lockNote, setLockNote] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [writerKind, setWriterKind] = useState<string | null>(null);
+  const [deskHint, setDeskHint] = useState<string | null>(null);
+  const [probing, setProbing] = useState(false);
 
-  // Detected after mount: the server cannot know what the phone can do.
-  useEffect(() => {
-    const writer = tagWriter();
+  function refreshWriter() {
+    const writer = pairingWriter();
     setCapable(writer.isSupported());
     setBlocker(writer.blocker());
+    setWriterKind(writer.kind);
+  }
+
+  async function connectDeskReader() {
+    setProbing(true);
+    const status = await deskReader.probe();
+    setProbing(false);
+    if (deskReader.isSupported()) rememberDeskReader();
+    setDeskHint(deskReader.isSupported() ? null : status.hint);
+    refreshWriter();
+  }
+
+  // Detected after mount: the server cannot know what the phone can do. A
+  // computer that has used its desk reader before reconnects to it quietly.
+  useEffect(() => {
+    refreshWriter();
+    if (pairingWriter().blocker() === "desktop" && rememberedDeskReader()) void connectDeskReader();
   }, []);
+
+  const desk = writerKind === "desk-reader";
 
   async function pair() {
     setError(null);
     setLockNote(null);
     try {
       const outcome = await pairTagToUnit({
-        organizationId, unitId: equipmentId, lock, writer: tagWriter(), api: tagApi, onPhase: setPhase,
+        organizationId, unitId: equipmentId, lock, writer: pairingWriter(), api: tagApi, onPhase: setPhase,
       });
       setLockNote(outcome.lockNote);
       setDone(true);
@@ -76,12 +102,23 @@ export function PairTag({ equipmentId, organizationId, unitName }: {
             {blockerMessage(blocker)}
           </p>
           {blocker === "ios" ? <PrepareTag equipmentId={equipmentId} organizationId={organizationId} /> : null}
+          {blocker === "desktop" ? (
+            <div style={{ marginTop: 10, maxWidth: 260 }}>
+              <Button variant="secondary" size="sm" onClick={connectDeskReader} disabled={probing}>
+                {probing ? "Looking for the reader…" : "Use the USB reader on this computer"}
+              </Button>
+              {deskHint ? (
+                <p style={{ fontSize: 13, color: "var(--ink-faint)", marginTop: 8, lineHeight: 1.5 }}>{deskHint}</p>
+              ) : null}
+            </div>
+          ) : null}
         </>
       ) : (
         <>
           <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 8, lineHeight: 1.5 }}>
-            Hold a blank tag against the back of the phone. It gets written,
-            checked by reading it back, and only then linked to this unit.
+            {desk
+              ? "Put a blank tag flat on the USB reader and leave it there. It gets written, checked by reading it back, and only then linked to this unit."
+              : "Hold a blank tag against the back of the phone. It gets written, checked by reading it back, and only then linked to this unit."}
           </p>
 
           <label style={{ display: "flex", alignItems: "center", gap: 9, marginTop: 10, fontSize: 13.5, cursor: "pointer" }}>
@@ -91,7 +128,7 @@ export function PairTag({ equipmentId, organizationId, unitName }: {
 
           <div style={{ marginTop: 12, maxWidth: 210 }}>
             <Button onClick={pair} disabled={phase !== null || capable === null}>
-              {phase ? pairPhaseLabel(phase) : "Pair a tag"}
+              {phase ? pairPhaseLabel(phase, writerKind ?? undefined) : desk ? "Pair the tag on the reader" : "Pair a tag"}
             </Button>
           </div>
         </>
@@ -101,7 +138,7 @@ export function PairTag({ equipmentId, organizationId, unitName }: {
         <div style={{ color: "var(--bad)", fontSize: 13.5, marginTop: 10 }}>
           {error}
           <div style={{ color: "var(--ink-faint)", marginTop: 4 }}>
-            Nothing was linked — the unit is unchanged. Try again with the tag flat against the phone.
+            Nothing was linked — the unit is unchanged. {desk ? "Check the tag is flat on the reader and try again." : "Try again with the tag flat against the phone."}
           </div>
         </div>
       ) : null}
