@@ -22,6 +22,8 @@ func appURL() -> URL {
 final class ReaderBridge: NSObject, WKScriptMessageHandlerWithReply {
     private let reader = DeskReader()
     private let queue = DispatchQueue(label: "clearline.desk-reader")
+    /// Status checks never wait behind a write that is waiting for a tag.
+    private let statusQueue = DispatchQueue(label: "clearline.desk-reader.status")
     private let allowedHost: String
 
     init(allowedHost: String) { self.allowedHost = allowedHost }
@@ -38,7 +40,7 @@ final class ReaderBridge: NSObject, WKScriptMessageHandlerWithReply {
         }
         let wait = (body["waitMs"] as? NSNumber)?.intValue ?? 0
         let uid = body["uid"] as? String
-        queue.async { [reader] in
+        (op == "status" ? statusQueue : queue).async { [reader] in
             let result: [String: Any]
             switch op {
             case "status": result = reader.status()

@@ -116,7 +116,7 @@ export function macAppTransport(handler: () => ReplyHandler | null = macAppHandl
     try {
       return (await Promise.race([
         h.postMessage({ op, ...args }),
-        new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("The reader did not answer.")), timeoutMs); }),
+        new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("no reply in time.")), timeoutMs); }),
       ])) as DeskReaderResult;
     } finally {
       clearTimeout(timer);
@@ -168,7 +168,7 @@ export function createDeskReaderWriter(opts: DeskReaderOptions = {}): DeskReader
   // Decided per call: the Mac app injects its handler after the page starts.
   const transport: DeskReaderTransport =
     opts.transport ?? (opts.fetch ? http : (op, args, t) => (isInMacApp() ? mac : http)(op, args, t));
-  const probeTimeoutMs = opts.probeTimeoutMs ?? 1_500;
+  const probeTimeoutMs = opts.probeTimeoutMs ?? 4_000;
 
   let available = false;
   /** The tag the last write or read went to, until it is locked. */
@@ -204,9 +204,14 @@ export function createDeskReaderWriter(opts: DeskReaderOptions = {}): DeskReader
           tag: body.tag ? { uid: body.tag.uid ?? "", type: body.tag.type ?? "unknown" } : null,
           hint: body.hint ?? body.error ?? null,
         };
-      } catch {
+      } catch (error) {
         available = false;
-        return { bridge: false, reader: null, tag: null, hint: NOT_RUNNING };
+        // Reached but did not answer (inside the app) is not the same as
+        // nothing there to reach (a browser); say which.
+        const hint = error instanceof Unreachable || !(error instanceof Error)
+          ? NOT_RUNNING
+          : `The NFC reader/writer did not answer (${error.message}) Still trying; if it stays like this, unplug it and plug it back in.`;
+        return { bridge: false, reader: null, tag: null, hint };
       }
     },
 
