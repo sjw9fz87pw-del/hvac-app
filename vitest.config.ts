@@ -8,7 +8,7 @@ export default defineConfig({
   esbuild: { jsx: "automatic" },
   test: {
     environment: "node",
-    include: ["tests/**/*.test.ts"],
+    include: ["tests/**/*.test.ts", "packages/nfc-writer/tests/**/*.test.ts"],
     // Integration tests share one Postgres database, so they must not interleave.
     fileParallelism: false,
     testTimeout: 30_000,
@@ -18,6 +18,7 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "@pmops/nfc-core": path.resolve(__dirname, "./packages/nfc-core/src/index.ts"),
+      "@pmops/nfc-writer": path.resolve(__dirname, "./packages/nfc-writer/src/index.ts"),
     },
   },
 });

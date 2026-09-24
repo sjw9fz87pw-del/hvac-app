@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Pill } from "@/components/ui/primitives";
-import { isNfcSupported, nfcBlocker, nfcBlockerMessage, type NfcBlocker } from "@/lib/nfc/web-nfc";
-import { mintWriteVerifyPair, pairPhaseLabel, type PairPhase } from "@/lib/nfc/pairing";
+import { blockerMessage, pairTagToUnit, pairPhaseLabel, type NfcBlocker, type PairPhase } from "@pmops/nfc-writer";
+import { tagApi, tagWriter } from "@/lib/nfc/writer";
 import { PrepareTag } from "./prepare-tag";
 
 /**
@@ -33,15 +33,18 @@ export function PairTag({ equipmentId, organizationId, unitName }: {
 
   // Detected after mount: the server cannot know what the phone can do.
   useEffect(() => {
-    setCapable(isNfcSupported());
-    setBlocker(nfcBlocker());
+    const writer = tagWriter();
+    setCapable(writer.isSupported());
+    setBlocker(writer.blocker());
   }, []);
 
   async function pair() {
     setError(null);
     setLockNote(null);
     try {
-      const outcome = await mintWriteVerifyPair({ organizationId, equipmentId, lock, onPhase: setPhase });
+      const outcome = await pairTagToUnit({
+        organizationId, unitId: equipmentId, lock, writer: tagWriter(), api: tagApi, onPhase: setPhase,
+      });
       setLockNote(outcome.lockNote);
       setDone(true);
       router.refresh();
@@ -70,7 +73,7 @@ export function PairTag({ equipmentId, organizationId, unitName }: {
       {capable === false ? (
         <>
           <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 8, lineHeight: 1.5 }}>
-            {nfcBlockerMessage(blocker)}
+            {blockerMessage(blocker)}
           </p>
           {blocker === "ios" ? <PrepareTag equipmentId={equipmentId} organizationId={organizationId} /> : null}
         </>
