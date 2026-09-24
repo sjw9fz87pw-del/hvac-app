@@ -1,0 +1,47 @@
+# Proves the iPhone app compiles, without an Apple account or a Mac of our own.
+# Builds for the simulator with signing off, so it checks the Swift code and the
+# project wiring, not the App Store upload. See docs/IOS-APP.md.
+name: iOS build
+
+on:
+  pull_request:
+    paths:
+      - "ios/**"
+      - "capacitor.config.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/ios-build.yml"
+  push:
+    paths:
+      - "ios/**"
+      - "capacitor.config.ts"
+      - ".github/workflows/ios-build.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Generates ios/App/App/capacitor.config.json and the web fallback, both gitignored.
+      - run: npx cap sync ios
+
+      - name: Build for the simulator
+        run: |
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build

@@ -16,12 +16,15 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:nfc-writer": "vitest run --config packages/nfc-writer/vitest.config.ts",
-    "nfc:size": "tsx scripts/ndef-size.ts"
+    "nfc:size": "tsx scripts/ndef-size.ts",
+    "ios:sync": "cap sync ios",
+    "ios:open": "cap open ios"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@capacitor/core": "^8.5.2",
     "@netlify/blobs": "^11.0.3",
     "@netlify/database": "^2.0.1",
     "@netlify/functions": "^6.0.0",
@@ -36,6 +39,8 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/ios": "^8.5.2",
     "@netlify/plugin-nextjs": "^5.15.13",
     "@tailwindcss/postcss": "^4.1.13",
     "@types/node": "^22.20.1",
