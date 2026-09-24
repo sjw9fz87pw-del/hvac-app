@@ -229,7 +229,7 @@ Two things to know in the field:
 
 - `NDEFReader.makeReadOnly()` arrived later than the rest of Web NFC, so a phone
   can be perfectly able to read and write while unable to lock. The flow detects
-  this (`canLockTags()`), greys out the toggle and says so, rather than failing.
+  this (`TagWriter.canLock()` in `packages/nfc-writer`), greys out the toggle and says so, rather than failing.
 - The technician can switch locking off per session. It defaults on.
 
 ---

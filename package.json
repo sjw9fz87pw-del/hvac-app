@@ -15,6 +15,7 @@
     "db:reset": "prisma migrate reset --force",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:nfc-writer": "vitest run --config packages/nfc-writer/vitest.config.ts",
     "nfc:size": "tsx scripts/ndef-size.ts"
   },
   "prisma": {

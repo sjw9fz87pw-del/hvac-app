@@ -5,7 +5,7 @@ import { Card, Button, Pill, formatDate } from "@/components/ui/primitives";
 import { photoThumb } from "@/components/ui/equipment-bits";
 import { compressImage, uploadPhoto, captureTimestamp } from "@/lib/photos/client";
 import { submitOrQueue } from "@/lib/sync/queue";
-import { isNfcSupported, readTagOnce } from "@/lib/nfc/web-nfc";
+import { tagWriter } from "@/lib/nfc/writer";
 
 interface Props {
   task: { id: string; status: string; visitId: string; locationName: string };
@@ -45,7 +45,7 @@ export function ServiceTask({ task, equipment, serviceType, nextTask }: Props) {
   const [result, setResult] = useState<"synced" | "queued" | null>(null);
   const [nfcAvailable, setNfcAvailable] = useState(false);
 
-  useEffect(() => setNfcAvailable(isNfcSupported()), []);
+  useEffect(() => setNfcAvailable(tagWriter().isSupported()), []);
 
   const missing: string[] = [];
   if (serviceType.requirements.nfc && !verification) missing.push("Verify the tag");
@@ -61,7 +61,7 @@ export function ServiceTask({ task, equipment, serviceType, nextTask }: Props) {
   async function verifyByTag() {
     setError(null);
     try {
-      const payload = await readTagOnce();
+      const payload = await tagWriter().readOnce();
       const response = await fetch("/api/v1/tags/resolve", {
         method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ payload }),

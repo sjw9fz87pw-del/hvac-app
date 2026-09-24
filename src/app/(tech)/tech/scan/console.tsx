@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, Button, PageHeader, Pill } from "@/components/ui/primitives";
-import { isNfcSupported, readTagOnce } from "@/lib/nfc/web-nfc";
+import { tagWriter } from "@/lib/nfc/writer";
 
 /**
  * Scan.
@@ -17,7 +17,7 @@ export function ScanConsole() {
   const [manual, setManual] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => setSupported(isNfcSupported()), []);
+  useEffect(() => setSupported(tagWriter().isSupported()), []);
 
   async function resolve(payload: string) {
     setError(null);
@@ -40,7 +40,7 @@ export function ScanConsole() {
     setScanning(true);
     setError(null);
     try {
-      await resolve(await readTagOnce());
+      await resolve(await tagWriter().readOnce());
     } catch (e) {
       setError(e instanceof Error ? e.message : "Scan failed");
     } finally {

@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card, Button, Pill } from "@/components/ui/primitives";
 import { compressImage, uploadPhoto } from "@/lib/photos/client";
-import { isNfcSupported, canLockTags, nfcBlocker, nfcBlockerMessage, type NfcBlocker } from "@/lib/nfc/web-nfc";
-import { mintWriteVerifyPair, type PairPhase } from "@/lib/nfc/pairing";
+import { blockerMessage, pairTagToUnit, type NfcBlocker, type PairPhase } from "@pmops/nfc-writer";
+import { tagApi, tagWriter } from "@/lib/nfc/writer";
 
 interface LocationOption {
   id: string; name: string; organizationId: string; organizationName: string;
@@ -72,10 +72,13 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
   const [sessionCount, setSessionCount] = useState(0);
   const [nfcAvailable, setNfcAvailable] = useState(false);
   const [blocker, setBlocker] = useState<NfcBlocker>(null);
+  const [canLock, setCanLock] = useState(false);
 
   useEffect(() => {
-    setNfcAvailable(isNfcSupported());
-    setBlocker(nfcBlocker());
+    const writer = tagWriter();
+    setNfcAvailable(writer.isSupported());
+    setBlocker(writer.blocker());
+    setCanLock(writer.canLock());
   }, []);
 
   const field: React.CSSProperties = {
@@ -144,10 +147,12 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
       pairing: "verifying", locking: "locking",
     };
     try {
-      const outcome = await mintWriteVerifyPair({
+      const outcome = await pairTagToUnit({
         organizationId: location.organizationId,
-        equipmentId: createdId,
+        unitId: createdId,
         lock: lockTags,
+        writer: tagWriter(),
+        api: tagApi,
         onPhase: (phase) => setTagState(shown[phase]),
       });
       setLockNote(outcome.lockNote);
@@ -206,7 +211,7 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
                 </Button>
               ) : (
                 <Card style={{ background: "var(--warn-soft)", borderColor: "transparent", fontSize: 13.5, textAlign: "left", lineHeight: 1.5 }}>
-                  {nfcBlockerMessage(blocker)}
+                  {blockerMessage(blocker)}
                   <div style={{ marginTop: 8 }}>
                     The unit is saved either way. Open it from{" "}
                     <strong>Assets without tags</strong> to tag it — on an iPhone that page
@@ -343,27 +348,27 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
       <Card style={{ marginBottom: 14, padding: 14 }}>
         <button
           onClick={() => setLockTags((v) => !v)}
-          disabled={!canLockTags()}
+          disabled={!canLock}
           style={{
             display: "flex", alignItems: "center", gap: 11, width: "100%", background: "none",
-            border: "none", padding: 0, textAlign: "left", cursor: canLockTags() ? "pointer" : "not-allowed",
-            opacity: canLockTags() ? 1 : 0.55,
+            border: "none", padding: 0, textAlign: "left", cursor: canLock ? "pointer" : "not-allowed",
+            opacity: canLock ? 1 : 0.55,
           }}
         >
           <span
             style={{
               width: 26, height: 26, borderRadius: 8, flexShrink: 0, display: "grid", placeItems: "center",
-              border: `2px solid ${lockTags && canLockTags() ? "var(--good)" : "var(--line)"}`,
-              background: lockTags && canLockTags() ? "var(--good)" : "transparent",
+              border: `2px solid ${lockTags && canLock ? "var(--good)" : "var(--line)"}`,
+              background: lockTags && canLock ? "var(--good)" : "transparent",
               color: "#1a0f04", fontSize: 15, fontWeight: 700,
             }}
           >
-            {lockTags && canLockTags() ? "✓" : ""}
+            {lockTags && canLock ? "✓" : ""}
           </span>
           <span style={{ flex: 1 }}>
             <span style={{ display: "block", fontWeight: 620, fontSize: 14.5 }}>Lock tags after pairing</span>
             <span style={{ display: "block", fontSize: 12.5, color: "var(--ink-faint)", marginTop: 1 }}>
-              {canLockTags()
+              {canLock
                 ? "Permanent. Stops anyone repointing the tag at different equipment."
                 : "This browser cannot lock tags — they will pair but stay rewritable."}
             </span>

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Card, Button } from "@/components/ui/primitives";
-import { isNfcSupported, writeTag, readTagOnce, lockTag, canLockTags } from "@/lib/nfc/web-nfc";
+import { replaceUnitTag, type ReplacePhase } from "@pmops/nfc-writer";
+import { tagApi, tagWriter } from "@/lib/nfc/writer";
 
 /**
  * Replace, unpair and revoke.
@@ -23,48 +24,24 @@ export function TagActions({ tagId, equipmentId, equipmentName, organizationId, 
   async function replace() {
     setBusy(true);
     setError(null);
+    const writer = tagWriter();
+    const label: Record<ReplacePhase, string> = {
+      minting: "Minting a replacement identifier…",
+      writing: "Hold the new blank tag against the phone…",
+      verifying: "Reading the tag back to verify…",
+      replacing: "Revoking the old tag and pairing the new one…",
+      locking: "Locking the replacement so it cannot be rewritten…",
+    };
     try {
-      setStatus("Minting a replacement identifier…");
-      const mint = await fetch("/api/v1/tags/mint", {
-        method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ organizationId }),
+      await replaceUnitTag({
+        organizationId,
+        unitId: equipmentId,
+        reason,
+        lock: writer.canLock(),
+        writer,
+        api: tagApi,
+        onPhase: (phase) => setStatus(label[phase]),
       });
-      const minted = await mint.json();
-      if (!mint.ok) throw new Error(minted.error ?? "Could not mint a replacement");
-
-      setStatus("Hold the new blank tag against the phone…");
-      await writeTag(minted.url);
-
-      setStatus("Reading the tag back to verify…");
-      const readBack = await readTagOnce(15_000);
-      const verify = await fetch("/api/v1/tags/verify", {
-        method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tagId: minted.tagId, readBackPayload: readBack.split("/t/").pop() ?? readBack }),
-      });
-      if (!(await verify.json()).verified) throw new Error("The replacement tag did not verify");
-
-      setStatus("Revoking the old tag and pairing the new one…");
-      const response = await fetch("/api/v1/tags/replace", {
-        method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ equipmentId, newTagId: minted.tagId, reason: reason || "Tag replaced", verified: true }),
-      });
-      if (!response.ok) throw new Error((await response.json()).error ?? "Replacement failed");
-
-      if (canLockTags()) {
-        setStatus("Locking the replacement so it cannot be rewritten…");
-        const outcome = await lockTag();
-        await fetch("/api/v1/tags/lock", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            tagId: minted.tagId,
-            locked: outcome.locked,
-            reason: outcome.locked ? null : outcome.reason,
-            unsupported: outcome.locked ? false : Boolean(outcome.unsupported),
-          }),
-        }).catch(() => {});
-      }
-
       setStatus("Replaced. The old tag is revoked and its history retained.");
       setTimeout(() => window.location.reload(), 1200);
     } catch (e) {
@@ -117,7 +94,7 @@ export function TagActions({ tagId, equipmentId, equipmentName, organizationId, 
       <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", marginTop: 12 }}>
         {mode === "idle" ? (
           <>
-            <Button variant="secondary" size="sm" onClick={() => setMode("replacing")} disabled={!isNfcSupported()}>
+            <Button variant="secondary" size="sm" onClick={() => setMode("replacing")} disabled={!tagWriter().isSupported()}>
               Replace tag
             </Button>
             <Button variant="secondary" size="sm" onClick={() => setMode("confirm-unpair")}>Unpair</Button>
@@ -140,7 +117,7 @@ export function TagActions({ tagId, equipmentId, equipmentName, organizationId, 
         )}
       </div>
 
-      {!isNfcSupported() ? (
+      {!tagWriter().isSupported() ? (
         <p style={{ fontSize: 12.5, color: "var(--ink-faint)", marginTop: 10 }}>
           Replacing a tag requires a device that can write NFC (Chrome on Android). Unpair and revoke work anywhere.
         </p>

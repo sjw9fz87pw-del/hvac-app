@@ -49,6 +49,7 @@ out to fill screens — empty states are real.
 
 ```bash
 npm test          # 125 tests: unit + integration against a real PostgreSQL database
+npm run test:nfc-writer  # just the tag-writing module, no database needed
 npm run typecheck
 npm run build
 ```
@@ -60,6 +61,7 @@ the same database as the seed data.
 
 ```
 packages/nfc-core/    Framework-free NFC domain — zero dependencies, shareable across services
+packages/nfc-writer/  Writing tags onto units: the radio, the safe order of steps, its own tests
 prisma/               Schema (40 tables) and seed
 src/lib/auth/         Sessions, password hashing, capabilities, tenant scope
 src/lib/maintenance/  Due-date engine, scheduling, completion + proof gates
