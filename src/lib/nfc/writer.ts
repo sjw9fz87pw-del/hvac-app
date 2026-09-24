@@ -31,7 +31,7 @@ export function tagWriter(): TagWriter {
 export const deskReader = createDeskReaderWriter();
 
 /**
- * For pairing from a unit's page: the desk reader once probed, else the
+ * For pairing from a unit's page: the NFC reader/writer once found, else the
  * phone (the iPhone app's writer inside that app, Web NFC otherwise).
  */
 export function pairingWriter(): TagWriter {
@@ -78,7 +78,7 @@ export async function pairWithReader(opts: {
   onPhase?: (phase: PairPhase) => void;
 }): Promise<TagOutcome> {
   const status = await deskReader.probe();
-  if (!deskReader.isSupported()) throw new Error(status.hint ?? "The USB reader is not connected.");
+  if (!deskReader.isSupported()) throw new Error(status.hint ?? "The NFC reader/writer is not connected.");
   if (!status.tag) throw new Error("Put a tag flat on the reader first.");
 
   let existing: string | null = null;

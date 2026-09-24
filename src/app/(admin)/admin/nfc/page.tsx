@@ -108,7 +108,7 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
         <>
           <SectionTitle>Assets without a tag</SectionTitle>
           <p style={{ fontSize: 13.5, color: "var(--ink-soft)", margin: "-4px 0 10px" }}>
-            Pair each one with the USB reader here, or open it to pair from a phone. Nothing here needs re-entering — these units already exist.
+            Pair each one with the NFC reader/writer here, or open it to pair from a phone. Nothing here needs re-entering — these units already exist.
           </p>
           {untagged.length === 0 ? (
             <EmptyState title="Every active asset is tagged" />

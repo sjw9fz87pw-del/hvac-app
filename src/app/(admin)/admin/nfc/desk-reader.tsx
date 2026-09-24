@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Card, Divider, List, Pill, Row } from "@/components/ui/primitives";
-import { createTag, isInMacApp, pairPhaseLabel, type CreatePhase, type PairPhase } from "@pmops/nfc-writer";
-import { deskReader, pairWithReader, rememberDeskReader, rememberedDeskReader, tagApi } from "@/lib/nfc/writer";
+import { createTag, pairPhaseLabel, type CreatePhase, type PairPhase } from "@pmops/nfc-writer";
+import { deskReader, pairWithReader, tagApi } from "@/lib/nfc/writer";
+import { connectReader, READER_NAME, useReaderStatus, withReader } from "@/lib/nfc/reader-status";
 
 /**
- * The USB reader on the office computer, inside the NFC console.
+ * The NFC reader/writer on the office computer, inside the NFC console. It
+ * connects on its own when plugged in (see `@/lib/nfc/reader-status`).
  *
  * - "Create tag" writes and verifies a blank tag as stock for one customer,
  *   linked to nothing yet, so a batch can be made ahead of time.
@@ -18,44 +20,11 @@ import { deskReader, pairWithReader, rememberDeskReader, rememberedDeskReader, t
  *   tapping it with a phone.
  */
 
-type ReaderState =
-  | { state: "idle" }
-  | { state: "connecting" }
-  | { state: "ready"; reader: string }
-  | { state: "unavailable"; hint: string };
-
-// One reader per computer, shared by the bar and the list.
-let current: ReaderState = { state: "idle" };
-const listeners = new Set<() => void>();
-function setReader(next: ReaderState) {
-  current = next;
-  listeners.forEach((fn) => fn());
-}
-function subscribe(fn: () => void) {
-  listeners.add(fn);
-  return () => listeners.delete(fn);
-}
-
-async function connect() {
-  setReader({ state: "connecting" });
-  const status = await deskReader.probe();
-  if (deskReader.isSupported() && status.reader) {
-    rememberDeskReader();
-    setReader({ state: "ready", reader: status.reader });
-  } else {
-    setReader({ state: "unavailable", hint: status.hint ?? "No reader found." });
-  }
-}
-
-function useReader(): ReaderState {
-  return useSyncExternalStore(subscribe, () => current, () => current);
-}
-
 export interface CustomerOption { id: string; name: string }
 
 export function DeskReaderBar({ customers }: { customers: CustomerOption[] }) {
   const router = useRouter();
-  const reader = useReader();
+  const reader = useReaderStatus();
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [customerId, setCustomerId] = useState(customers[0]?.id ?? "");
@@ -68,28 +37,30 @@ export function DeskReaderBar({ customers }: { customers: CustomerOption[] }) {
     setScanError(null);
     setCreating("starting");
     try {
-      await createTag({ organizationId: customerId, writer: deskReader, api: tagApi, onPhase: setCreating });
+      await withReader(async () => {
+        // A tag that already carries one of our links is either stock or on a
+        // unit; rewriting it would break whatever it points at.
+        const existing = await deskReader.readOnce(0).catch(() => null);
+        if (existing && new URL(existing).pathname.startsWith("/t/")) {
+          throw new Error("This tag already has a Clearline link on it, so it was left alone. Use a blank tag.");
+        }
+        await createTag({ organizationId: customerId, writer: deskReader, api: tagApi, onPhase: setCreating });
+      });
       setCreated((n) => n + 1);
       const name = customers.find((c) => c.id === customerId)?.name ?? "this customer";
       setCreateNote({ ok: true, text: `Tag created for ${name}. Take it off and put the next blank tag on, or pair it to a unit below.` });
     } catch (e) {
-      setCreateNote({ ok: false, text: `${e instanceof Error ? e.message : "Could not create the tag."} Nothing was saved as usable.` });
+      setCreateNote({ ok: false, text: e instanceof Error ? e.message : "Could not create the tag." });
     } finally {
       setCreating(null);
     }
   }
 
-  // The Mac app always has its reader; a browser that has used the reader
-  // before reconnects without being asked.
-  useEffect(() => {
-    if (current.state === "idle" && (isInMacApp() || rememberedDeskReader())) void connect();
-  }, []);
-
   async function scan() {
     setScanError(null);
     setScanning(true);
     try {
-      const url = await deskReader.readOnce(15_000);
+      const url = await withReader(() => deskReader.readOnce(15_000));
       const path = new URL(url).pathname;
       if (!path.startsWith("/t/")) throw new Error("That tag is not one of ours.");
       router.push(path);
@@ -104,16 +75,18 @@ export function DeskReaderBar({ customers }: { customers: CustomerOption[] }) {
     <Card style={{ marginTop: 18, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
       <div style={{ flex: 1, minWidth: 200 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontWeight: 650, fontSize: 14.5 }}>USB reader</span>
+          <span style={{ fontWeight: 650, fontSize: 14.5 }}>{READER_NAME}</span>
           {reader.state === "ready" ? <Pill tone="good">Connected</Pill> : null}
           {reader.state === "unavailable" ? <Pill tone="warn">Not found</Pill> : null}
         </div>
         <p style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 4, lineHeight: 1.5 }}>
           {reader.state === "ready"
-            ? `${reader.reader}. Put a tag flat on it to create, pair or scan.`
+            ? `Put a tag flat on it to create, pair or scan. (${reader.reader})`
             : reader.state === "unavailable"
               ? reader.hint
-              : "Create, pair and scan tags with the reader plugged into this computer."}
+              : reader.state === "connecting"
+                ? `Looking for the ${READER_NAME}…`
+                : `Plug the ${READER_NAME} into this computer. In the Clearline app it connects on its own.`}
         </p>
         {scanError ? <p style={{ fontSize: 13, color: "var(--bad)", marginTop: 4 }}>{scanError}</p> : null}
         {createNote ? (
@@ -143,8 +116,8 @@ export function DeskReaderBar({ customers }: { customers: CustomerOption[] }) {
             </Button>
           </>
         ) : (
-          <Button size="sm" variant="secondary" onClick={connect} disabled={reader.state === "connecting"}>
-            {reader.state === "connecting" ? "Looking…" : reader.state === "unavailable" ? "Try again" : "Connect reader"}
+          <Button size="sm" variant="secondary" onClick={connectReader} disabled={reader.state === "connecting"}>
+            {reader.state === "connecting" ? "Looking…" : reader.state === "unavailable" ? "Try again" : "Connect"}
           </Button>
         )}
       </div>
@@ -160,7 +133,7 @@ export interface UntaggedUnit {
 }
 
 export function UntaggedPairList({ units }: { units: UntaggedUnit[] }) {
-  const reader = useReader();
+  const reader = useReaderStatus();
   const [lock, setLock] = useState(true);
   const [busy, setBusy] = useState<{ id: string; phase: PairPhase | null } | null>(null);
   const [paired, setPaired] = useState<Record<string, string | null>>({});
@@ -171,12 +144,12 @@ export function UntaggedPairList({ units }: { units: UntaggedUnit[] }) {
     setErrors(({ [unit.id]: _, ...rest }) => rest);
     setBusy({ id: unit.id, phase: null });
     try {
-      const outcome = await pairWithReader({
+      const outcome = await withReader(() => pairWithReader({
         organizationId: unit.organizationId,
         unitId: unit.id,
         lock,
         onPhase: (phase) => setBusy({ id: unit.id, phase }),
-      });
+      }));
       setPaired((p) => ({ ...p, [unit.id]: outcome.lockNote }));
     } catch (e) {
       setErrors((x) => ({ ...x, [unit.id]: `${e instanceof Error ? e.message : "Pairing failed"} Nothing was linked.` }));
@@ -200,9 +173,9 @@ export function UntaggedPairList({ units }: { units: UntaggedUnit[] }) {
           const right = done ? (
             <Pill tone="good">Paired</Pill>
           ) : ready ? (
-            <div style={{ width: 150 }}>
+            <div style={{ width: 170 }}>
               <Button size="sm" onClick={() => pair(unit)} disabled={busy !== null}>
-                {mine ? (busy.phase ? pairPhaseLabel(busy.phase, "desk-reader") : "Starting…") : "Pair with reader"}
+                {mine ? (busy.phase ? pairPhaseLabel(busy.phase, "desk-reader") : "Starting…") : "Write & pair tag"}
               </Button>
             </div>
           ) : (
