@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db/client";
 import { organizationScope } from "@/lib/auth/scope";
 import { Card, Stat, StatGrid, SectionTitle, List, Row, Divider, Pill, StatusPill, EmptyState, formatDate, Button } from "@/components/ui/primitives";
 
+const UNTAGGED_LIST_LIMIT = 100;
+
 /**
  * The NFC console.
  *
@@ -14,8 +16,9 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
   const { filter } = await searchParams;
   const scope = organizationScope(actor);
   const orgFilter = scope ? { organizationId: { in: scope.length ? scope : ["__none__"] } } : {};
+  const untaggedWhere = { ...orgFilter, archivedAt: null, status: { in: ["ACTIVE" as const, "NEEDS_ATTENTION" as const] }, tagAssignments: { none: { unassignedAt: null } } };
 
-  const [tags, counts, untagged, unlocked, failures] = await Promise.all([
+  const [tags, counts, untagged, untaggedCount, unlocked, failures] = await Promise.all([
     prisma.tag.findMany({
       where: {
         ...orgFilter,
@@ -32,10 +35,13 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
     }),
     prisma.tag.groupBy({ by: ["state"], where: orgFilter, _count: true }),
     prisma.equipment.findMany({
-      where: { ...orgFilter, archivedAt: null, status: { in: ["ACTIVE", "NEEDS_ATTENTION"] }, tagAssignments: { none: { unassignedAt: null } } },
+      where: untaggedWhere,
       include: { location: { select: { name: true } }, area: { select: { name: true } } },
-      take: 25,
+      orderBy: [{ location: { name: "asc" } }, { name: "asc" }],
+      take: UNTAGGED_LIST_LIMIT,
     }),
+    // Counted separately so the stat is the real total, not the length of the capped list.
+    prisma.equipment.count({ where: untaggedWhere }),
     prisma.tag.count({ where: { ...orgFilter, state: "ACTIVE", lockedAt: null } }),
     prisma.tagEvent.findMany({
       where: { type: { in: ["WRITE_FAILED", "VERIFY_FAILED", "READ_DENIED", "LOCK_FAILED"] } },
@@ -66,7 +72,7 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
         <Stat label="Active" value={byState.ACTIVE ?? 0} tone="good" />
         <Stat label="Unassigned" value={byState.UNASSIGNED ?? 0} />
         <Stat label="Revoked" value={byState.REVOKED ?? 0} tone="bad" />
-        <Stat label="Assets untagged" value={untagged.length} tone={untagged.length > 0 ? "warn" : "good"} />
+        <Stat label="Assets untagged" value={untaggedCount} tone={untaggedCount > 0 ? "warn" : "good"} />
         <Stat label="Unlocked" value={unlocked} tone={unlocked > 0 ? "warn" : "good"} hint="Can still be rewritten" />
       </StatGrid>
 
@@ -98,6 +104,7 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
           <SectionTitle>Assets without a tag</SectionTitle>
           <p style={{ fontSize: 13.5, color: "var(--ink-soft)", margin: "-4px 0 10px" }}>
             Open one to pair a tag to it. Nothing here needs re-entering — these units already exist.
+            {untaggedCount > untagged.length ? ` Showing the first ${untagged.length} of ${untaggedCount}, by location.` : null}
           </p>
           {untagged.length === 0 ? (
             <EmptyState title="Every active asset is tagged" />
