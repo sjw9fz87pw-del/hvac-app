@@ -1,0 +1,16 @@
+{
+  // Typechecks this module on its own, without the app's aliases or types, so
+  // a stray import from the host app fails here: npx tsc -p packages/nfc-writer
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["dom", "ES2022"],
+    "types": [],
+    "strict": true,
+    "noEmit": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "isolatedModules": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts", "tests/**/*.ts", "vitest.config.ts"]
+}

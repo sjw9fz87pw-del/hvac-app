@@ -11,3 +11,6 @@ coverage/
 # Source bundle the Netlify deploy tool writes into the working directory
 # while uploading, then removes. Never part of the repository.
 deploy-*.zip
+
+__pycache__/
+desktop/mac/build/

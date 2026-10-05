@@ -192,8 +192,10 @@ point. The QR fallback covers every one of these cases and needs no explanation.
 
 A USB PC/SC reader — **ACR122U** (~$35–45, ubiquitous, somewhat dated) or
 **Identiv uTrust 3700F** (~$50–60, better behaved) — lets you encode a batch of
-tags at a desk before a survey instead of one at a time on site. Requires a small
-local bridge, which is not built (see *Not built* below).
+tags at a desk instead of one at a time on site. Use the Clearline Mac app
+(`desktop/mac`), which has the reader built in, and pair from **NFC → Assets
+without tags**. In a plain browser, `packages/nfc-writer/desk-reader/desk_reader.py`
+does the same job.
 
 ---
 
@@ -229,7 +231,7 @@ Two things to know in the field:
 
 - `NDEFReader.makeReadOnly()` arrived later than the rest of Web NFC, so a phone
   can be perfectly able to read and write while unable to lock. The flow detects
-  this (`canLockTags()`), greys out the toggle and says so, rather than failing.
+  this (`TagWriter.canLock()` in `packages/nfc-writer`), greys out the toggle and says so, rather than failing.
 - The technician can switch locking off per session. It defaults on.
 
 ---
@@ -280,8 +282,6 @@ restaurant. Specifically confirm, on your own equipment:
 
 Stated plainly, so nobody discovers it mid-deployment:
 
-- **No USB reader bridge.** Bulk desk encoding needs a local helper that does not
-  exist yet.
 - **No UID capture**, since Web NFC cannot provide it.
 - **Physical read/write has never been exercised on a real tag** in this build —
   no NFC hardware was available. The Web NFC paths are unit-tested against a

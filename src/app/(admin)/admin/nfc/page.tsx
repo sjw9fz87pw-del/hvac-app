@@ -1,6 +1,7 @@
 import { requireCapability } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
 import { organizationScope } from "@/lib/auth/scope";
+import { DeskReaderBar, UntaggedPairList } from "./desk-reader";
 import { Stat, StatGrid, SectionTitle, List, Row, Divider, Pill, StatusPill, EmptyState, formatDate, Button } from "@/components/ui/primitives";
 
 /**
@@ -15,7 +16,7 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
   const scope = organizationScope(actor);
   const orgFilter = scope ? { organizationId: { in: scope.length ? scope : ["__none__"] } } : {};
 
-  const [tags, counts, untagged, unlocked, failures] = await Promise.all([
+  const [tags, counts, untagged, unlocked, failures, customers] = await Promise.all([
     prisma.tag.findMany({
       where: {
         ...orgFilter,
@@ -42,6 +43,14 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
       orderBy: { createdAt: "desc" },
       take: 15,
     }),
+    // Who a new tag can be created for, with the USB reader.
+    actor.capabilities.has("tag.mint")
+      ? prisma.customerOrganization.findMany({
+        where: scope ? { id: { in: scope.length ? scope : ["__none__"] } } : {},
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      })
+      : Promise.resolve([]),
   ]);
 
   const byState = Object.fromEntries(counts.map((c) => [c.state, c._count]));
@@ -65,6 +74,8 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
         <Stat label="Unlocked" value={unlocked} tone={unlocked > 0 ? "warn" : "neutral"} />
         <Stat label="Revoked" value={byState.REVOKED ?? 0} />
       </StatGrid>
+
+      <DeskReaderBar customers={customers} />
 
       <div style={{ display: "flex", gap: 8, marginTop: 18, flexWrap: "wrap" }}>
         {[
@@ -93,24 +104,19 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
         <>
           <SectionTitle>Untagged units</SectionTitle>
           <p style={{ fontSize: 13.5, color: "var(--ink-soft)", margin: "-4px 0 10px" }}>
-            Open a unit to pair a tag.
+            Pair here with the NFC reader/writer, or open a unit to pair from a phone.
           </p>
           {untagged.length === 0 ? (
             <EmptyState title="All units are tagged" />
           ) : (
-            <List>
-              {untagged.map((asset, index) => (
-                <div key={asset.id}>
-                  {index > 0 ? <Divider /> : null}
-                  <Row
-                    href={`/admin/equipment/${asset.id}`}
-                    title={asset.name}
-                    subtitle={`${asset.location.name}${asset.area ? ` · ${asset.area.name}` : ""} · ${asset.internalAssetId}`}
-                    right={<Pill tone="warn">Pair a tag →</Pill>}
-                  />
-                </div>
-              ))}
-            </List>
+            <UntaggedPairList
+              units={untagged.map((asset) => ({
+                id: asset.id,
+                organizationId: asset.organizationId,
+                name: asset.name,
+                subtitle: `${asset.location.name}${asset.area ? ` · ${asset.area.name}` : ""} · ${asset.internalAssetId}`,
+              }))}
+            />
           )}
         </>
       ) : (
