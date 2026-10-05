@@ -124,7 +124,7 @@ export function CompleteLocationForm({ locationId, locationName, units, technici
             {ok} unit{ok === 1 ? "" : "s"} marked serviced
           </h2>
           <p style={{ color: "var(--ink-soft)", fontSize: 14.5, marginTop: 8 }}>
-            Each one now has its own service record and a fresh next-due date.
+            Service records created and schedules updated.
           </p>
         </Card>
 
@@ -223,10 +223,8 @@ export function CompleteLocationForm({ locationId, locationName, units, technici
 
             <Card style={{ marginTop: 14, background: "var(--surface-2)", borderStyle: "dashed" }}>
               <p style={{ fontSize: 13.5, color: "var(--ink-soft)", lineHeight: 1.55, margin: 0 }}>
-                You are recording, as <strong>{technicianName}</strong>, that the standard
-                checklist was completed on {picked.size} unit{picked.size === 1 ? "" : "s"}.
-                These records are marked <strong>unverified</strong> — no tag scan or photos —
-                and cannot be edited afterwards, only superseded.
+                Recording {picked.size} unit{picked.size === 1 ? "" : "s"} as serviced by{" "}
+                <strong>{technicianName}</strong>. Records are marked as manual entries and cannot be edited.
               </p>
             </Card>
 
@@ -250,8 +248,7 @@ export function CompleteLocationForm({ locationId, locationName, units, technici
           <SectionTitle>Needs the full flow</SectionTitle>
           <Card>
             <p style={{ fontSize: 13.5, color: "var(--ink-soft)", margin: "0 0 10px", lineHeight: 1.55 }}>
-              These require proof this screen cannot capture. Open the unit from a visit,
-              or change what the job requires in Settings.
+              These need photos or a tag scan. Complete them from a visit.
             </p>
             {blocked.map((unit) => (
               <div key={`${unit.equipmentId}-${unit.serviceTypeId}`} style={{ fontSize: 14, marginBottom: 8 }}>
@@ -267,7 +264,7 @@ export function CompleteLocationForm({ locationId, locationName, units, technici
         <Card style={{ marginTop: 14 }}>
           <Pill tone="neutral">No units</Pill>
           <p style={{ fontSize: 14, color: "var(--ink-soft)", marginTop: 8 }}>
-            This restaurant has no units on a maintenance schedule yet.
+            No scheduled units at this restaurant.
           </p>
         </Card>
       ) : null}

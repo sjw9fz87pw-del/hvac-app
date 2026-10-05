@@ -70,8 +70,7 @@ export function AcceptInviteForm({ token, valid, firstName, email, companyName }
             <div style={{ fontSize: 38, color: "var(--warn)" }}>!</div>
             <h1 style={{ fontSize: 21, marginTop: 8 }}>This link has expired</h1>
             <p style={{ color: "var(--ink-soft)", fontSize: 14.5, marginTop: 10, lineHeight: 1.6 }}>
-              Invitation links work once and expire. If you have already set a password,
-              sign in instead. Otherwise ask whoever invited you to send a new one.
+              This link has expired or was already used. Sign in, or ask for a new invitation.
             </p>
             <div style={{ marginTop: 20 }}>
               <Button href="/signin">Go to sign in</Button>

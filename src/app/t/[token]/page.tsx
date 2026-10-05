@@ -60,7 +60,6 @@ export default async function TagLanding({ params }: { params: Promise<{ token: 
     return (
       <main className="page-scroll" style={{ height: "100%", display: "grid", placeItems: "center", padding: 20 }}>
         <Card style={{ maxWidth: 420, textAlign: "center", padding: 30 }}>
-          <div style={{ fontSize: 34 }}>🏷️</div>
           <h1 style={{ fontSize: 20, marginTop: 10 }}>Tag not available</h1>
           {/* One generic message for every denial — otherwise valid tags could be enumerated. */}
           <p style={{ color: "var(--ink-soft)", fontSize: 14.5, marginTop: 8 }}>

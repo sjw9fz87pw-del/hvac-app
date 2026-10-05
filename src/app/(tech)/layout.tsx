@@ -36,10 +36,11 @@ export default async function TechLayout({ children }: { children: React.ReactNo
     <div className="app-shell">
       <ShellBar
         roots={TAB_ROOTS}
+        home="/tech"
         crossShell={home === "/tech" ? null : { href: home, label: SHELL_LABEL[home] ?? "Dashboard" }}
       />
       <div className="app-scroll">
-        <div style={{ maxWidth: 720, margin: "0 auto", padding: "22px 18px 24px" }}>{children}</div>
+        <div className="page page-narrow">{children}</div>
       </div>
       <TabBar items={TABS} />
     </div>

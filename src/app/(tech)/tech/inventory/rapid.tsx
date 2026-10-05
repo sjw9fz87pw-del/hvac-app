@@ -5,6 +5,7 @@ import { Card, Button, Pill } from "@/components/ui/primitives";
 import { compressImage, uploadPhoto } from "@/lib/photos/client";
 import { isNfcSupported, canLockTags, nfcBlocker, nfcBlockerMessage, type NfcBlocker } from "@/lib/nfc/web-nfc";
 import { mintWriteVerifyPair, type PairPhase } from "@/lib/nfc/pairing";
+import { NavIcon } from "@/components/ui/nav";
 
 interface LocationOption {
   id: string; name: string; organizationId: string; organizationName: string;
@@ -123,7 +124,7 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
 
     setBusy(false);
     const body = await response.json().catch(() => ({}));
-    if (!response.ok) { setError(body.error ?? "Could not create the asset"); return; }
+    if (!response.ok) { setError(body.error ?? "Could not create the unit"); return; }
 
     setCreatedId(body.id);
     setCreatedAssetId(body.internalAssetId);
@@ -207,11 +208,7 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
               ) : (
                 <Card style={{ background: "var(--warn-soft)", borderColor: "transparent", fontSize: 13.5, textAlign: "left", lineHeight: 1.5 }}>
                   {nfcBlockerMessage(blocker)}
-                  <div style={{ marginTop: 8 }}>
-                    The unit is saved either way. Open it from{" "}
-                    <strong>Assets without tags</strong> to tag it — on an iPhone that page
-                    hands you a link to write with a free NFC app.
-                  </div>
+                  <div style={{ marginTop: 6 }}>The unit is saved. Tag it later from its page.</div>
                 </Card>
               )
             ) : null}
@@ -231,7 +228,7 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
         <div>
           <h1 style={{ fontSize: 23 }}>Rapid inventory</h1>
           <div style={{ fontSize: 13.5, color: "var(--ink-soft)" }}>
-            {location?.name} · {existingCount + sessionCount} assets
+            {location?.name} · {existingCount + sessionCount} units
           </div>
         </div>
         <Pill tone="accent">{sessionCount} this session</Pill>
@@ -255,7 +252,7 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
               style={{
                 padding: "9px 14px", borderRadius: 999, fontSize: 14, fontWeight: 600, cursor: "pointer", minHeight: 42,
                 border: `1px solid ${areaId === area.id ? "transparent" : "var(--line)"}`,
-                background: areaId === area.id ? "linear-gradient(180deg, var(--accent-2), var(--accent))" : "var(--surface-2)",
+                background: areaId === area.id ? "var(--accent)" : "var(--surface-2)",
                 color: areaId === area.id ? "#1a0f04" : "var(--ink-soft)",
               }}
             >
@@ -285,7 +282,7 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
           <img src={preview} alt="Equipment" style={{ width: "100%", height: 180, objectFit: "cover" }} />
         ) : (
           <>
-            <span style={{ fontSize: 30 }}>📷</span>
+            <NavIcon name="camera" size={28} />
             <span style={{ fontWeight: 620, marginTop: 6 }}>Photograph the unit</span>
           </>
         )}
@@ -300,7 +297,7 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
               style={{
                 padding: "9px 13px", borderRadius: 999, fontSize: 13.5, fontWeight: 600, cursor: "pointer", minHeight: 40,
                 border: `1px solid ${type.label === item.label ? "transparent" : "var(--line)"}`,
-                background: type.label === item.label ? "linear-gradient(180deg, var(--accent-2), var(--accent))" : "var(--surface-2)",
+                background: type.label === item.label ? "var(--accent)" : "var(--surface-2)",
                 color: type.label === item.label ? "#1a0f04" : "var(--ink-soft)",
               }}
             >
@@ -330,7 +327,7 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
               style={{
                 flex: 1, padding: "11px 4px", borderRadius: 11, fontSize: 14, fontWeight: 620, cursor: "pointer", minHeight: 44,
                 border: `1px solid ${intervalDays === days ? "transparent" : "var(--line)"}`,
-                background: intervalDays === days ? "linear-gradient(180deg, var(--accent-2), var(--accent))" : "var(--surface-2)",
+                background: intervalDays === days ? "var(--accent)" : "var(--surface-2)",
                 color: intervalDays === days ? "#1a0f04" : "var(--ink-soft)",
               }}
             >
@@ -364,8 +361,8 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
             <span style={{ display: "block", fontWeight: 620, fontSize: 14.5 }}>Lock tags after pairing</span>
             <span style={{ display: "block", fontSize: 12.5, color: "var(--ink-faint)", marginTop: 1 }}>
               {canLockTags()
-                ? "Permanent. Stops anyone repointing the tag at different equipment."
-                : "This browser cannot lock tags — they will pair but stay rewritable."}
+                ? "Permanent. Prevents the tag being rewritten."
+                : "This browser cannot lock tags."}
             </span>
           </span>
         </button>

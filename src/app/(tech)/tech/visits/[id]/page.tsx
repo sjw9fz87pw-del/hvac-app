@@ -49,7 +49,7 @@ export default async function VisitPage({ params }: { params: Promise<{ id: stri
     <main className="rise">
 
       <div style={{ margin: "12px 0 16px" }}>
-        <h1 style={{ fontSize: 25 }}>{visit.location.name}</h1>
+        <h1 style={{ fontSize: 23 }}>{visit.location.name}</h1>
         <div style={{ color: "var(--ink-soft)", fontSize: 14.5, marginTop: 3 }}>
           {visit.organization.name} · {formatDateTime(visit.scheduledFor, visit.location.timezone)} · {visit.tasks.length} units
         </div>

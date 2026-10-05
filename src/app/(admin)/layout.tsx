@@ -2,9 +2,8 @@ import { redirect } from "next/navigation";
 import { currentActor } from "@/lib/auth/session";
 import { ShellBar } from "@/components/ui/shell-bar";
 import { homeFor } from "@/lib/auth/routing";
-import { AppBar, TabBar } from "@/components/ui/nav";
+import { TabBar } from "@/components/ui/nav";
 import type { NavItem } from "@/components/ui/nav-active";
-import { GlobalSearch } from "@/components/ui/global-search";
 
 /**
  * The admin shell.
@@ -44,14 +43,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="app-shell">
       <ShellBar
         roots={TAB_ROOTS}
+        home="/admin"
+        search
         crossShell={home === "/admin" ? null : { href: home, label: SHELL_LABEL[home] ?? "Dashboard" }}
       />
-      {/* The app bar lives inside the scroller so it can scroll away on a
-          phone, and sticks to the top of it rather than eating fixed height. */}
       <div className="app-scroll">
-        <AppBar title="Equipment Care" />
-        <GlobalSearch />
-        <div style={{ maxWidth: 1240, margin: "0 auto", padding: "18px 20px 24px" }}>{children}</div>
+        <div className="page">{children}</div>
       </div>
       <TabBar items={TABS} />
     </div>

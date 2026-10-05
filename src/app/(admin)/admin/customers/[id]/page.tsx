@@ -33,7 +33,7 @@ export default async function CustomerDetail({ params }: { params: Promise<{ id:
 
   return (
     <main className="rise">
-      <h1 style={{ fontSize: 27, margin: "12px 0 18px" }}>{organization.name}</h1>
+      <h1 style={{ fontSize: 23, margin: "12px 0 18px" }}>{organization.name}</h1>
 
       <Card style={{ display: "flex", gap: 20, alignItems: "center", marginBottom: 16 }}>
         <HealthRing score={dashboard.health.score} band={dashboard.health.band} />
@@ -49,12 +49,11 @@ export default async function CustomerDetail({ params }: { params: Promise<{ id:
         </div>
       </Card>
 
-      <StatGrid min={155}>
-        <Stat label="Total assets" value={dashboard.totals.assets} />
-        <Stat label="Current" value={dashboard.totals.current} tone="good" />
+      <StatGrid>
+        <Stat label="Units" value={dashboard.totals.assets} />
         <Stat label="Due" value={dashboard.totals.dueSoon} tone={dashboard.totals.dueSoon > 0 ? "warn" : "neutral"} />
-        <Stat label="Overdue" value={dashboard.totals.overdue} tone={dashboard.totals.overdue > 0 ? "bad" : "good"} />
-        <Stat label="Open issues" value={dashboard.totals.openIssues} tone={dashboard.totals.openIssues > 0 ? "warn" : "good"} />
+        <Stat label="Overdue" value={dashboard.totals.overdue} tone={dashboard.totals.overdue > 0 ? "bad" : "neutral"} />
+        <Stat label="Issues" value={dashboard.totals.openIssues} tone={dashboard.totals.openIssues > 0 ? "warn" : "neutral"} />
       </StatGrid>
 
       <SectionTitle>Locations</SectionTitle>
@@ -67,7 +66,7 @@ export default async function CustomerDetail({ params }: { params: Promise<{ id:
               <Row
                 href={`/admin/locations/${location.id}`}
                 title={location.name}
-                subtitle={`${location._count.equipment} assets${location.city ? ` · ${location.city}` : ""}`}
+                subtitle={`${location._count.equipment} units${location.city ? ` · ${location.city}` : ""}`}
                 right={overdue > 0 ? <Pill tone="bad">{overdue} overdue</Pill> : <Pill tone="good">Current</Pill>}
               />
             </div>

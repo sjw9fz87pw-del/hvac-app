@@ -55,8 +55,7 @@ export default async function CompletePage() {
       )}
 
       <p style={{ color: "var(--ink-faint)", fontSize: 13, marginTop: 20, lineHeight: 1.55 }}>
-        For a single unit with photos and a tag scan, open it from a visit instead.
-        This screen is for recording a whole restaurant at once.
+        Record a service for every unit at a restaurant at once.
       </p>
     </main>
   );

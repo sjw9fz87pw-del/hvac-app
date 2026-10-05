@@ -1,6 +1,6 @@
 import { requireActor } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
-import { Card, Stat, StatGrid, SectionTitle, EmptyState, Button, Pill, formatDate } from "@/components/ui/primitives";
+import { Card, Stat, StatGrid, SectionTitle, EmptyState, Button, Pill } from "@/components/ui/primitives";
 import { SyncBanner } from "@/components/ui/sync-banner";
 
 /**
@@ -44,13 +44,13 @@ export default async function TechToday() {
         <div style={{ fontSize: 13.5, color: "var(--ink-faint)", fontWeight: 600 }}>
           {new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
         </div>
-        <h1 style={{ fontSize: 27, marginTop: 2 }}>Hi, {actor.name.split(" ")[0]}</h1>
+        <h1 style={{ fontSize: 23, marginTop: 2 }}>Today</h1>
       </div>
 
       <StatGrid>
         <Stat label="Restaurants" value={visits.length} />
-        <Stat label="Units due" value={allTasks.length - completed} tone={allTasks.length - completed > 0 ? "warn" : "good"} />
-        <Stat label="Completed" value={completed} tone="good" />
+        <Stat label="Units due" value={allTasks.length - completed} tone={allTasks.length - completed > 0 ? "warn" : "neutral"} />
+        <Stat label="Completed" value={completed} />
       </StatGrid>
 
       <SectionTitle>Today&rsquo;s visits</SectionTitle>
@@ -102,9 +102,6 @@ export default async function TechToday() {
         <Button href="/tech/scan" size="lg" variant="secondary">Scan a tag</Button>
         <Button href="/tech/inventory" size="lg" variant="secondary">Rapid inventory</Button>
         <Button href="/tech/activity" size="lg" variant="secondary">My activity</Button>
-      </div>
-      <div style={{ marginTop: 10, fontSize: 12.5, color: "var(--ink-faint)", textAlign: "center" }}>
-        Next visit {upcoming > 0 ? "scheduled" : "unscheduled"} · {formatDate(new Date())}
       </div>
     </main>
   );

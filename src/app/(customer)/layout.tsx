@@ -34,10 +34,11 @@ export default async function CustomerLayout({ children }: { children: React.Rea
     <div className="app-shell">
       <ShellBar
         roots={TAB_ROOTS}
+        home="/home"
         crossShell={home === "/home" ? null : { href: home, label: SHELL_LABEL[home] ?? "Dashboard" }}
       />
       <div className="app-scroll">
-        <div style={{ maxWidth: 720, margin: "0 auto", padding: "22px 18px 24px" }}>{children}</div>
+        <div className="page page-narrow">{children}</div>
       </div>
       <TabBar items={TABS} />
     </div>

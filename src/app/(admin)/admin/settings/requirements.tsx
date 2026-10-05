@@ -100,8 +100,7 @@ export function RequirementsEditor({ serviceTypeId, initial }: {
 
       {required.length === 0 ? (
         <p style={{ fontSize: 12.5, color: "var(--warn)", marginTop: 10, lineHeight: 1.5 }}>
-          Nothing is required. A completed record will carry the technician, the unit and
-          the time — no evidence of the work itself.
+          No evidence required.
         </p>
       ) : null}
 

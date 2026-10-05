@@ -116,14 +116,14 @@ export function EditSchedule({ schedule, canEdit }: { schedule: ScheduleRow; can
             value={days} onChange={(e) => setDays(e.target.value)} aria-label="Days between services"
           />
           <p style={{ color: "var(--ink-faint)", fontSize: 12.5, marginTop: 6, lineHeight: 1.5 }}>
-            Counted from when the work was last done, so the next visit moves with it.
+            Counted from the last service.
           </p>
 
           <div style={{ marginTop: 16 }}>
             <label style={label} htmlFor={`due-${schedule.id}`}>Next due</label>
             <input id={`due-${schedule.id}`} style={field} type="date" value={due} onChange={(e) => setDue(e.target.value)} />
             <p style={{ color: "var(--ink-faint)", fontSize: 12.5, marginTop: 6, lineHeight: 1.5 }}>
-              Moves this visit only. The cadence above stays as it is.
+              Changes this visit only. The interval stays the same.
             </p>
           </div>
 

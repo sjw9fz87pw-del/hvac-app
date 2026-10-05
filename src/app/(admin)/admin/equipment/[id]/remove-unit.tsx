@@ -87,38 +87,36 @@ export function RemoveUnit({ equipmentId, unitName, locationId }: {
   return (
     <Card style={{ marginTop: 10, borderColor: "var(--bad)" }}>
       {!check ? (
-        <div style={{ fontSize: 13.5, color: "var(--ink-soft)" }}>Checking what is recorded against it…</div>
+        <div style={{ fontSize: 13.5, color: "var(--ink-soft)" }}>Checking…</div>
       ) : check.deletable ? (
         <>
           <div style={{ fontWeight: 640 }}>Delete {unitName}?</div>
           <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 6, lineHeight: 1.5 }}>
-            Nothing has been recorded against this unit, so it can go completely. This cannot be undone.
-            {check.hasTag ? " Its tag goes back to unassigned stock rather than being destroyed." : ""}
+            This cannot be undone.
+            {check.hasTag ? " Its tag returns to unassigned stock." : ""}
             {check.pendingTasks > 0
               ? ` ${check.pendingTasks} scheduled task${check.pendingTasks === 1 ? "" : "s"} will be cancelled.`
               : ""}
           </p>
           <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
             <div style={{ width: 150 }}>
-              <Button onClick={remove} disabled={busy}>{busy ? "Removing…" : "Yes, delete"}</Button>
+              <Button variant="danger" onClick={remove} disabled={busy}>{busy ? "Deleting…" : "Delete"}</Button>
             </div>
             <div style={{ width: 110 }}>
-              <Button variant="secondary" onClick={() => setOpen(false)} disabled={busy}>Keep</Button>
+              <Button variant="secondary" onClick={() => setOpen(false)} disabled={busy}>Cancel</Button>
             </div>
           </div>
         </>
       ) : (
         <>
-          <div style={{ fontWeight: 640 }}>This one gets archived, not deleted</div>
+          <div style={{ fontWeight: 640 }}>Archive {unitName}?</div>
           <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 6, lineHeight: 1.5 }}>
-            It has {check.blockers.join(", ")}. Those records name this unit, so deleting it would
-            change what the history says was done. Archiving stops it being scheduled and takes it
-            off the list, and keeps the record intact.
+            It has {check.blockers.join(", ")}, so it is archived rather than deleted. Its history is kept.
           </p>
           <input
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="Why? e.g. replaced, scrapped, sold"
+            placeholder="Reason (e.g. replaced, removed)"
             style={{
               width: "100%", marginTop: 12, padding: "11px 13px", borderRadius: 11,
               border: "1px solid var(--line)", background: "var(--surface-2)", minHeight: 44,
@@ -126,10 +124,10 @@ export function RemoveUnit({ equipmentId, unitName, locationId }: {
           />
           <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
             <div style={{ width: 150 }}>
-              <Button onClick={archive} disabled={busy}>{busy ? "Archiving…" : "Archive it"}</Button>
+              <Button onClick={archive} disabled={busy}>{busy ? "Archiving…" : "Archive"}</Button>
             </div>
             <div style={{ width: 110 }}>
-              <Button variant="secondary" onClick={() => setOpen(false)} disabled={busy}>Keep</Button>
+              <Button variant="secondary" onClick={() => setOpen(false)} disabled={busy}>Cancel</Button>
             </div>
           </div>
         </>

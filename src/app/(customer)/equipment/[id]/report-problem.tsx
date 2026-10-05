@@ -66,7 +66,7 @@ export function ReportProblem({ equipmentId, equipmentName }: { equipmentId: str
       <Card style={{ background: "var(--good-soft)", borderColor: "transparent", textAlign: "center" }}>
         <div style={{ fontWeight: 660, color: "var(--good)" }}>Problem reported</div>
         <p style={{ fontSize: 14, color: "var(--ink-soft)", marginTop: 5 }}>
-          Our team has the equipment details and service history. We&rsquo;ll be in touch.
+          Thank you. Our team will be in touch.
         </p>
       </Card>
     );
@@ -80,7 +80,7 @@ export function ReportProblem({ equipmentId, equipmentName }: { equipmentId: str
     <Card>
       <div style={{ fontWeight: 660, marginBottom: 3 }}>What&rsquo;s wrong with {equipmentName}?</div>
       <p style={{ fontSize: 13.5, color: "var(--ink-faint)", marginBottom: 14 }}>
-        We already have the model, serial number and service history.
+        Equipment details are attached automatically.
       </p>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 8 }}>

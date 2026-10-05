@@ -57,7 +57,7 @@ export function PairTag({ equipmentId, organizationId, unitName }: {
       <div style={{ marginTop: 10 }}>
         <Pill tone="good">Tag paired</Pill>
         <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 8 }}>
-          Tapping it now opens {unitName}. {lockNote ? `The tag could not be locked: ${lockNote}` : null}
+          {lockNote ? `Paired to ${unitName}. Not locked: ${lockNote}` : `Paired to ${unitName}.`}
         </p>
       </div>
     );
@@ -77,13 +77,12 @@ export function PairTag({ equipmentId, organizationId, unitName }: {
       ) : (
         <>
           <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 8, lineHeight: 1.5 }}>
-            Hold a blank tag against the back of the phone. It gets written,
-            checked by reading it back, and only then linked to this unit.
+            Hold a blank tag to the back of the phone. It is written, verified, then linked to this unit.
           </p>
 
           <label style={{ display: "flex", alignItems: "center", gap: 9, marginTop: 10, fontSize: 13.5, cursor: "pointer" }}>
             <input type="checkbox" checked={lock} onChange={(e) => setLock(e.target.checked)} style={{ width: 18, height: 18 }} />
-            <span>Lock the tag so it cannot be rewritten <span style={{ color: "var(--ink-faint)" }}>— permanent</span></span>
+            <span>Lock tag after pairing <span style={{ color: "var(--ink-faint)" }}>(permanent)</span></span>
           </label>
 
           <div style={{ marginTop: 12, maxWidth: 210 }}>
@@ -98,7 +97,7 @@ export function PairTag({ equipmentId, organizationId, unitName }: {
         <div style={{ color: "var(--bad)", fontSize: 13.5, marginTop: 10 }}>
           {error}
           <div style={{ color: "var(--ink-faint)", marginTop: 4 }}>
-            Nothing was linked — the unit is unchanged. Try again with the tag flat against the phone.
+            Nothing was saved. Hold the tag flat against the phone and try again.
           </div>
         </div>
       ) : null}

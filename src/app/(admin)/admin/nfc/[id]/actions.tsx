@@ -65,7 +65,7 @@ export function TagActions({ tagId, equipmentId, equipmentName, organizationId, 
         }).catch(() => {});
       }
 
-      setStatus("Replaced. The old tag is revoked and its history retained.");
+      setStatus("Tag replaced. The old tag was revoked.");
       setTimeout(() => window.location.reload(), 1200);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Replacement failed");
@@ -142,7 +142,7 @@ export function TagActions({ tagId, equipmentId, equipmentName, organizationId, 
 
       {!isNfcSupported() ? (
         <p style={{ fontSize: 12.5, color: "var(--ink-faint)", marginTop: 10 }}>
-          Replacing a tag requires a device that can write NFC (Chrome on Android). Unpair and revoke work anywhere.
+          Replacing a tag requires Chrome on Android.
         </p>
       ) : null}
     </Card>

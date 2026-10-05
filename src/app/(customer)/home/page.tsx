@@ -38,7 +38,7 @@ export default async function CustomerHome({ searchParams }: { searchParams: Pro
         <div style={{ fontSize: 13.5, color: "var(--ink-faint)", fontWeight: 600 }}>
           {locations[0]?.organization.name ?? "Your restaurants"}
         </div>
-        <h1 style={{ fontSize: 27, marginTop: 2 }}>
+        <h1 style={{ fontSize: 23, marginTop: 2 }}>
           {selected ? locations.find((l) => l.id === selected)!.name : multiLocation ? "All locations" : locations[0]?.name ?? "Your equipment"}
         </h1>
       </div>
@@ -64,17 +64,17 @@ export default async function CustomerHome({ searchParams }: { searchParams: Pro
           </div>
           {/* Stated plainly: this measures our upkeep, not the machine's condition. */}
           <p style={{ fontSize: 12, color: "var(--ink-faint)", marginTop: 10, lineHeight: 1.45 }}>
-            Based on service punctuality, overdue items and open issues — not on sensor diagnostics.
+            Based on service timeliness and open issues.
           </p>
         </div>
       </Card>
 
       <div style={{ marginTop: 14 }}>
         <StatGrid>
-          <Stat label="Assets" value={dashboard.totals.assets} hint="Under management" />
-          <Stat label="Current" value={dashboard.totals.current} tone="good" />
+          <Stat label="Units" value={dashboard.totals.assets} />
+          <Stat label="Current" value={dashboard.totals.current} />
           <Stat label="Due soon" value={dashboard.totals.dueSoon} tone={dashboard.totals.dueSoon > 0 ? "warn" : "neutral"} />
-          <Stat label="Overdue" value={dashboard.totals.overdue} tone={dashboard.totals.overdue > 0 ? "bad" : "good"} />
+          <Stat label="Overdue" value={dashboard.totals.overdue} tone={dashboard.totals.overdue > 0 ? "bad" : "neutral"} />
         </StatGrid>
       </div>
 
@@ -105,7 +105,7 @@ export default async function CustomerHome({ searchParams }: { searchParams: Pro
                 <Row
                   href={`/equipment?areaId=${area.id}`}
                   title={area.name}
-                  subtitle={`${area.assetCount} asset${area.assetCount === 1 ? "" : "s"}`}
+                  subtitle={`${area.assetCount} unit${area.assetCount === 1 ? "" : "s"}`}
                   right={
                     area.overdue > 0 ? <Pill tone="bad">{area.overdue} overdue</Pill>
                       : area.dueSoon > 0 ? <Pill tone="warn">{area.dueSoon} due</Pill>
@@ -137,14 +137,9 @@ export default async function CustomerHome({ searchParams }: { searchParams: Pro
       )}
 
       <SectionTitle>This year</SectionTitle>
-      <StatGrid min={170}>
-        <Stat label="Services completed" value={dashboard.yearToDate.servicesCompleted} tone="accent" />
-        <Stat
-          label="Problems identified"
-          value={dashboard.yearToDate.issuesIdentified}
-          tone="info"
-          hint="Found during preventive service"
-        />
+      <StatGrid min={140}>
+        <Stat label="Services completed" value={dashboard.yearToDate.servicesCompleted} />
+        <Stat label="Problems found" value={dashboard.yearToDate.issuesIdentified} />
       </StatGrid>
 
       {dashboard.totals.openIssues > 0 ? (

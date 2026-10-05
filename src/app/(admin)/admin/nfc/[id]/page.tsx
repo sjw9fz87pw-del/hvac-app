@@ -4,7 +4,8 @@ import { prisma } from "@/lib/db/client";
 import { requireCapability } from "@/lib/auth/session";
 import { canAccessOrganization } from "@/lib/auth/scope";
 import { tagUrl } from "@/lib/nfc/service";
-import { Card, SectionTitle, StatusPill, Pill, List, Row, Divider, formatDate } from "@/components/ui/primitives";
+import { Card, SectionTitle, StatusPill, Pill, List, Row, Divider, formatDate, formatDateTime } from "@/components/ui/primitives";
+import { tagEventLabel } from "@/components/ui/labels";
 import { TagActions } from "./actions";
 
 /**
@@ -44,7 +45,7 @@ export default async function TagDetail({ params }: { params: Promise<{ id: stri
     <main className="rise">
 
       <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "12px 0 18px", flexWrap: "wrap" }}>
-        <h1 style={{ fontSize: 25 }}>{current?.equipment.name ?? tag.label ?? "Unassigned tag"}</h1>
+        <h1 style={{ fontSize: 23 }}>{current?.equipment.name ?? tag.label ?? "Unassigned tag"}</h1>
         <StatusPill status={tag.state} />
       </div>
 
@@ -71,7 +72,7 @@ export default async function TagDetail({ params }: { params: Promise<{ id: stri
             </div>
             <div dangerouslySetInnerHTML={{ __html: qrSvg }} style={{ display: "inline-block", background: "#fff", padding: 10, borderRadius: 12 }} />
             <p style={{ fontSize: 12.5, color: "var(--ink-soft)", marginTop: 10 }}>
-              Resolves to the same record as the tag. Print and stick it beside the tag for iPhones and damaged chips.
+              Print and place beside the tag as a backup.
             </p>
           </Card>
         ) : null}
@@ -106,15 +107,15 @@ export default async function TagDetail({ params }: { params: Promise<{ id: stri
         ))}
       </List>
 
-      <SectionTitle>Audit history</SectionTitle>
+      <SectionTitle>History</SectionTitle>
       <List>
         {tag.events.map((event, index) => (
           <div key={event.id}>
             {index > 0 ? <Divider /> : null}
             <Row
-              title={event.type.replace(/_/g, " ").toLowerCase().replace(/^./, (c) => c.toUpperCase())}
-              subtitle={Object.keys(event.detail as object).length > 0 ? JSON.stringify(event.detail) : undefined}
-              right={<span style={{ fontSize: 13, color: "var(--ink-faint)" }}>{event.createdAt.toLocaleString()}</span>}
+              title={tagEventLabel(event.type)}
+              subtitle={(event.detail as { via?: string } | null)?.via === "TAP" ? "Confirmed by tapping the tag" : undefined}
+              right={<span style={{ fontSize: 13, color: "var(--ink-faint)" }}>{formatDateTime(event.createdAt)}</span>}
             />
           </div>
         ))}

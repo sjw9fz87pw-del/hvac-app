@@ -44,10 +44,9 @@ export function ClaimTag({ payload, units }: { payload: string; units: UnitOptio
 
   return (
     <Card style={{ maxWidth: 460, padding: 22 }}>
-      <div style={{ fontSize: 30 }}>🏷️</div>
-      <h1 style={{ fontSize: 20, marginTop: 8 }}>New tag — what is it on?</h1>
+      <h1 style={{ fontSize: 20 }}>Link tag</h1>
       <p style={{ color: "var(--ink-soft)", fontSize: 14, marginTop: 6, lineHeight: 1.5 }}>
-        This tag is written but not linked to anything yet. Pick the unit it is stuck to.
+        Select the unit this tag is attached to.
       </p>
 
       {units.length > 6 ? (

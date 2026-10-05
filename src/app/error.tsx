@@ -9,10 +9,9 @@ export default function ErrorBoundary({ reset }: { error: Error; reset: () => vo
   return (
     <main className="page-scroll" style={{ height: "100%", display: "grid", placeItems: "center", padding: 20 }}>
       <div style={{ maxWidth: 420, textAlign: "center", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 16, padding: 30 }}>
-        <div style={{ fontSize: 32 }}>⚠️</div>
         <h1 style={{ fontSize: 20, marginTop: 10 }}>Something went wrong</h1>
         <p style={{ color: "var(--ink-soft)", fontSize: 14.5, marginTop: 8 }}>
-          This page could not be loaded. It may not exist, or your account may not have access to it.
+          This page could not be loaded.
         </p>
         <div style={{ display: "flex", gap: 10, marginTop: 20, justifyContent: "center" }}>
           <button

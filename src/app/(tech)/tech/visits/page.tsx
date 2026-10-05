@@ -24,7 +24,7 @@ export default async function TechVisits() {
       <PageHeader title="Visits" subtitle="Your scheduled and completed restaurant visits" />
 
       {upcoming.length === 0 && past.length === 0 ? (
-        <EmptyState title="No visits assigned" body="Scheduled work appears here as soon as it is assigned to you." />
+        <EmptyState title="No visits assigned" body="Assigned visits appear here." />
       ) : null}
 
       {upcoming.length > 0 ? (

@@ -39,7 +39,7 @@ export default async function AccountPage() {
             <Row
               title={location.name}
               subtitle={location.organization.name}
-              right={<span style={{ fontSize: 13.5, color: "var(--ink-faint)" }}>{location._count.equipment} assets</span>}
+              right={<span style={{ fontSize: 13.5, color: "var(--ink-faint)" }}>{location._count.equipment} units</span>}
             />
           </div>
         ))}
@@ -48,8 +48,7 @@ export default async function AccountPage() {
       <SectionTitle>Notifications</SectionTitle>
       <Card>
         <p style={{ fontSize: 14, color: "var(--ink-soft)" }}>
-          You&rsquo;ll be notified about upcoming and completed service, issues found and resolved, and overdue maintenance.
-          Overdue items are digested into one daily summary per location rather than one message per unit.
+          You&rsquo;ll be notified about service visits, issues and overdue maintenance.
         </p>
       </Card>
 

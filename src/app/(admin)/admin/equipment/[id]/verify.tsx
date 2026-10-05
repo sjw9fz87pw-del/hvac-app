@@ -39,8 +39,7 @@ export function VerifyEquipment({ equipmentId, equipmentName, serviceTypes }: {
       <Pill tone="warn">Awaiting service setup</Pill>
       <div style={{ fontWeight: 640, marginTop: 10 }}>Verify {equipmentName}</div>
       <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 4 }}>
-        The customer added this unit. Confirm the details and set its maintenance schedule — it starts generating
-        preventive work as soon as you do.
+        Added by the customer. Confirm the details and set a maintenance schedule.
       </p>
 
       <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap", alignItems: "center" }}>
@@ -64,7 +63,7 @@ export function VerifyEquipment({ equipmentId, equipmentName, serviceTypes }: {
               style={{
                 padding: "11px 13px", borderRadius: 11, fontSize: 14, fontWeight: 620, cursor: "pointer", minHeight: 44,
                 border: `1px solid ${intervalDays === days ? "transparent" : "var(--line)"}`,
-                background: intervalDays === days ? "linear-gradient(180deg, var(--accent-2), var(--accent))" : "var(--surface-2)",
+                background: intervalDays === days ? "var(--accent)" : "var(--surface-2)",
                 color: intervalDays === days ? "#1a0f04" : "var(--ink-soft)",
               }}
             >

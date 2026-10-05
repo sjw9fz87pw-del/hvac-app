@@ -148,7 +148,7 @@ export function UnitList({ units, canEdit, canRemove }: { units: UnitRow[]; canE
 
       {refused.length > 0 ? (
         <Card style={{ marginBottom: 10, borderColor: "var(--warn-line)" }}>
-          <div style={{ fontWeight: 640, fontSize: 14 }}>Kept, because they have history</div>
+          <div style={{ fontWeight: 640, fontSize: 14 }}>Not removed</div>
           <ul style={{ margin: "8px 0 0", paddingLeft: 18, fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.6 }}>
             {refused.map((line) => <li key={line}>{line}</li>)}
           </ul>
@@ -222,17 +222,16 @@ export function UnitList({ units, canEdit, canRemove }: { units: UnitRow[]; canE
                   Remove {picked.size} unit{picked.size === 1 ? "" : "s"}?
                 </div>
                 <p style={{ color: "var(--ink-soft)", fontSize: 13, marginTop: 5, lineHeight: 1.5 }}>
-                  This cannot be undone. Anything that has been serviced is kept and named
-                  below instead — archive those if the machine is gone.
+                  This cannot be undone. Units with service history are kept.
                 </p>
                 <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
                   <div style={{ width: 150 }}>
                     <Button onClick={removePicked} disabled={busy}>
-                      {busy ? "Removing…" : "Yes, remove"}
+                      {busy ? "Removing…" : "Remove"}
                     </Button>
                   </div>
                   <div style={{ width: 110 }}>
-                    <Button variant="secondary" onClick={() => setConfirming(false)} disabled={busy}>Keep</Button>
+                    <Button variant="secondary" onClick={() => setConfirming(false)} disabled={busy}>Cancel</Button>
                   </div>
                 </div>
               </div>

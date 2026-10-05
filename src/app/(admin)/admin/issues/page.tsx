@@ -30,13 +30,13 @@ export default async function AdminIssues({ searchParams }: { searchParams: Prom
 
   return (
     <main className="rise">
-      <PageHeader title="Issues" subtitle="Problems reported by customers and found during service" />
+      <PageHeader title="Issues" subtitle="Reported by customers and technicians" />
 
-      <StatGrid min={150}>
-        <Stat label="Open" value={open.length} tone={open.length > 0 ? "warn" : "good"} />
-        <Stat label="From customers" value={fromCustomers} />
-        <Stat label="Found by technicians" value={fromTechs} tone="info" />
-        <Stat label="Critical" value={open.filter((i) => i.severity === "CRITICAL").length} tone="bad" />
+      <StatGrid>
+        <Stat label="Open" value={open.length} tone={open.length > 0 ? "warn" : "neutral"} />
+        <Stat label="Customer" value={fromCustomers} />
+        <Stat label="Technician" value={fromTechs} />
+        <Stat label="Critical" value={open.filter((i) => i.severity === "CRITICAL").length} tone={open.some((i) => i.severity === "CRITICAL") ? "bad" : "neutral"} />
       </StatGrid>
 
       <SectionTitle>Open issues</SectionTitle>

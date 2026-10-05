@@ -25,14 +25,14 @@ export default async function VisitReportPage({ params }: { params: Promise<{ id
     <main className="rise">
 
       <div style={{ margin: "12px 0 18px" }}>
-        <h1 style={{ fontSize: 25 }}>{report.locationName}</h1>
+        <h1 style={{ fontSize: 23 }}>{report.locationName}</h1>
         <div style={{ color: "var(--ink-soft)", fontSize: 14.5, marginTop: 3 }}>
           Service report · {formatDate(report.completedAt ?? report.scheduledFor)} · {report.technicianName ?? "Our team"}
         </div>
       </div>
 
       <StatGrid>
-        <Stat label="Assets serviced" value={report.summary.assetsServiced} tone="accent" />
+        <Stat label="Units serviced" value={report.summary.assetsServiced} tone="accent" />
         <Stat label="Photos captured" value={report.summary.photoCount} />
         <Stat label="Issues found" value={report.summary.issuesFound} tone={report.summary.issuesFound > 0 ? "warn" : "good"} />
       </StatGrid>

@@ -20,7 +20,7 @@ export const CONDITIONS: readonly ConditionCopy[] = [
   { value: "GOOD", label: "Good", hint: "Working normally", tone: "good" },
   { value: "FAIR", label: "Fair", hint: "Worn but working", tone: "warn" },
   { value: "POOR", label: "Poor", hint: "Needs attention soon", tone: "bad" },
-  { value: "UNKNOWN", label: "Not checked", hint: "Nobody has assessed it", tone: "neutral" },
+  { value: "UNKNOWN", label: "Not checked", hint: "Not yet assessed", tone: "neutral" },
 ];
 
 export function conditionCopy(value: string): ConditionCopy {

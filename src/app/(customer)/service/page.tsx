@@ -30,7 +30,7 @@ export default async function ServicePage() {
 
       <SectionTitle>Upcoming</SectionTitle>
       {upcoming.length === 0 ? (
-        <EmptyState title="Nothing scheduled" body="When a visit is booked you'll see the date and which units are covered." />
+        <EmptyState title="Nothing scheduled" body="Scheduled visits will appear here." />
       ) : (
         <List>
           {upcoming.map((visit, index) => (
@@ -48,7 +48,7 @@ export default async function ServicePage() {
 
       <SectionTitle>Service reports</SectionTitle>
       {completed.length === 0 ? (
-        <EmptyState title="No completed visits yet" body="After each visit we publish a report with photos of every unit serviced." />
+        <EmptyState title="No completed visits yet" body="Reports appear here after each visit." />
       ) : (
         <List>
           {completed.map((visit, index) => (
@@ -57,7 +57,7 @@ export default async function ServicePage() {
               <Row
                 href={`/service/${visit.id}`}
                 title={`${visit.location.name} — ${formatDate(visit.completedAt ?? visit.scheduledFor)}`}
-                subtitle={`${visit.serviceRecords.length} asset${visit.serviceRecords.length === 1 ? "" : "s"} serviced${
+                subtitle={`${visit.serviceRecords.length} unit${visit.serviceRecords.length === 1 ? "" : "s"} serviced${
                   visit.serviceRecords.some((r) => r.issuesFoundCount > 0) ? " · issues noted" : ""
                 }`}
                 right={<StatusPill status="COMPLETED" />}
@@ -69,7 +69,7 @@ export default async function ServicePage() {
 
       <Card style={{ marginTop: 20, background: "var(--surface-2)", borderStyle: "dashed" }}>
         <div style={{ fontSize: 13.5, color: "var(--ink-soft)" }}>
-          Every completed service is recorded permanently with the technician, timestamp, checklist and before/after photos.
+          Completed services appear here.
         </div>
       </Card>
     </main>

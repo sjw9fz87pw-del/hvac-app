@@ -9,7 +9,7 @@ interface Result { type: string; id: string; title: string; subtitle: string; hr
  * asset id and tag - because internal staff know one of those, not which filter
  * it belongs under. Cmd/Ctrl-K opens it.
  */
-export function GlobalSearch() {
+export function GlobalSearch({ compact = false }: { compact?: boolean } = {}) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Result[]>([]);
@@ -37,6 +37,24 @@ export function GlobalSearch() {
     }, 180);
     return () => clearTimeout(timer);
   }, [query]);
+
+  if (!open && compact) {
+    // An icon in the top bar rather than a full-width box above every page:
+    // the box cost a whole row of the screen on a phone for something used a
+    // few times a day.
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        aria-label="Search"
+        className="icon-button"
+      >
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <path d="M20 20l-3.5-3.5" />
+        </svg>
+      </button>
+    );
+  }
 
   if (!open) {
     return (

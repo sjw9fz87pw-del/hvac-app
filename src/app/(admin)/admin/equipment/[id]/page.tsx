@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db/client";
 import { requireCapability } from "@/lib/auth/session";
 import { canAccessAsset } from "@/lib/auth/scope";
-import { Card, SectionTitle, StatusPill, Pill, List, Row, Divider, Button, formatDate } from "@/components/ui/primitives";
+import { Card, SectionTitle, StatusPill, Pill, List, Row, Divider, Button, formatDate, formatDateTime } from "@/components/ui/primitives";
+import { auditLabel, humanize } from "@/components/ui/labels";
 import { VerifyEquipment } from "./verify";
 import { EditSchedule } from "./edit-schedule";
 import { EditCondition } from "./edit-condition";
@@ -44,7 +45,7 @@ export default async function AdminEquipmentDetail({ params }: { params: Promise
     <main className="rise">
 
       <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "12px 0 6px", flexWrap: "wrap" }}>
-        <h1 style={{ fontSize: 26 }}>{equipment.name}</h1>
+        <h1 style={{ fontSize: 23 }}>{equipment.name}</h1>
         <StatusPill status={equipment.status} />
         {equipment.createdBySource === "CUSTOMER" ? <Pill tone="info">Customer-added</Pill> : null}
       </div>
@@ -65,13 +66,12 @@ export default async function AdminEquipmentDetail({ params }: { params: Promise
 
       <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
         <Card>
-          <div style={{ fontWeight: 640, marginBottom: 10 }}>Asset</div>
+          <div style={{ fontWeight: 640, marginBottom: 10 }}>Details</div>
           <Field label="Type" value={equipment.equipmentType} />
           <Field label="Manufacturer" value={equipment.manufacturer} />
           <Field label="Model" value={equipment.model} />
           <Field label="Serial" value={equipment.serialNumber} />
-          <Field label="Condition" value={equipment.condition} />
-          <Field label="Criticality" value={equipment.criticality} />
+          <Field label="Criticality" value={humanize(equipment.criticality)} />
           {equipment.filterSize ? <Field label="Filter" value={`${equipment.filterSize}${equipment.filterType ? ` · ${equipment.filterType}` : ""}`} /> : null}
           {equipment.warrantyExpires ? <Field label="Warranty" value={`${equipment.warrantyProvider ?? ""} until ${formatDate(equipment.warrantyExpires)}`} /> : null}
         </Card>
@@ -80,7 +80,7 @@ export default async function AdminEquipmentDetail({ params }: { params: Promise
           <div style={{ fontWeight: 640, marginBottom: 10 }}>NFC tag</div>
           {currentTag ? (
             <>
-              <Field label="State" value={currentTag.tag.state} />
+              <Field label="Status" value={humanize(currentTag.tag.state)} />
               <Field label="Paired" value={formatDate(currentTag.assignedAt)} />
               <Field label="Verified" value={formatDate(currentTag.tag.verifiedAt)} />
               <div style={{ marginTop: 12, width: 170 }}>
@@ -130,7 +130,7 @@ export default async function AdminEquipmentDetail({ params }: { params: Promise
       <SectionTitle>Maintenance schedules</SectionTitle>
       {equipment.schedules.length === 0 ? (
         <Card style={{ color: "var(--ink-soft)", fontSize: 14 }}>
-          No schedule yet — this asset is not generating preventive work.
+          No maintenance schedule.
         </Card>
       ) : (
         equipment.schedules.map((schedule) => (
@@ -162,22 +162,27 @@ export default async function AdminEquipmentDetail({ params }: { params: Promise
               <Row
                 title={record.serviceType.name}
                 subtitle={`${record.technician.name} · ${formatDate(record.performedAt)}${record.supersedesId ? " · correction" : ""}`}
-                right={record.nfcVerified ? <Pill tone="good">{record.verificationMethod}</Pill> : <Pill tone="warn">Unverified</Pill>}
+                right={
+                  // A record entered by hand is not suspect, just not tag-confirmed;
+                  // a warning colour on the owner's own history read as an accusation.
+                  record.nfcVerified ? <Pill tone="good">Tag verified</Pill>
+                    : record.verificationMethod === "QR" ? <Pill tone="good">QR verified</Pill>
+                    : <Pill>Manual entry</Pill>
+                }
               />
             </div>
           ))
         )}
       </List>
 
-      <SectionTitle>Audit trail</SectionTitle>
+      <SectionTitle>Activity</SectionTitle>
       <List>
         {audit.map((event, index) => (
           <div key={event.id}>
             {index > 0 ? <Divider /> : null}
             <Row
-              title={event.action}
-              subtitle={event.detail && Object.keys(event.detail as object).length ? JSON.stringify(event.detail) : undefined}
-              right={<span style={{ fontSize: 13, color: "var(--ink-faint)" }}>{event.createdAt.toLocaleString()}</span>}
+              title={auditLabel(event.action)}
+              right={<span style={{ fontSize: 13, color: "var(--ink-faint)" }}>{formatDateTime(event.createdAt, equipment.location.timezone)}</span>}
             />
           </div>
         ))}

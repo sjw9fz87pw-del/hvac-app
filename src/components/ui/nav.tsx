@@ -32,6 +32,8 @@ const GLYPHS: Record<IconName, string> = {
   people: "M9 12a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2 21a7 7 0 0 1 14 0M17 11a3 3 0 1 0 0-6M18 21a6 6 0 0 0-2-4.5",
   chart: "M3 21h18M7 17v-6M12 17V7M17 17v-9",
   check: "M4 12.5 9.5 18 20 6",
+  camera: "M4 8h3l2-3h6l2 3h3v12H4zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
+  plus: "M12 5v14M5 12h14",
   gear: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM4.3 14.5a8 8 0 0 1 0-5l2-.4a6 6 0 0 1 1-1.7l-.7-1.9a8 8 0 0 1 4.3-2.5l1.1 1.7a6 6 0 0 1 2 0l1.1-1.7a8 8 0 0 1 4.3 2.5l-.7 1.9a6 6 0 0 1 1 1.7l2 .4a8 8 0 0 1 0 5l-2 .4a6 6 0 0 1-1 1.7l.7 1.9a8 8 0 0 1-4.3 2.5l-1.1-1.7a6 6 0 0 1-2 0l-1.1 1.7a8 8 0 0 1-4.3-2.5l.7-1.9a6 6 0 0 1-1-1.7z",
 };
 
@@ -50,7 +52,7 @@ export function TabBar({ items }: { items: NavItem[] }) {
         paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${items.length}, 1fr)`, maxWidth: 640, margin: "0 auto", padding: "6px 6px 8px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${items.length}, 1fr)`, maxWidth: 640, margin: "0 auto", padding: "2px 4px 4px" }}>
         {items.map((item) => {
           const active = current === item.href;
           return (
@@ -58,13 +60,9 @@ export function TabBar({ items }: { items: NavItem[] }) {
               key={item.href}
               href={item.href}
               style={{
-                display: "grid", justifyItems: "center", gap: 4, padding: "8px 4px 7px",
+                display: "grid", justifyItems: "center", gap: 3, padding: "8px 4px 6px",
                 color: active ? "var(--accent)" : "var(--ink-faint)",
-                fontSize: 10.5, fontWeight: 700, letterSpacing: "0.02em", minHeight: 52,
-                // The active tab sits on its own amber-tinted pill.
-                background: active ? "var(--accent-soft)" : "transparent",
-                border: `1px solid ${active ? "var(--accent-line)" : "transparent"}`,
-                borderRadius: 13,
+                fontSize: 10.5, fontWeight: 600, minHeight: 50,
               }}
             >
               <span style={{ display: "grid", placeItems: "center", height: 22 }}>{item.icon ? <Glyph d={GLYPHS[item.icon]} /> : null}</span>
@@ -96,7 +94,7 @@ export function AppBar({ title, right }: { title: string; right?: React.ReactNod
             aria-hidden="true"
             style={{
               width: 26, height: 26, borderRadius: 8, flexShrink: 0, display: "grid", placeItems: "center",
-              background: "linear-gradient(180deg, var(--accent-2), var(--accent))",
+              background: "var(--accent)",
               color: "#1a0f04", fontWeight: 800, fontSize: 13,
             }}
           >

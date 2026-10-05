@@ -24,7 +24,7 @@ export default async function IssuesPage() {
       {issues.length === 0 ? (
         <EmptyState
           title="No issues reported"
-          body="Report a problem from any equipment page — we'll already know the unit, its model and its history."
+          body="Report a problem from any equipment page."
         />
       ) : (
         <>

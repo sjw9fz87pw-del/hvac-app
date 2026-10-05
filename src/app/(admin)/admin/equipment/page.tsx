@@ -37,7 +37,7 @@ export default async function AdminEquipment({ searchParams }: { searchParams: P
 
   return (
     <main className="rise">
-      <PageHeader title="Equipment" subtitle={`${equipment.length} asset${equipment.length === 1 ? "" : "s"}`} />
+      <PageHeader title="Equipment" subtitle={`${equipment.length} unit${equipment.length === 1 ? "" : "s"}`} />
 
       <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
         {filters.map((filter) => (
@@ -47,7 +47,7 @@ export default async function AdminEquipment({ searchParams }: { searchParams: P
             style={{
               padding: "8px 14px", borderRadius: 999, fontSize: 13.5, fontWeight: 600,
               border: `1px solid ${status === filter.key ? "transparent" : "var(--line)"}`,
-              background: status === filter.key ? "linear-gradient(180deg, var(--accent-2), var(--accent))" : "var(--surface-2)",
+              background: status === filter.key ? "var(--accent)" : "var(--surface-2)",
               color: status === filter.key ? "#1a0f04" : "var(--ink-soft)",
             }}
           >
@@ -57,7 +57,7 @@ export default async function AdminEquipment({ searchParams }: { searchParams: P
       </div>
 
       {equipment.length === 0 ? (
-        <EmptyState title="Nothing here" body="No assets match this filter." />
+        <EmptyState title="Nothing here" body="No units match this filter." />
       ) : (
         <List>
           {equipment.map((item, index) => {

@@ -70,17 +70,14 @@ export function ScanConsole() {
             <div style={{ fontWeight: 640, fontSize: 17 }}>
               {scanning ? "Hold the phone against the tag" : "Ready to scan"}
             </div>
-            <p style={{ color: "var(--ink-soft)", fontSize: 14, marginTop: 6, marginBottom: 18 }}>
-              The asset and its open task open automatically.
-            </p>
+            <p style={{ color: "var(--ink-soft)", fontSize: 14, marginTop: 6, marginBottom: 18 }}>The unit and any open task open automatically.</p>
             <Button size="lg" onClick={scan} disabled={scanning}>{scanning ? "Scanning…" : "Scan tag"}</Button>
           </>
         ) : (
           <>
             <Pill tone="warn">NFC not available in this browser</Pill>
             <p style={{ color: "var(--ink-soft)", fontSize: 14, marginTop: 12 }}>
-              Scan the QR code on the tag with your camera, or enter the tag id below.
-              Both open exactly the same record.
+              Scan the QR code with your camera, or enter the tag ID.
             </p>
           </>
         )}

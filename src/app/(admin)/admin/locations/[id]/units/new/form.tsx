@@ -186,8 +186,7 @@ export function AddUnitsForm({ locationId, locationName, areas, serviceTypes }: 
             </div>
           </div>
           <p style={{ color: "var(--ink-faint)", fontSize: 13, marginTop: 10 }}>
-            Leave these blank if you don&rsquo;t know them — they can be filled in from the unit&rsquo;s
-            data plate on the next visit.
+            Optional. Can be added from the data plate later.
           </p>
         </Card>
 

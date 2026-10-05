@@ -11,7 +11,7 @@ export function ServiceHistory({ history }: { history: CustomerServiceRecordView
   if (history.length === 0) {
     return (
       <Card style={{ textAlign: "center", padding: "32px 20px", color: "var(--ink-soft)" }}>
-        No service recorded yet. Once we service this unit, every visit appears here with photos.
+        No service recorded yet.
       </Card>
     );
   }

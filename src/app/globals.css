@@ -149,6 +149,87 @@ button, [role="button"], a.tap { min-height: 44px; }
   overflow: hidden;
 }
 
+/* One bar: brand on a tab root, Back elsewhere, search as an icon. */
+.top-bar {
+  flex-shrink: 0;
+  z-index: 35;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--line);
+  padding-top: env(safe-area-inset-top);
+}
+.top-bar-inner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 1240px;
+  margin: 0 auto;
+  height: 52px;
+  padding: 0 10px 0 14px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 15.5px;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+.brand-mark {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: #1a0f04;
+  font-weight: 800;
+  font-size: 12.5px;
+}
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 40px;
+  padding: 0 10px 0 2px;
+  margin-left: -6px;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+}
+.icon-button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.icon-button:hover { background: var(--surface-2); color: var(--ink); }
+.cross-shell {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 11px;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 13.5px;
+}
+
+/* Page body inside the scroller. */
+.page { max-width: 1240px; margin: 0 auto; padding: 16px 16px 28px; }
+.page-narrow { max-width: 720px; }
+
 /* The only thing that scrolls. */
 .app-scroll {
   flex: 1;

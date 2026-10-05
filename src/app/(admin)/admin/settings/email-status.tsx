@@ -26,7 +26,7 @@ export function EmailStatus({ configured, provider, ownEmail }: {
     setBusy(false);
     setResult(
       response.ok
-        ? { ok: true, message: `Sent to ${body.to}. Check your inbox, and your spam folder.` }
+        ? { ok: true, message: `Sent to ${body.to}. Check spam if it does not arrive.` }
         : { ok: false, message: body.error ?? "Could not send" },
     );
   }
@@ -41,8 +41,8 @@ export function EmailStatus({ configured, provider, ownEmail }: {
 
       <p style={{ fontSize: 14, color: "var(--ink-soft)", marginTop: 10, lineHeight: 1.6 }}>
         {configured
-          ? "Invitations and password resets are emailed automatically. Send yourself a test to be sure."
-          : "Invitations still work — the screen shows a link to pass on by hand. Set SMTP_USER and SMTP_PASSWORD in Netlify to have them emailed instead."}
+          ? "Invitations and password resets are sent by email."
+          : "Invitation links must be shared manually until SMTP_USER and SMTP_PASSWORD are set in Netlify."}
       </p>
 
       {configured ? (

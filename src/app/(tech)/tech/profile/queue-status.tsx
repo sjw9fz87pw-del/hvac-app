@@ -18,7 +18,7 @@ export function QueueStatus() {
   if (events.length === 0) {
     return (
       <Card style={{ color: "var(--ink-soft)", fontSize: 14 }}>
-        Everything on this device has synced. Work completed without signal is stored here until it does.
+        All work is synced.
       </Card>
     );
   }

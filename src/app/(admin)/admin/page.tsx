@@ -18,7 +18,7 @@ export default async function CommandCenter() {
     { label: "Overdue service", value: data.exceptions.overdueAssets, href: "/admin/equipment?status=OVERDUE", tone: "bad" as const },
     { label: "Missed visits", value: data.exceptions.missedVisits, href: "/admin/schedule?status=missed", tone: "bad" as const },
     { label: "Customer-reported problems", value: data.exceptions.customerReportedProblems, href: "/admin/issues?source=CUSTOMER", tone: "warn" as const },
-    { label: "Assets without NFC tags", value: data.exceptions.assetsWithoutTags, href: "/admin/nfc?filter=untagged", tone: "warn" as const },
+    { label: "Untagged units", value: data.exceptions.assetsWithoutTags, href: "/admin/nfc?filter=untagged", tone: "warn" as const },
     { label: "Awaiting verification", value: data.exceptions.assetsAwaitingVerification, href: "/admin/equipment?status=PENDING_SETUP", tone: "warn" as const },
     { label: "Failed NFC pairings (24h)", value: data.exceptions.failedTagPairings, href: "/admin/nfc?filter=failed", tone: "bad" as const },
     { label: "Incomplete service proof", value: data.exceptions.incompleteProof, href: "/admin/schedule?status=incomplete", tone: "bad" as const },
@@ -32,20 +32,19 @@ export default async function CommandCenter() {
         <div style={{ fontSize: 13.5, color: "var(--ink-faint)", fontWeight: 600 }}>
           {new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
         </div>
-        <h1 style={{ fontSize: 27, marginTop: 2 }}>Command center</h1>
+        <h1 style={{ fontSize: 23, marginTop: 2 }}>Today</h1>
       </div>
 
-      <StatGrid min={160}>
-        <Stat label="Restaurants today" value={data.today.restaurants.length} />
-        <Stat label="Equipment scheduled" value={data.today.equipmentScheduled} />
-        <Stat label="Technicians working" value={data.today.techniciansWorking} />
-        <Stat label="Completed" value={data.today.servicesCompleted} tone="good" />
-        <Stat label="Remaining" value={data.today.servicesRemaining} tone={data.today.servicesRemaining > 0 ? "warn" : "good"} />
+      <StatGrid>
+        <Stat label="Restaurants" value={data.today.restaurants.length} />
+        <Stat label="Units" value={data.today.equipmentScheduled} />
+        <Stat label="Done" value={data.today.servicesCompleted} tone={data.today.servicesCompleted > 0 ? "good" : "neutral"} />
+        <Stat label="Left" value={data.today.servicesRemaining} tone={data.today.servicesRemaining > 0 ? "warn" : "neutral"} />
       </StatGrid>
 
       <SectionTitle>Today&rsquo;s restaurants</SectionTitle>
       {data.today.restaurants.length === 0 ? (
-        <EmptyState title="No visits scheduled today" body="Generate a visit from Schedule to cover what's due." />
+        <EmptyState title="No visits today" />
       ) : (
         <List>
           {data.today.restaurants.map((restaurant, index) => (
@@ -67,7 +66,7 @@ export default async function CommandCenter() {
         <Card style={{ background: "var(--good-soft)", borderColor: "transparent" }}>
           <div style={{ fontWeight: 660, color: "var(--good)" }}>Nothing outstanding</div>
           <p style={{ fontSize: 14, color: "var(--ink-soft)", marginTop: 4 }}>
-            No overdue work, no missed visits, no untagged assets, no incomplete proof.
+            Nothing needs attention.
           </p>
         </Card>
       ) : (

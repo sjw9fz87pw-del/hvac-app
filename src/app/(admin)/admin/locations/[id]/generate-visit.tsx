@@ -91,22 +91,22 @@ export function GenerateVisit({ locationId, dueCount, unitCount }: {
   return (
     <Card>
       <div style={{ fontWeight: 640 }}>Schedule a visit</div>
-      <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 3 }}>
+      <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 2 }}>
         {covers > 0
-          ? `Covers ${covers} unit${covers === 1 ? "" : "s"}${include === "due" ? ", grouped by area" : " — everything here, grouped by area"}.`
+          ? `${covers} unit${covers === 1 ? "" : "s"}`
           : include === "due"
-            ? "Nothing is due here right now. Switch to “Everything here” to book a visit anyway."
-            : "There are no units here yet. Add some first."}
+            ? "Nothing is due. Choose All units to book a visit anyway."
+            : "No units at this restaurant yet."}
       </p>
 
       <div style={{ marginTop: 12 }}>
-        <span style={labelStyle}>What to cover</span>
+        <span style={labelStyle}>Include</span>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           <Pill on={include === "due"} onClick={() => setInclude("due")}>
-            Due soon · {dueCount}
+            Due · {dueCount}
           </Pill>
           <Pill on={include === "all"} onClick={() => setInclude("all")}>
-            Everything here · {unitCount}
+            All units · {unitCount}
           </Pill>
         </div>
       </div>

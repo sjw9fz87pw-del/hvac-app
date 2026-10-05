@@ -310,7 +310,7 @@ export function RestaurantList({ groups, loose, canGroup }: {
 
       {canGroup && groups.length === 0 && loose.length > 1 ? (
         <p style={{ color: "var(--ink-faint)", fontSize: 13, marginTop: 14, lineHeight: 1.55 }}>
-          Drag a restaurant by its grip onto another to put them in a group.
+          Drag one restaurant onto another to group them.
         </p>
       ) : null}
 
@@ -366,8 +366,7 @@ export function RestaurantList({ groups, loose, canGroup }: {
                   Remove group
                 </Button>
                 <p style={{ color: "var(--ink-faint)", fontSize: 12.5, lineHeight: 1.5, margin: 0 }}>
-                  Removing the group keeps every restaurant in it — they go back to the
-                  ungrouped list. Nothing recorded is lost.
+                  Its restaurants move to the ungrouped list. No records are lost.
                 </p>
                 <Button variant="secondary" onClick={() => setManaging(null)}>Cancel</Button>
               </div>

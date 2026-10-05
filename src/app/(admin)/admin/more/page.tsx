@@ -30,22 +30,22 @@ export default async function MorePage() {
     {
       title: "Customers",
       items: [
-        { href: "/admin/customers", icon: "building", label: "Groups", hint: "Restaurant groups under management", badge: { text: `${customers}`, tone: "neutral" } },
-        { href: "/admin/equipment", icon: "grid", label: "All units", hint: "Every unit across every restaurant, in one list", badge: { text: `${units}`, tone: "neutral" } },
+        { href: "/admin/customers", icon: "building", label: "Groups", hint: "Restaurant groups", badge: { text: `${customers}`, tone: "neutral" } },
+        { href: "/admin/equipment", icon: "grid", label: "All units", hint: "Equipment across all restaurants", badge: { text: `${units}`, tone: "neutral" } },
       ],
     },
     {
       title: "Operations",
       items: [
-        { href: "/admin/people", icon: "people", label: "People", hint: "Who can sign in, and what each of them sees", badge: { text: `${technicians}`, tone: "neutral" } },
-        { href: "/admin/nfc", icon: "tag", label: "NFC", hint: "Tags, pairing, history and QR fallback", ...(untagged > 0 ? { badge: { text: `${untagged} unlocked`, tone: "warn" as const } } : {}) },
-        { href: "/admin/reports", icon: "chart", label: "Reports", hint: "Service proof and year-to-date performance" },
+        { href: "/admin/people", icon: "people", label: "People", hint: "Users and access", badge: { text: `${technicians}`, tone: "neutral" } },
+        { href: "/admin/nfc", icon: "tag", label: "NFC tags", hint: "Pairing and tag history", ...(untagged > 0 ? { badge: { text: `${untagged} unlocked`, tone: "warn" as const } } : {}) },
+        { href: "/admin/reports", icon: "chart", label: "Reports", hint: "Service history and totals" },
       ],
     },
     {
       title: "Setup",
       items: [
-        { href: "/admin/settings", icon: "gear", label: "Settings", hint: "Service types, plan overrides and vendors" },
+        { href: "/admin/settings", icon: "gear", label: "Settings", hint: "Intervals, requirements and email" },
       ],
     },
   ];

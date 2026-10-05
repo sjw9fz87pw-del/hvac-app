@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db/client";
 import { requireCapability } from "@/lib/auth/session";
 import { canAccessAsset } from "@/lib/auth/scope";
-import { Card, SectionTitle, StatusPill, Pill, List, Row, Divider, formatDate } from "@/components/ui/primitives";
+import { Card, SectionTitle, StatusPill, Pill, List, Row, Divider, formatDate, formatDateTime } from "@/components/ui/primitives";
+import { humanize } from "@/components/ui/labels";
 import { IssueActions } from "./actions";
 
 export default async function IssueDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -38,7 +39,7 @@ export default async function IssueDetail({ params }: { params: Promise<{ id: st
     <main className="rise">
 
       <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "12px 0 6px", flexWrap: "wrap" }}>
-        <h1 style={{ fontSize: 25 }}>{issue.title}</h1>
+        <h1 style={{ fontSize: 23 }}>{issue.title}</h1>
         <StatusPill status={issue.status} />
         <Pill tone={issue.severity === "CRITICAL" || issue.severity === "HIGH" ? "bad" : "neutral"}>{issue.severity}</Pill>
       </div>
@@ -99,9 +100,9 @@ export default async function IssueDetail({ params }: { params: Promise<{ id: st
           <div key={event.id}>
             {index > 0 ? <Divider /> : null}
             <Row
-              title={event.type.replace(/_/g, " ").toLowerCase().replace(/^./, (c) => c.toUpperCase())}
+              title={humanize(event.type)}
               subtitle={event.body ?? undefined}
-              right={<span style={{ fontSize: 13, color: "var(--ink-faint)" }}>{event.createdAt.toLocaleString()}</span>}
+              right={<span style={{ fontSize: 13, color: "var(--ink-faint)" }}>{formatDateTime(event.createdAt)}</span>}
             />
           </div>
         ))}

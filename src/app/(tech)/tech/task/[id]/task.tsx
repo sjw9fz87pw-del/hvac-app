@@ -6,6 +6,7 @@ import { photoThumb } from "@/components/ui/equipment-bits";
 import { compressImage, uploadPhoto, captureTimestamp } from "@/lib/photos/client";
 import { submitOrQueue } from "@/lib/sync/queue";
 import { isNfcSupported, readTagOnce } from "@/lib/nfc/web-nfc";
+import { NavIcon } from "@/components/ui/nav";
 
 interface Props {
   task: { id: string; status: string; visitId: string; locationName: string };
@@ -133,7 +134,7 @@ export function ServiceTask({ task, equipment, serviceType, nextTask }: Props) {
           <h1 style={{ fontSize: 21, marginTop: 8 }}>{serviceType.name} complete</h1>
           <p style={{ color: "var(--ink-soft)", fontSize: 14.5, marginTop: 8 }}>
             {equipment.name}
-            {result === "queued" ? " — saved on this device and will sync when you have signal." : " — recorded with photos and next service date."}
+            {result === "queued" ? " — saved offline. Will sync when online." : ""}
           </p>
 
           <div style={{ marginTop: 22, display: "grid", gap: 10 }}>
@@ -236,7 +237,7 @@ export function ServiceTask({ task, equipment, serviceType, nextTask }: Props) {
         <textarea
           value={customerNotes}
           onChange={(e) => setCustomerNotes(e.target.value)}
-          placeholder="Note for the customer (optional) — this one is visible to them"
+          placeholder="Customer note (optional, visible to the customer)"
           rows={2}
           style={{ width: "100%", marginTop: 8, padding: 12, borderRadius: 10, border: "1px solid var(--line)", background: "var(--surface-2)", resize: "vertical" }}
         />
@@ -247,7 +248,7 @@ export function ServiceTask({ task, equipment, serviceType, nextTask }: Props) {
           onClick={() => setFlagIssue((f) => !f)}
           style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}
         >
-          <span style={{ fontSize: 18 }}>{flagIssue ? "⚠️" : "＋"}</span>
+          <NavIcon name={flagIssue ? "alert" : "plus"} size={18} />
           <span style={{ fontWeight: 620 }}>Flag something for follow-up</span>
         </button>
         {flagIssue ? (
@@ -310,7 +311,7 @@ function PhotoSlot({ kind, label, required, photos, onAdd }: {
         </>
       ) : (
         <>
-          <span style={{ fontSize: 26 }}>📷</span>
+          <NavIcon name="camera" size={26} />
           <span style={{ fontWeight: 620, marginTop: 6, fontSize: 14 }}>{label}</span>
           <span style={{ fontSize: 12, color: "var(--ink-faint)" }}>{required ? "Required" : "Optional"}</span>
         </>

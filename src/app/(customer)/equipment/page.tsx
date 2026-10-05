@@ -43,14 +43,14 @@ export default async function EquipmentPage({ searchParams }: { searchParams: Pr
     <main className="rise">
       <PageHeader
         title="Equipment"
-        subtitle={`${equipment.length} asset${equipment.length === 1 ? "" : "s"} under management`}
+        subtitle={`${equipment.length} unit${equipment.length === 1 ? "" : "s"}`}
         action={<div style={{ width: 130 }}><Button href="/equipment/new" size="sm">Add equipment</Button></div>}
       />
 
       {equipment.length === 0 ? (
         <EmptyState
           title="No equipment yet"
-          body="Your equipment appears here once our team completes the initial survey, or you can add a unit yourself."
+          body="Equipment appears here once added."
           action={<Button href="/equipment/new">Add equipment</Button>}
         />
       ) : (

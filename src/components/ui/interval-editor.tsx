@@ -118,8 +118,7 @@ export function IntervalEditor({ rows, scope, organizationId, locationId }: {
                   }}
                 />
                 <p style={{ color: "var(--ink-faint)", fontSize: 12.5, marginTop: 8, lineHeight: 1.5 }}>
-                  Every unit that follows this setting has its next visit recalculated from when
-                  it was last serviced. Units with their own schedule keep it.
+                  Next due dates are recalculated from each unit's last service. Units with their own interval are unaffected.
                 </p>
 
                 <div style={{ marginTop: 14, display: "grid", gap: 10 }}>

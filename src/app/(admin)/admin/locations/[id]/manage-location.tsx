@@ -79,8 +79,7 @@ export function ManageLocation({ id, name, active, equipment }: {
         {active ? (
           <>
             <p style={{ fontSize: 14, color: "var(--ink-soft)", lineHeight: 1.6 }}>
-              Archiving takes it out of the restaurants list and stops it being scheduled.
-              Everything recorded here is kept, and you can bring it back any time.
+              Removes it from the list and stops scheduling. Records are kept and it can be restored.
             </p>
             {!confirmArchive ? (
               <div style={{ marginTop: 14 }}>
@@ -100,7 +99,7 @@ export function ManageLocation({ id, name, active, equipment }: {
           <>
             <Pill tone="warn">Archived</Pill>
             <p style={{ fontSize: 14, color: "var(--ink-soft)", marginTop: 10, lineHeight: 1.6 }}>
-              Hidden from the restaurants list and not being scheduled.
+              Archived. Not listed or scheduled.
             </p>
             <div style={{ marginTop: 14 }}>
               <Button disabled={busy !== null} onClick={() => act("restore")}>

@@ -32,7 +32,7 @@ export function Card({ children, style, className, as: As = "div" }: {
         border: "1px solid var(--line)",
         borderRadius: "var(--radius-card)",
         boxShadow: "var(--shadow-card)",
-        padding: 18,
+        padding: 16,
         ...style,
       }}
     >
@@ -50,8 +50,8 @@ export function Pill({ tone = "neutral", children }: { tone?: Tone; children: Re
         display: "inline-flex", alignItems: "center", gap: 6,
         background: t.bg, color: t.fg,
         border: `1px solid ${tone === "neutral" ? "var(--line)" : t.fg}2e`,
-        borderRadius: 999, padding: "4px 11px 4px 8px",
-        fontSize: 12, fontWeight: 700, letterSpacing: "0.01em", whiteSpace: "nowrap",
+        borderRadius: 999, padding: "3px 9px 3px 7px",
+        fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
       }}
     >
       <span style={{ width: 6, height: 6, borderRadius: 999, background: t.fg, flexShrink: 0 }} />
@@ -91,24 +91,24 @@ export function Stat({ label, value, tone = "neutral", hint }: {
 }) {
   const t = TONE_VARS[tone];
   return (
-    <Card style={{ padding: 16 }}>
-      <div className="kicker">{label}</div>
+    <Card style={{ padding: "11px 12px", minWidth: 0 }}>
       <div
         style={{
-          fontSize: 31, fontWeight: 750, letterSpacing: "-0.035em", marginTop: 7, lineHeight: 1,
+          fontSize: 22, fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1.1,
           color: tone === "neutral" ? "var(--ink)" : t.fg,
         }}
       >
         {value}
       </div>
-      {hint ? <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 6 }}>{hint}</div> : null}
+      <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 4, lineHeight: 1.25 }}>{label}</div>
+      {hint ? <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 2, lineHeight: 1.3 }}>{hint}</div> : null}
     </Card>
   );
 }
 
-export function StatGrid({ children, min = 150 }: { children: ReactNode; min?: number }) {
+export function StatGrid({ children, min = 76 }: { children: ReactNode; min?: number }) {
   return (
-    <div style={{ display: "grid", gap: 12, gridTemplateColumns: `repeat(auto-fit, minmax(${min}px, 1fr))` }}>
+    <div style={{ display: "grid", gap: 8, gridTemplateColumns: `repeat(auto-fit, minmax(${min}px, 1fr))` }}>
       {children}
     </div>
   );
@@ -116,10 +116,10 @@ export function StatGrid({ children, min = 150 }: { children: ReactNode; min?: n
 
 export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: ReactNode; action?: ReactNode }) {
   return (
-    <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 22 }}>
-      <div>
-        <h1 style={{ fontSize: 28, lineHeight: 1.1 }}>{title}</h1>
-        {subtitle ? <div style={{ color: "var(--ink-soft)", marginTop: 6, fontSize: 14.5 }}>{subtitle}</div> : null}
+    <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
+      <div style={{ minWidth: 0 }}>
+        <h1 style={{ fontSize: 23, lineHeight: 1.15 }}>{title}</h1>
+        {subtitle ? <div style={{ color: "var(--ink-soft)", marginTop: 3, fontSize: 14 }}>{subtitle}</div> : null}
       </div>
       {action}
     </header>
@@ -139,10 +139,9 @@ export function Button({ children, variant = "primary", size = "md", type = "but
   const palette: Record<string, CSSProperties> = {
     // Amber-to-gold gradient with near-black text: the one loud element per screen.
     primary: {
-      background: "linear-gradient(180deg, var(--accent-2), var(--accent))",
+      background: "var(--accent)",
       color: "#1a0f04",
       border: "1px solid transparent",
-      boxShadow: disabled ? "none" : "0 6px 20px rgba(255, 138, 31, 0.24)",
     },
     secondary: { background: "var(--surface-2)", color: "var(--ink)", border: "1px solid var(--line-strong)" },
     ghost: { background: "transparent", color: "var(--ink-soft)", border: "1px solid transparent" },
@@ -150,15 +149,15 @@ export function Button({ children, variant = "primary", size = "md", type = "but
   };
 
   const sizing = {
-    sm: { padding: "8px 13px", fontSize: 13.5, minHeight: 38, borderRadius: 11 },
-    md: { padding: "11px 16px", fontSize: 14.5, minHeight: 46, borderRadius: 13 },
-    lg: { padding: "15px 20px", fontSize: 16, minHeight: 54, borderRadius: 14 },
+    sm: { padding: "7px 12px", fontSize: 13.5, minHeight: 36, borderRadius: 9 },
+    md: { padding: "10px 15px", fontSize: 14.5, minHeight: 44, borderRadius: 10 },
+    lg: { padding: "13px 18px", fontSize: 15.5, minHeight: 50, borderRadius: 11 },
   }[size];
 
   const css: CSSProperties = {
     ...palette[variant], ...sizing,
     display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
-    fontWeight: 700, letterSpacing: "-0.01em", cursor: disabled ? "not-allowed" : "pointer",
+    fontWeight: 650, letterSpacing: "-0.005em", cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.45 : 1, transition: "opacity 140ms ease, transform 140ms ease",
     width: "100%", maxWidth: "100%", ...style,
   };
@@ -169,10 +168,10 @@ export function Button({ children, variant = "primary", size = "md", type = "but
 
 export function EmptyState({ title, body, action }: { title: string; body?: string; action?: ReactNode }) {
   return (
-    <Card style={{ textAlign: "center", padding: "42px 24px" }}>
-      <div style={{ fontSize: 16.5, fontWeight: 700 }}>{title}</div>
-      {body ? <p style={{ color: "var(--ink-soft)", marginTop: 7, fontSize: 14.5, maxWidth: 420, marginInline: "auto" }}>{body}</p> : null}
-      {action ? <div style={{ marginTop: 18, display: "inline-block", minWidth: 200 }}>{action}</div> : null}
+    <Card style={{ textAlign: "center", padding: "26px 20px" }}>
+      <div style={{ fontSize: 15, fontWeight: 650 }}>{title}</div>
+      {body ? <p style={{ color: "var(--ink-soft)", marginTop: 5, fontSize: 14, maxWidth: 400, marginInline: "auto" }}>{body}</p> : null}
+      {action ? <div style={{ marginTop: 14, display: "inline-block", minWidth: 180 }}>{action}</div> : null}
     </Card>
   );
 }
@@ -181,12 +180,12 @@ export function Row({ title, subtitle, right, href, leading }: {
   title: ReactNode; subtitle?: ReactNode; right?: ReactNode; href?: string; leading?: ReactNode;
 }) {
   const inner = (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", minHeight: 62 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", minHeight: 54 }}>
       {leading}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 650, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
+        <div style={{ fontWeight: 600, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
         {subtitle ? (
-          <div style={{ color: "var(--ink-soft)", fontSize: 13.5, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <div style={{ color: "var(--ink-soft)", fontSize: 13, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {subtitle}
           </div>
         ) : null}
@@ -223,12 +222,10 @@ export function Divider() {
   return <div style={{ height: 1, background: "var(--line)" }} />;
 }
 
-/** Kicker-style section headings, with the accent rule the reference app uses. */
 export function SectionTitle({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, margin: "28px 0 11px" }}>
-      <h2 className="kicker" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
-        <span style={{ width: 5, height: 5, borderRadius: 999, background: "var(--accent)", flexShrink: 0 }} />
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, margin: "22px 0 8px" }}>
+      <h2 style={{ fontSize: 13, fontWeight: 650, color: "var(--ink-soft)", letterSpacing: "0.01em" }}>
         {children}
       </h2>
       {action}

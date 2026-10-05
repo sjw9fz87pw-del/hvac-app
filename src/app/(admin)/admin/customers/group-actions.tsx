@@ -91,8 +91,8 @@ export function GroupActions({ group }: { group: GroupRow }) {
 
                 <p style={{ color: "var(--ink-faint)", fontSize: 12.5, lineHeight: 1.5, margin: 0 }}>
                   {group.isBucket
-                    ? "This is where restaurants sit before they are grouped. It comes back on its own when something needs it."
-                    : "Every restaurant in it is kept — they go back to the ungrouped list. Nothing recorded is lost."}
+                    ? "Ungrouped restaurants appear here."
+                    : "Its restaurants move to the ungrouped list. No records are lost."}
                 </p>
 
                 <Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>

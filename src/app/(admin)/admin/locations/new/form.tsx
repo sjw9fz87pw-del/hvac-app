@@ -110,7 +110,7 @@ export function AddRestaurantForm({ organizations, defaultGroupId, canCreateGrou
               />
             ) : (
               <p style={{ color: "var(--ink-faint)", fontSize: 13, marginTop: 8 }}>
-                The next restaurant you add will default to this group.
+                New restaurants default to this group.
               </p>
             )}
           </div>

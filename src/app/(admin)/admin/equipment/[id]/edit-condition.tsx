@@ -46,10 +46,7 @@ export function EditCondition({ equipmentId, condition, canEdit }: {
         {canEdit ? (
           <>
             <ConditionPicker value={value} onChange={save} disabled={busy} />
-            <p style={{ color: "var(--ink-faint)", fontSize: 12.5, marginTop: 10, lineHeight: 1.5 }}>
-              {copy.hint}. Saved as soon as you tap — the previous value is kept in the
-              audit trail, so how a unit has changed over time stays readable.
-            </p>
+            <p style={{ color: "var(--ink-faint)", fontSize: 12.5, marginTop: 8 }}>{copy.hint}</p>
           </>
         ) : (
           <p style={{ fontSize: 14.5 }}>{copy.label} — {copy.hint}</p>

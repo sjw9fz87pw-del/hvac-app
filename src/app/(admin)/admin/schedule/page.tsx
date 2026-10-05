@@ -48,11 +48,11 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
     <main className="rise">
       <PageHeader title="Schedule" subtitle="Upcoming visits, overdue work and exceptions" />
 
-      <StatGrid min={150}>
+      <StatGrid>
         <Stat label="Scheduled" value={visits.length} />
-        <Stat label="Missed visits" value={missed.length} tone={missed.length > 0 ? "bad" : "good"} />
-        <Stat label="Overdue assets" value={overdueSchedules.length} tone={overdueSchedules.length > 0 ? "bad" : "good"} />
-        <Stat label="Incomplete proof" value={incomplete.length} tone={incomplete.length > 0 ? "warn" : "good"} />
+        <Stat label="Missed" value={missed.length} tone={missed.length > 0 ? "bad" : "neutral"} />
+        <Stat label="Overdue" value={overdueSchedules.length} tone={overdueSchedules.length > 0 ? "bad" : "neutral"} />
+        <Stat label="Incomplete" value={incomplete.length} tone={incomplete.length > 0 ? "warn" : "neutral"} />
       </StatGrid>
 
       {status === "missed" || missed.length > 0 ? (
@@ -97,7 +97,7 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
 
       <SectionTitle>Upcoming visits</SectionTitle>
       {visits.length === 0 ? (
-        <EmptyState title="Nothing scheduled" body="Generate visits from a location page to cover what's due." />
+        <EmptyState title="Nothing scheduled" body="Schedule visits from a restaurant's page." />
       ) : (
         <List>
           {visits.map((visit, index) => (
@@ -114,9 +114,9 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
         </List>
       )}
 
-      <SectionTitle>Overdue assets</SectionTitle>
+      <SectionTitle>Overdue units</SectionTitle>
       {overdueSchedules.length === 0 ? (
-        <EmptyState title="Nothing overdue" body="Every asset is within its maintenance interval." />
+        <EmptyState title="Nothing overdue" body="All units are within their maintenance interval." />
       ) : (
         <List>
           {overdueSchedules.map((schedule, index) => (

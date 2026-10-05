@@ -1,7 +1,7 @@
 import { requireCapability } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
 import { organizationScope } from "@/lib/auth/scope";
-import { Card, Stat, StatGrid, SectionTitle, List, Row, Divider, Pill, StatusPill, EmptyState, formatDate, Button } from "@/components/ui/primitives";
+import { Stat, StatGrid, SectionTitle, List, Row, Divider, Pill, StatusPill, EmptyState, formatDate, Button } from "@/components/ui/primitives";
 
 /**
  * The NFC console.
@@ -50,10 +50,7 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
     <main className="rise">
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
         <div>
-          <h1 style={{ fontSize: 27 }}>NFC</h1>
-          <p style={{ color: "var(--ink-soft)", fontSize: 14.5, marginTop: 3 }}>
-            Tags carry only a signed identifier. Everything else resolves server-side.
-          </p>
+          <h1 style={{ fontSize: 23 }}>NFC tags</h1>
         </div>
         {/* Tagging what is already inventoried is the common case; adding a unit
             and tagging it in one go is the rarer one and lives in rapid inventory. */}
@@ -62,12 +59,11 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
         </div>
       </div>
 
-      <StatGrid min={150}>
-        <Stat label="Active" value={byState.ACTIVE ?? 0} tone="good" />
-        <Stat label="Unassigned" value={byState.UNASSIGNED ?? 0} />
-        <Stat label="Revoked" value={byState.REVOKED ?? 0} tone="bad" />
-        <Stat label="Assets untagged" value={untagged.length} tone={untagged.length > 0 ? "warn" : "good"} />
-        <Stat label="Unlocked" value={unlocked} tone={unlocked > 0 ? "warn" : "good"} hint="Can still be rewritten" />
+      <StatGrid>
+        <Stat label="Active" value={byState.ACTIVE ?? 0} />
+        <Stat label="Untagged units" value={untagged.length} tone={untagged.length > 0 ? "warn" : "neutral"} />
+        <Stat label="Unlocked" value={unlocked} tone={unlocked > 0 ? "warn" : "neutral"} />
+        <Stat label="Revoked" value={byState.REVOKED ?? 0} />
       </StatGrid>
 
       <div style={{ display: "flex", gap: 8, marginTop: 18, flexWrap: "wrap" }}>
@@ -76,7 +72,7 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
           { key: "unassigned", label: "Unassigned" },
           { key: "revoked", label: "Revoked" },
           { key: "unlocked", label: "Unlocked" },
-          { key: "untagged", label: "Assets without tags" },
+          { key: "untagged", label: "Untagged units" },
         ].map((option) => (
           <a
             key={option.label}
@@ -84,7 +80,7 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
             style={{
               padding: "8px 14px", borderRadius: 999, fontSize: 13.5, fontWeight: 600,
               border: `1px solid ${filter === option.key ? "transparent" : "var(--line)"}`,
-              background: filter === option.key ? "linear-gradient(180deg, var(--accent-2), var(--accent))" : "var(--surface-2)",
+              background: filter === option.key ? "var(--accent)" : "var(--surface-2)",
               color: filter === option.key ? "#1a0f04" : "var(--ink-soft)",
             }}
           >
@@ -95,12 +91,12 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
 
       {filter === "untagged" ? (
         <>
-          <SectionTitle>Assets without a tag</SectionTitle>
+          <SectionTitle>Untagged units</SectionTitle>
           <p style={{ fontSize: 13.5, color: "var(--ink-soft)", margin: "-4px 0 10px" }}>
-            Open one to pair a tag to it. Nothing here needs re-entering — these units already exist.
+            Open a unit to pair a tag.
           </p>
           {untagged.length === 0 ? (
-            <EmptyState title="Every active asset is tagged" />
+            <EmptyState title="All units are tagged" />
           ) : (
             <List>
               {untagged.map((asset, index) => (
@@ -121,7 +117,7 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
         <>
           <SectionTitle>Tags</SectionTitle>
           {tags.length === 0 ? (
-            <EmptyState title="No tags yet" body="Tags are minted and paired during the restaurant survey." />
+            <EmptyState title="No tags yet" />
           ) : (
             <List>
               {tags.map((tag, index) => (
@@ -167,17 +163,6 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
         </>
       ) : null}
 
-      <Card style={{ marginTop: 22, background: "var(--surface-2)", borderStyle: "dashed" }}>
-        <div style={{ fontWeight: 620, fontSize: 14 }}>What is on a tag</div>
-        <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 5 }}>
-          A single URL containing a random 128-bit identifier and a truncated HMAC. No customer name, location,
-          equipment, model or serial number is written to the chip. Every read is checked server-side for tag state,
-          tenant binding and the reader&rsquo;s own access — and logged either way.
-          Tags are locked read-only once paired, so nobody who can physically reach one can repoint it at
-          different equipment. Locking is irreversible and happens only after the write is verified, so
-          any tag that could not be locked is listed above rather than quietly left rewritable.
-        </p>
-      </Card>
     </main>
   );
 }

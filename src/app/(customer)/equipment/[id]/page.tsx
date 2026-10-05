@@ -49,7 +49,7 @@ export default async function EquipmentPassport({ params }: { params: Promise<{ 
 
       <div style={{ marginTop: 12, marginBottom: 4 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <h1 style={{ fontSize: 25 }}>{view.name}</h1>
+          <h1 style={{ fontSize: 23 }}>{view.name}</h1>
           <StatusPill status={record.status === "PENDING_SETUP" ? "PENDING_SETUP" : worst?.status ?? "PAUSED"} />
         </div>
         <div style={{ color: "var(--ink-soft)", fontSize: 14.5, marginTop: 4 }}>
@@ -86,7 +86,7 @@ export default async function EquipmentPassport({ params }: { params: Promise<{ 
         <Card style={{ marginTop: 12, background: "var(--warn-soft)", borderColor: "transparent" }}>
           <div style={{ fontWeight: 640, color: "var(--warn)" }}>Awaiting service setup</div>
           <p style={{ fontSize: 14, color: "var(--ink-soft)", marginTop: 4 }}>
-            Our team has been notified. We&rsquo;ll confirm the details, set the maintenance schedule and attach a tag on our next visit.
+            Pending confirmation by our team.
           </p>
         </Card>
       ) : null}
@@ -119,7 +119,7 @@ export default async function EquipmentPassport({ params }: { params: Promise<{ 
         <DetailRow label="Manufacturer" value={view.manufacturer} />
         <DetailRow label="Model" value={view.model} />
         <DetailRow label="Serial number" value={view.serialNumber} />
-        <DetailRow label="Asset ID" value={view.internalAssetId} />
+        <DetailRow label="Unit ID" value={view.internalAssetId} />
         <DetailRow label="Condition" value={view.condition} />
         {view.filter ? <DetailRow label="Filter" value={[view.filter.size, view.filter.type].filter(Boolean).join(" · ")} /> : null}
         {view.warranty ? <DetailRow label="Warranty" value={`${view.warranty.provider ?? "—"}${view.warranty.expires ? ` until ${formatDate(view.warranty.expires)}` : ""}`} /> : null}
@@ -171,9 +171,6 @@ export default async function EquipmentPassport({ params }: { params: Promise<{ 
         <ReportProblem equipmentId={view.id} equipmentName={view.name} />
       </div>
 
-      <p style={{ fontSize: 12.5, color: "var(--ink-faint)", textAlign: "center", marginBottom: 20 }}>
-        This record stays with this machine — through manager changes, vendor changes, and relocation.
-      </p>
     </main>
   );
 }

@@ -33,15 +33,14 @@ export default async function SettingsPage() {
 
   return (
     <main className="rise">
-      <PageHeader title="Settings" subtitle="What each job must prove before it counts as done" />
+      <PageHeader title="Settings" />
 
       <SectionTitle>Email</SectionTitle>
       <EmailStatus configured={emailConfigured()} provider={emailProvider()} ownEmail={actor.email} />
 
       <SectionTitle>How often each job is done</SectionTitle>
       <Card style={{ marginBottom: 12, background: "var(--surface-2)", borderStyle: "dashed", fontSize: 13.5, color: "var(--ink-soft)" }}>
-        The company default for every unit of that kind. A restaurant or an individual
-        unit can be set differently, and those win over this.
+        Default intervals. Restaurants and individual units can override them.
       </Card>
       {canEdit ? (
         <IntervalEditor
@@ -56,7 +55,7 @@ export default async function SettingsPage() {
         />
       ) : null}
 
-      <SectionTitle>What each job must prove</SectionTitle>
+      <SectionTitle>Completion requirements</SectionTitle>
       <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
         {serviceTypes.map((serviceType) => (
           <Card key={serviceType.id}>
@@ -102,7 +101,7 @@ export default async function SettingsPage() {
 
       <SectionTitle>Maintenance plan overrides</SectionTitle>
       <Card style={{ marginBottom: 12, background: "var(--surface-2)", borderStyle: "dashed", fontSize: 13.5, color: "var(--ink-soft)" }}>
-        Precedence runs asset → location → customer → system template. The most specific active plan wins.
+        Unit settings override restaurant, group and default settings.
       </Card>
       <List>
         {plans.map((plan, index) => (
@@ -124,7 +123,7 @@ export default async function SettingsPage() {
       <SectionTitle>Vendors</SectionTitle>
       {vendors.length === 0 ? (
         <Card style={{ fontSize: 14, color: "var(--ink-soft)" }}>
-          No outside vendors yet. Issues can be routed to a contractor once vendors are added.
+          No vendors added.
         </Card>
       ) : (
         <List>

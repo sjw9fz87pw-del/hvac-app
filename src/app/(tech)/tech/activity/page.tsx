@@ -37,7 +37,7 @@ export default async function ActivityPage() {
       <div style={{ height: 20 }} />
 
       {records.length === 0 ? (
-        <EmptyState title="No services recorded yet" body="Completed work appears here with its photos and checklist." />
+        <EmptyState title="No services recorded yet" body="Completed work appears here." />
       ) : (
         <List>
           {records.map((record, index) => (

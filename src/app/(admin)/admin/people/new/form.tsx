@@ -178,7 +178,7 @@ export function AddPersonForm({ roles, organizations }: {
             <Card>
               {organizations.length === 0 ? (
                 <p style={{ fontSize: 14.5, color: "var(--ink-soft)" }}>
-                  Add a restaurant first — there is nothing to give them access to yet.
+                  Add a restaurant first.
                 </p>
               ) : (
                 <>
@@ -198,7 +198,7 @@ export function AddPersonForm({ roles, organizations }: {
                         {(organization?.locations ?? []).map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
                       </select>
                       <p style={{ color: "var(--ink-faint)", fontSize: 13, marginTop: 8 }}>
-                        They will not be able to see any other restaurant in this group.
+                        Access is limited to this restaurant.
                       </p>
                     </div>
                   ) : null}

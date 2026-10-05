@@ -191,7 +191,7 @@ export function ManagePerson({ person, roles, organizations, isSelf, isLastOwner
           ) : null}
 
           <p style={{ fontSize: 12.5, color: "var(--ink-faint)", marginTop: 12, lineHeight: 1.5 }}>
-            They will be signed out and will sign back in under the new role.
+            They will be signed out and need to sign in again.
           </p>
 
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
@@ -217,15 +217,13 @@ export function ManagePerson({ person, roles, organizations, isSelf, isLastOwner
         {locked ? (
           <p style={{ fontSize: 14, color: "var(--ink-soft)", lineHeight: 1.6 }}>
             {isSelf
-              ? "You cannot change your own access. Another owner has to do it."
-              : "This is the only owner. Make someone else an owner first, or you would lock everyone out."}
+              ? "Only another owner can change your access."
+              : "This is the only owner. Assign another owner first."}
           </p>
         ) : person.active ? (
           <>
             <p style={{ fontSize: 14, color: "var(--ink-soft)", lineHeight: 1.6 }}>
-              They stop being able to sign in immediately, and any session they have open
-              ends. Nothing they recorded is deleted — service records keep their name on
-              them, because those are permanent proof of work.
+              They can no longer sign in. Their records are kept.
             </p>
             {!confirmRemove ? (
               <div style={{ marginTop: 14 }}>
@@ -244,7 +242,7 @@ export function ManagePerson({ person, roles, organizations, isSelf, isLastOwner
         ) : (
           <>
             <p style={{ fontSize: 14, color: "var(--ink-soft)", lineHeight: 1.6 }}>
-              This account cannot sign in. Give it back whenever you like.
+              This account is deactivated.
             </p>
             <div style={{ marginTop: 14 }}>
               <Button disabled={busy !== null} onClick={() => act("activate")}>
@@ -258,9 +256,7 @@ export function ManagePerson({ person, roles, organizations, isSelf, isLastOwner
       {!locked ? (
         <Card style={{ marginTop: 12 }}>
           <p style={{ fontSize: 14, color: "var(--ink-soft)", lineHeight: 1.6 }}>
-            Or delete the account entirely, so it stops appearing in this list. Only
-            possible while nothing is recorded in their name — anyone who has completed
-            work keeps it, and can only have their access removed.
+            Or delete the account permanently. Only possible if it has no recorded work.
           </p>
 
           {deleteError ? (

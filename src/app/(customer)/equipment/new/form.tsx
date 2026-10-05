@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button, Card, PageHeader } from "@/components/ui/primitives";
 import { compressImage, uploadPhoto } from "@/lib/photos/client";
+import { NavIcon } from "@/components/ui/nav";
 
 const TYPES = [
   { category: "REFRIGERATION", label: "Reach-in refrigerator" },
@@ -80,8 +81,7 @@ export function AddEquipmentForm({ locations }: {
           <div style={{ fontSize: 40 }}>✓</div>
           <h1 style={{ fontSize: 21, marginTop: 8 }}>Equipment added</h1>
           <p style={{ color: "var(--ink-soft)", fontSize: 14.5, marginTop: 8, maxWidth: 380, marginInline: "auto" }}>
-            It&rsquo;s marked <strong>Needs service setup</strong>. Our team has been notified and will confirm the details,
-            set the maintenance schedule and attach a tag.
+            It&rsquo;s marked <strong>Needs service setup</strong>. Our team will confirm the details.
           </p>
           <div style={{ marginTop: 20, maxWidth: 260, marginInline: "auto" }}>
             <Button href="/equipment">Back to equipment</Button>
@@ -93,7 +93,7 @@ export function AddEquipmentForm({ locations }: {
 
   return (
     <main className="rise">
-      <PageHeader title="Add equipment" subtitle="Tell us about a new unit and we'll set up its maintenance." />
+      <PageHeader title="Add equipment" subtitle="Add a unit for maintenance." />
 
       <form onSubmit={submit} style={{ display: "grid", gap: 14 }}>
         <Card style={{ display: "grid", gap: 12 }}>
@@ -141,7 +141,7 @@ export function AddEquipmentForm({ locations }: {
           style={{ display: "grid", placeItems: "center", padding: 24, borderRadius: 16, border: "1.5px dashed var(--line)", background: "var(--surface)", cursor: "pointer" }}
         >
           <input type="file" accept="image/*" capture="environment" onChange={addPhoto} style={{ display: "none" }} />
-          <div style={{ fontSize: 26 }}>📷</div>
+          <NavIcon name="camera" size={26} />
           <div style={{ fontWeight: 600, marginTop: 6 }}>
             {photoKeys.length > 0 ? `${photoKeys.length} photo${photoKeys.length === 1 ? "" : "s"} added` : "Add a photo"}
           </div>

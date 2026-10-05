@@ -37,7 +37,7 @@ export function PrepareTag({ equipmentId, organizationId }: { equipmentId: strin
       <div style={{ marginTop: 12 }}>
         <div style={{ maxWidth: 230 }}>
           <Button onClick={prepare} disabled={busy} variant="secondary">
-            {busy ? "Preparing…" : "Prepare a tag to write"}
+            {busy ? "Preparing…" : "Prepare tag"}
           </Button>
         </div>
         {error ? <div style={{ color: "var(--bad)", fontSize: 13.5, marginTop: 8 }}>{error}</div> : null}
@@ -47,18 +47,13 @@ export function PrepareTag({ equipmentId, organizationId }: { equipmentId: strin
 
   return (
     <div style={{ marginTop: 12 }}>
-      <div style={{ fontSize: 13.5, fontWeight: 620 }}>Write this to the tag</div>
+      <div style={{ fontSize: 13.5, fontWeight: 620 }}>Tag link</div>
       <CopyLink link={url} />
       <ol style={{ fontSize: 13.5, color: "var(--ink-soft)", lineHeight: 1.6, marginTop: 12, paddingLeft: 20 }}>
-        <li>Install <strong>NFC Tools</strong> from the App Store — free, no account.</li>
-        <li>Open it, choose <strong>Write</strong> → <strong>Add a record</strong> → <strong>URL</strong>.</li>
-        <li>Paste the link above, then <strong>Write</strong>, and hold the tag to the top of the phone.</li>
-        <li>Come back here and <strong>tap the finished tag</strong> — it opens the app and asks which unit it belongs to.</li>
+        <li>In <strong>NFC Tools</strong> (App Store), choose Write → Add a record → URL.</li>
+        <li>Paste the link and write it to the tag.</li>
+        <li>Tap the tag with your phone and select this unit.</li>
       </ol>
-      <p style={{ fontSize: 12.5, color: "var(--ink-faint)", marginTop: 8, lineHeight: 1.5 }}>
-        Nothing is linked until you tap it. Until then the tag is blank stock, and the link above
-        works on its own if you would rather print it as a QR code.
-      </p>
     </div>
   );
 }

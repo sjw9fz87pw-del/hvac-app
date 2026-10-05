@@ -65,13 +65,13 @@ export function nfcBlocker(): NfcBlocker {
 export function nfcBlockerMessage(blocker: NfcBlocker): string {
   switch (blocker) {
     case "ios":
-      return "iPhones cannot write NFC tags from a browser — Apple does not allow it, in Safari or any other iOS browser. Use the Android phone, or prepare the tag here and write it with a free NFC app.";
+      return "iPhone browsers cannot write NFC tags. Use an Android phone, or prepare the tag here and write it with NFC Tools.";
     case "android-browser":
-      return "This browser cannot write NFC tags. Open the same page in Chrome on this phone and the button appears.";
+      return "This browser cannot write NFC tags. Open this page in Chrome.";
     case "android-nfc-off":
-      return "Chrome can write tags on this phone, but NFC looks switched off. Turn on NFC in Settings → Connected devices, then reload this page.";
+      return "NFC appears to be off. Turn it on in Settings, then reload.";
     case "desktop":
-      return "This computer has no NFC reader. Tagging is done on the phone.";
+      return "Pair tags from a phone.";
     default:
       return "";
   }

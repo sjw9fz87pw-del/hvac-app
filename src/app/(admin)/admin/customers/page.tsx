@@ -33,7 +33,7 @@ export default async function CustomersPage() {
               <Row
                 href={`/admin/customers/${organization.id}`}
                 title={organization.name}
-                subtitle={`${organization.locations.length} location${organization.locations.length === 1 ? "" : "s"} · ${organization._count.equipment} assets`}
+                subtitle={`${organization.locations.length} restaurant${organization.locations.length === 1 ? "" : "s"} · ${organization._count.equipment} units`}
                 right={
                   <>
                     {organization.locations.length === 0

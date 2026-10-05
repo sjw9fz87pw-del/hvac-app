@@ -77,27 +77,30 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
   return (
     <main className="rise">
 
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, margin: "12px 0 18px" }}>
-        <div>
-          <h1 style={{ fontSize: 27 }}>{location.name}</h1>
-          <div style={{ color: "var(--ink-soft)", fontSize: 14.5, marginTop: 3 }}>
-            {location.organization.name}
-            {location.addressLine1 ? ` · ${[location.addressLine1, location.city, location.state].filter(Boolean).join(", ")}` : ""}
-          </div>
+      <div style={{ marginBottom: 14 }}>
+        <h1 style={{ fontSize: 23 }}>{location.name}</h1>
+        <div style={{ color: "var(--ink-soft)", fontSize: 14, marginTop: 2 }}>
+          {location.organization.name}
+          {location.addressLine1 ? ` · ${[location.addressLine1, location.city, location.state].filter(Boolean).join(", ")}` : ""}
         </div>
-        <div style={{ display: "grid", gap: 8, width: 160, flexShrink: 0 }}>
+        {/* Side by side under the title, so a long restaurant name keeps the full width. */}
+        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
           {actor.capabilities.has("equipment.create") ? (
-            <Button href={`/admin/locations/${location.id}/units/new`} size="sm">Add units</Button>
+            <div style={{ flex: 1 }}>
+              <Button href={`/admin/locations/${location.id}/units/new`} size="sm">Add units</Button>
+            </div>
           ) : null}
-          <Button href={`/tech/inventory?locationId=${location.id}`} size="sm" variant="secondary">Rapid inventory</Button>
+          <div style={{ flex: 1 }}>
+            <Button href={`/tech/inventory?locationId=${location.id}`} size="sm" variant="secondary">Rapid inventory</Button>
+          </div>
         </div>
       </div>
 
-      <StatGrid min={150}>
-        <Stat label="Assets" value={location.equipment.length} />
-        <Stat label="Due" value={due} tone={due > 0 ? "warn" : "good"} />
-        <Stat label="Overdue" value={overdue} tone={overdue > 0 ? "bad" : "good"} />
-        <Stat label="Untagged" value={untagged} tone={untagged > 0 ? "warn" : "good"} />
+      <StatGrid>
+        <Stat label="Units" value={location.equipment.length} />
+        <Stat label="Due" value={due} tone={due > 0 ? "warn" : "neutral"} />
+        <Stat label="Overdue" value={overdue} tone={overdue > 0 ? "bad" : "neutral"} />
+        <Stat label="Untagged" value={untagged} tone={untagged > 0 ? "warn" : "neutral"} />
       </StatGrid>
 
       {location.accessNotes ? (
@@ -135,7 +138,7 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
       {location.equipment.length === 0 ? (
         <EmptyState
           title="No units yet"
-          body="Add the equipment you know about in this restaurant. You can add more any time."
+          body="Add the equipment at this restaurant."
           action={
             actor.capabilities.has("equipment.create") ? (
               <div style={{ width: 170, marginInline: "auto" }}>
