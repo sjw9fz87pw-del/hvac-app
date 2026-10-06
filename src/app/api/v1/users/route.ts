@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db/client";
-import { requireCapability, AuthError } from "@/lib/auth/session";
+import { requireCapability } from "@/lib/auth/session";
 import { canGrantRole, type Role } from "@/lib/auth/permissions";
 import { assertOrganization, assertLocation } from "@/lib/auth/scope";
 import { recordAudit } from "@/lib/audit/log";

@@ -23,7 +23,8 @@ export type AuditAction =
   | "user.reset_requested" | "user.activated" | "user.deactivated" | "user.password_set"
   | "user.deleted"
   | "serviceType.updated"
-  | "auth.login" | "auth.logout" | "auth.login_failed";
+  | "auth.login" | "auth.logout" | "auth.login_failed"
+  | "job.refreshed";
 
 export interface AuditInput {
   action: AuditAction;

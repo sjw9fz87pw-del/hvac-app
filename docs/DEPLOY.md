@@ -105,17 +105,10 @@ which keeps deploy previews off production data.
 | `NFC_TAG_SECRET` | Signs every tag identifier. **Back it up** — losing it makes every tag in the field unresolvable |
 | `JOB_TOKEN` | Authenticates the nightly job and the bootstrap endpoint |
 
-> **Rotate `NFC_TAG_SECRET` before writing real tags.** The current value was
-> generated during this session and has appeared in a chat transcript. Nothing
-> of value depends on it yet — the 15 seeded tags are demo data — so rotating now
-> costs nothing and later costs every tag in the field:
->
-> ```bash
-> node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
-> ```
->
-> Set it in Netlify, redeploy, then re-run bootstrap with `{"reset": true}` so
-> the demo tags are re-minted under the new key.
+> **`NFC_TAG_SECRET` has been rotated** (September 2026), before any real tag
+> was written. Do not rotate it again casually: every tag already written is
+> signed with it, and a new secret makes every one of them stop resolving. If it
+> ever leaks, rotate it and re-pair every tag in the field.
 
 ### A trap worth knowing
 
@@ -150,7 +143,7 @@ from `Make the app deployable` onward. The two-step reproduction that found them
 # Clean room — the committed tree only. No .env, no stale node_modules.
 git archive HEAD | tar -x -C /tmp/cleanroom && cd /tmp/cleanroom && npm ci
 npm run build              # catches what your working directory hides
-npx netlify build --offline # Netlify's own pipeline, plugins included
+npx -y netlify-cli build --offline # Netlify's own pipeline, plugins included
 ```
 
 The working directory lies: Next loads `.env` from disk regardless of the shell,
@@ -158,19 +151,27 @@ so `env -u DATABASE_URL` does not reproduce a missing-database build.
 
 ## Operations
 
-- **Readiness:** `GET /api/v1/health` — database, schema, seeded, and missing config.
-- **Re-seed:** `POST /api/v1/jobs/bootstrap` with `x-job-token`, body `{"reset": true}`.
-  Refuses to wipe a populated database without it, and returns the new password once.
+- **Readiness:** `GET /api/v1/health` — database, schema, seeded, missing config,
+  each email setting, and when the nightly job last ran (`nightlyJob.current` is
+  false if it has missed two runs). Booleans and a timestamp only; no values.
+- **Weekly check:** a scheduled Claude routine reads the health endpoint and the
+  main pages every week and reports anything wrong. It never changes anything.
+- **First install only:** `POST /api/v1/jobs/bootstrap` with `x-job-token`. It
+  refuses with 409 once any data exists — there is no reset, by design.
 - **Nightly job:** `netlify/functions/scheduled-refresh.ts` at 07:00 UTC calls
   `/api/v1/jobs/refresh`, advancing schedule statuses and sending the overdue
-  digest. Both are idempotent, so a missed or doubled run is harmless.
+  digest. Both are idempotent, so a missed or doubled run is harmless. Each run
+  is recorded so the health check can tell a stopped job from a quiet one.
+- **Schema changes need a migration.** Production is never `db push`ed — Netlify
+  applies only the SQL under `netlify/database/migrations`. `tests/migrations.test.ts`
+  fails, printing the SQL to add, if `schema.prisma` gets ahead of them.
 - **Reproduce a build failure locally** — the working directory lies, because Next
   loads `.env` from disk regardless of the shell:
 
   ```bash
   git archive HEAD | tar -x -C /tmp/cleanroom && cd /tmp/cleanroom && npm ci
   npm run build
-  npx netlify build --offline   # Netlify's own pipeline, plugins included
+  npx -y netlify-cli build --offline   # Netlify's own pipeline, plugins included
   ```
 
 A second project, `clearline-equipment-care-misdetected`, is a dead first attempt

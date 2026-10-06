@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db/client";
 import { requireCapability } from "@/lib/auth/session";
 import { canAccessAsset } from "@/lib/auth/scope";
-import { setIntervalOverride, setNextDue, setPaused, recomputeSchedule } from "@/lib/maintenance/planning";
+import { setIntervalOverride, setNextDue, setPaused } from "@/lib/maintenance/planning";
 import { ok, fail, route } from "@/lib/api/respond";
 
 const schema = z.object({

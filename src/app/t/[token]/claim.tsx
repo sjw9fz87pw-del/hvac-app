@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card, Button } from "@/components/ui/primitives";
+import { Card } from "@/components/ui/primitives";
 
 interface UnitOption { id: string; name: string; locationName: string; areaName: string | null; tagged: boolean }
 

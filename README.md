@@ -26,7 +26,7 @@ issue-reporting system.
 
 ```bash
 npm install
-cp .env.example .env          # set DATABASE_URL, NFC_TAG_SECRET, SESSION_SECRET, APP_BASE_URL
+cp .env.example .env          # set DATABASE_URL, NFC_TAG_SECRET, APP_BASE_URL, BLOB_DIR
 npx prisma db push
 npm run db:seed
 npm run dev                   # http://localhost:3000
@@ -34,9 +34,18 @@ npm run dev                   # http://localhost:3000
 
 Requires PostgreSQL 14+ and Node 20+.
 
+### Check it
+
+```bash
+npm run typecheck
+npm test                      # app, database and migration checks
+npm run test:nfc-writer       # NFC writer module, no phone or database needed
+npm run build
+```
+
 ### Local account
 
-`npm run seed` installs the starting dataset and one owner account —
+`npm run db:seed` installs the starting dataset and one owner account —
 `panteli@bruphilly.com`, password `password123`, role Super Admin. The same
 dataset installs on a deployed environment through the guarded bootstrap
 endpoint, which generates a strong password instead (see `docs/DEPLOY.md`).

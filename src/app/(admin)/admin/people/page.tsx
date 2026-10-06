@@ -4,7 +4,7 @@ import { organizationScope } from "@/lib/auth/scope";
 import { roleCopy, roleLabel } from "@/lib/auth/role-copy";
 import { awaitingSetup } from "@/lib/auth/invite-service";
 import type { Role } from "@/lib/auth/permissions";
-import { PageHeader, List, Row, Divider, Pill, SectionTitle, EmptyState, Button, formatDate } from "@/components/ui/primitives";
+import { PageHeader, List, Row, Divider, Pill, SectionTitle, EmptyState, Button } from "@/components/ui/primitives";
 
 export default async function PeoplePage() {
   const actor = await requireCapability("user.manage");

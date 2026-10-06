@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db/client";
 import { requireCapability } from "@/lib/auth/session";
 import { canAccessLocation } from "@/lib/auth/scope";
 import { scheduleStatus, urgencyRank } from "@/lib/maintenance/engine";
-import { Card, Stat, StatGrid, SectionTitle, List, Row, Divider, Pill, StatusPill, Button, Disclosure, EmptyState, formatDate, formatDateTime } from "@/components/ui/primitives";
+import { Card, Stat, StatGrid, SectionTitle, List, Row, Divider, Pill, StatusPill, Button, Disclosure, EmptyState, formatDateTime } from "@/components/ui/primitives";
 import { GenerateVisit } from "./generate-visit";
 import { ManageLocation } from "./manage-location";
 import { IntervalEditor, type IntervalRow } from "@/components/ui/interval-editor";

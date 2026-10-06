@@ -41,6 +41,10 @@ export const GET = route(async () => {
     // Which route invitations take, if any. Never the credentials themselves.
     email: emailConfigured(),
     emailProvider: emailProvider(),
+    // Each half of the Gmail route on its own, so "email is off" says which
+    // half is missing rather than leaving it to guesswork.
+    smtpUser: Boolean(process.env.SMTP_USER),
+    smtpPassword: Boolean(process.env.SMTP_PASSWORD),
     // Not secret, so the resolved value is useful to see: a wrong base URL
     // silently bakes the wrong address into every tag written.
     appBaseUrl: process.env.APP_BASE_URL ?? process.env.URL ?? null,
@@ -55,12 +59,28 @@ export const GET = route(async () => {
 
   const ready = database === "ok" && schema && configured.nfcTagSecret && configured.jobToken;
 
+  // The nightly job runs at 07:00 UTC. Allowing 36 hours means one missed run
+  // is tolerated and two in a row is reported. Only the time is exposed here,
+  // never what it did: this endpoint is unauthenticated.
+  const lastRefresh = schema
+    ? await prisma.auditEvent.findFirst({
+        where: { action: "job.refreshed" },
+        orderBy: { createdAt: "desc" },
+        select: { createdAt: true },
+      })
+    : null;
+  const nightlyJob = {
+    lastRunAt: lastRefresh?.createdAt.toISOString() ?? null,
+    current: Boolean(lastRefresh && Date.now() - lastRefresh.createdAt.getTime() < 36 * 3_600_000),
+  };
+
   return ok({
     ready,
     database,
     schema,
     seeded,
     configured,
+    nightlyJob,
     missing: [
       ...(configured.nfcTagSecret ? [] : ["NFC_TAG_SECRET"]),
       ...(configured.jobToken ? [] : ["JOB_TOKEN"]),

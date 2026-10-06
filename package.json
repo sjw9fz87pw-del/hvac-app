@@ -7,7 +7,6 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
@@ -42,7 +41,6 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
-    "netlify-cli": "^27.5.2",
     "postcss": "^8.5.28",
     "prisma": "^6.16.2",
     "tailwindcss": "^4.1.13",
@@ -52,8 +50,9 @@
   },
   "overrides": {
     "postcss": "^8.5.28",
-    "sharp": "^0.35.4",
+    "sharp": "^0.35.5",
     "deepmerge-ts": "^8.0.0",
-    "effect": "^3.20.0"
+    "effect": "^3.20.0",
+    "source-map-js": "^1.2.2"
   }
 }

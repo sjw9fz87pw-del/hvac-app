@@ -3,6 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 import { refreshScheduleStatuses } from "@/lib/maintenance/scheduling";
 import { notifyOverdueDigest } from "@/lib/notifications/notify";
 import { ok, fail, route } from "@/lib/api/respond";
+import { recordAudit } from "@/lib/audit/log";
 
 /**
  * The nightly job.
@@ -31,6 +32,16 @@ export const POST = route(async (request: NextRequest) => {
   const started = Date.now();
   const statusesChanged = await refreshScheduleStatuses();
   const notificationsSent = await notifyOverdueDigest();
+
+  // Recorded so the health check can tell a job that ran and found nothing to
+  // do from a job that has stopped running. Without it, a dead nightly job
+  // looks exactly like a quiet week: statuses just quietly stop advancing.
+  await recordAudit({
+    action: "job.refreshed",
+    entityType: "Job",
+    entityId: "refresh",
+    detail: { statusesChanged, notificationsSent, durationMs: Date.now() - started },
+  });
 
   return ok({
     statusesChanged,

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db/client";
 import { requireActor } from "@/lib/auth/session";
 import { canAccessAsset } from "@/lib/auth/scope";
-import { Card, Pill, Button, StatusPill, formatDate, formatDateTime } from "@/components/ui/primitives";
+import { Card, Pill, Button, StatusPill, formatDateTime } from "@/components/ui/primitives";
 import { photoThumb } from "@/components/ui/equipment-bits";
 
 /**

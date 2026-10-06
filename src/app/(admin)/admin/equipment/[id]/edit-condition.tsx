@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Card, SectionTitle } from "@/components/ui/primitives";
+import { Card, SectionTitle } from "@/components/ui/primitives";
 import { ConditionPicker } from "@/components/ui/condition-picker";
 import { conditionCopy, type Condition } from "@/components/ui/condition";
 
