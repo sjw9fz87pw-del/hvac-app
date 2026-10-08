@@ -27,7 +27,7 @@ export const GET = route(async (request: NextRequest) => {
     where,
     include: {
       area: true, location: true, photos: { orderBy: { createdAt: "asc" } },
-      schedules: { include: { serviceType: true } },
+      schedules: { where: { serviceType: { active: true } }, include: { serviceType: true } },
       tagAssignments: { where: { unassignedAt: null } },
     },
     orderBy: [{ area: { sortOrder: "asc" } }, { name: "asc" }],

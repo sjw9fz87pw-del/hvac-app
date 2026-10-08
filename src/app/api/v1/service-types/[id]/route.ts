@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db/client";
 import { requireCapability } from "@/lib/auth/session";
 import { recordAudit } from "@/lib/audit/log";
 import { ok, fail, route } from "@/lib/api/respond";
+import { removeJob } from "@/lib/api/jobs";
 
 /**
  * Change what a service type demands before a technician may call the work
@@ -62,4 +63,15 @@ export const PATCH = route(async (request: NextRequest, context: { params: Promi
     requiresTechnicianNote: updated.requiresTechnicianNote,
     defaultIntervalDays: updated.defaultIntervalDays,
   });
+});
+
+/**
+ * Remove a job from the company. Deleted if it was never done; retired —
+ * hidden and no longer scheduled, but still named on its records — if it was.
+ */
+export const DELETE = route(async (_request: NextRequest, context: { params: Promise<{ id: string }> }) => {
+  const actor = await requireCapability("settings.manage");
+  const { id } = await context.params;
+  const result = await removeJob(id, { userId: actor.userId, serviceCompanyId: actor.serviceCompanyId });
+  return ok(result);
 });

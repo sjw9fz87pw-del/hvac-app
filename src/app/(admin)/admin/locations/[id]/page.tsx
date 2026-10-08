@@ -7,6 +7,7 @@ import { Card, Stat, StatGrid, SectionTitle, List, Row, Divider, Pill, StatusPil
 import { GenerateVisit } from "./generate-visit";
 import { ManageLocation } from "./manage-location";
 import { IntervalEditor, type IntervalRow } from "@/components/ui/interval-editor";
+import { AddJob } from "@/components/ui/add-job";
 import { UnitList, type UnitRow } from "./unit-list";
 
 export default async function LocationDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -22,7 +23,7 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
         where: { archivedAt: null },
         include: {
           area: true,
-          schedules: { include: { serviceType: true } },
+          schedules: { where: { serviceType: { active: true } }, include: { serviceType: true } },
           tagAssignments: { where: { unassignedAt: null } },
           photos: { where: { kind: "IDENTIFICATION" }, orderBy: { capturedAt: "desc" }, take: 1 },
         },
@@ -37,6 +38,13 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
   });
 
   if (!location || !canAccessLocation(actor, location.id, location.organizationId)) notFound();
+
+  // Numbered the way people count: Refrigerator 2 before Refrigerator 10.
+  // The database sorts text, which puts 10 straight after 1.
+  location.equipment.sort((a, b) =>
+    (a.area?.sortOrder ?? 999) - (b.area?.sortOrder ?? 999) ||
+    a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }),
+  );
 
   // What each job's cadence is here, and whether that was decided at this
   // restaurant or inherited from the level above.
@@ -62,6 +70,7 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
       effectiveDays: here?.intervalDays ?? group?.intervalDays ?? type.defaultIntervalDays,
       overridden: Boolean(here),
       inheritedFrom: group ? "GROUP" : "COMPANY",
+      unitCount: location.equipment.filter((e) => e.schedules.some((s) => s.serviceTypeId === type.id)).length,
     };
   });
 
@@ -183,10 +192,23 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
           );
         })
       )}
-      {actor.capabilities.has("plan.manage") ? (
+      {actor.capabilities.has("plan.manage") || actor.capabilities.has("settings.manage") || actor.capabilities.has("schedule.manage") ? (
         <>
           <SectionTitle>How often work happens here</SectionTitle>
-          <IntervalEditor scope="LOCATION" locationId={location.id} rows={intervalRows} />
+          {actor.capabilities.has("plan.manage") ? (
+            <IntervalEditor
+              scope="LOCATION"
+              locationId={location.id}
+              rows={intervalRows}
+              canRemove={actor.capabilities.has("settings.manage")}
+            />
+          ) : null}
+          <AddJob
+            jobs={intervalRows.map((row) => ({ id: row.serviceTypeId, name: row.name, effectiveDays: row.effectiveDays }))}
+            units={location.equipment.map((e) => ({ id: e.id, name: e.name, area: e.area?.name ?? null }))}
+            canCreate={actor.capabilities.has("settings.manage")}
+            canAttach={actor.capabilities.has("schedule.manage")}
+          />
         </>
       ) : null}
 

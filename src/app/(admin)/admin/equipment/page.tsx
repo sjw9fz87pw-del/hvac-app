@@ -22,7 +22,7 @@ export default async function AdminEquipment({ searchParams }: { searchParams: P
       location: { select: { name: true } },
       organization: { select: { name: true } },
       photos: { where: { kind: "IDENTIFICATION" }, orderBy: { capturedAt: "desc" }, take: 1 },
-      schedules: true,
+      schedules: { where: { serviceType: { active: true } } },
       tagAssignments: { where: { unassignedAt: null } },
     },
     orderBy: { updatedAt: "desc" },

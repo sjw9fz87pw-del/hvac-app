@@ -21,7 +21,7 @@ export const GET = route(async (_request: NextRequest, ctx: { params: Promise<{ 
       area: true, location: true, organization: true,
       photos: { orderBy: { capturedAt: "asc" } },
       documents: true,
-      schedules: { include: { serviceType: true } },
+      schedules: { where: { serviceType: { active: true } }, include: { serviceType: true } },
       tagAssignments: { include: { tag: true }, orderBy: { assignedAt: "desc" } },
       serviceRecords: {
         include: { serviceType: true, technician: true, photos: true },

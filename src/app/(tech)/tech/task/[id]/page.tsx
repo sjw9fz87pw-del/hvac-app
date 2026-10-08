@@ -19,7 +19,7 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
           area: true,
           photos: { where: { kind: "IDENTIFICATION" }, take: 1 },
           tagAssignments: { where: { unassignedAt: null }, include: { tag: true } },
-          schedules: { include: { serviceType: true } },
+          schedules: { where: { serviceType: { active: true } }, include: { serviceType: true } },
           serviceRecords: { orderBy: { performedAt: "desc" }, take: 1, include: { technician: { select: { name: true } } } },
         },
       },

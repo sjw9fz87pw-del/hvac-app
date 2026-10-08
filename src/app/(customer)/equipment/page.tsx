@@ -21,7 +21,7 @@ export default async function EquipmentPage({ searchParams }: { searchParams: Pr
       area: true,
       location: { select: { name: true } },
       photos: { where: { kind: "IDENTIFICATION" }, take: 1 },
-      schedules: { include: { serviceType: true } },
+      schedules: { where: { serviceType: { active: true } }, include: { serviceType: true } },
     },
     orderBy: [{ area: { sortOrder: "asc" } }, { name: "asc" }],
   });

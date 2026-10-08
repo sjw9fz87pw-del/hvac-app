@@ -43,7 +43,7 @@ export async function customerDashboard(
     select: {
       id: true, areaId: true, locationId: true,
       area: { select: { id: true, name: true, sortOrder: true } },
-      schedules: { select: { status: true } },
+      schedules: { where: { serviceType: { active: true } }, select: { status: true } },
     },
   });
 

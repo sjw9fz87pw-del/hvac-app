@@ -6,64 +6,7 @@
  * criss-crossing it.
  */
 import { prisma } from "@/lib/db/client";
-import { resolveInterval, scheduleStatus, nextDueDate, type PlanScope } from "./engine";
-
-/**
- * Recompute one asset's effective interval from the override chain and rewrite
- * its schedule row. Called when a plan changes at any level.
- */
-export async function refreshScheduleInterval(equipmentId: string, serviceTypeId: string) {
-  const equipment = await prisma.equipment.findUnique({ where: { id: equipmentId } });
-  if (!equipment) return null;
-
-  const serviceType = await prisma.serviceType.findUnique({ where: { id: serviceTypeId } });
-  if (!serviceType) return null;
-
-  const plans = await prisma.maintenancePlan.findMany({
-    where: {
-      serviceTypeId,
-      active: true,
-      OR: [
-        { scope: "SYSTEM", category: equipment.category },
-        { scope: "CUSTOMER", organizationId: equipment.organizationId },
-        { scope: "LOCATION", locationId: equipment.locationId },
-        { scope: "ASSET", equipmentId: equipment.id },
-      ],
-    },
-  });
-
-  const resolved = resolveInterval(
-    plans.map((p) => ({ scope: p.scope as PlanScope, intervalDays: p.intervalDays, active: p.active })),
-    serviceType.defaultIntervalDays,
-  );
-
-  const existing = await prisma.maintenanceSchedule.findUnique({
-    where: { equipmentId_serviceTypeId: { equipmentId, serviceTypeId } },
-  });
-
-  const anchor = existing?.lastServiceAt ?? equipment.createdAt;
-  const nextDueAt = existing?.lastServiceAt
-    ? nextDueDate(existing.lastServiceAt, resolved.intervalDays)
-    : nextDueDate(anchor, resolved.intervalDays);
-
-  return prisma.maintenanceSchedule.upsert({
-    where: { equipmentId_serviceTypeId: { equipmentId, serviceTypeId } },
-    create: {
-      equipmentId,
-      serviceTypeId,
-      intervalDays: resolved.intervalDays,
-      intervalSource: resolved.source,
-      nextDueAt,
-      status: scheduleStatus({ nextDueAt }),
-    },
-    update: {
-      intervalDays: resolved.intervalDays,
-      intervalSource: resolved.source,
-      nextDueAt,
-      status: scheduleStatus({ nextDueAt, paused: existing?.paused }),
-    },
-  });
-}
+import { scheduleStatus } from "./engine";
 
 /**
  * Re-evaluate stored statuses against the clock. Idempotent, so it is safe to

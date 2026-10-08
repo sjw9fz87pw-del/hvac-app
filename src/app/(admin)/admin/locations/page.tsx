@@ -21,7 +21,7 @@ export default async function LocationsPage() {
       organization: { select: { id: true, name: true, slug: true } },
       equipment: {
         where: { archivedAt: null },
-        select: { schedules: { select: { nextDueAt: true, paused: true } } },
+        select: { schedules: { where: { serviceType: { active: true } }, select: { nextDueAt: true, paused: true } } },
       },
     },
     orderBy: [{ organization: { name: "asc" } }, { name: "asc" }],

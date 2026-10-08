@@ -40,6 +40,21 @@ export function EditSchedule({ schedule, canEdit }: { schedule: ScheduleRow; can
   const [due, setDue] = useState(toDateInput(schedule.nextDueAt));
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState(false);
+
+  /** Only offered before the job has been done here; the server enforces the same. */
+  async function removeFromUnit() {
+    setBusy("remove");
+    setError(null);
+    const response = await fetch(`/api/v1/schedules/${schedule.id}`, { method: "DELETE" });
+    setBusy(null);
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      setError(payload.error ?? "Could not remove the job");
+      return;
+    }
+    router.refresh();
+  }
 
   const inherited = schedule.intervalSource !== "ASSET";
 
@@ -156,8 +171,36 @@ export function EditSchedule({ schedule, canEdit }: { schedule: ScheduleRow; can
               {busy === "pause" ? "Saving…" : schedule.paused ? "Resume scheduling" : "Pause scheduling"}
             </Button>
 
-            <Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => { setOpen(false); setConfirmRemove(false); }}>Cancel</Button>
           </div>
+
+          {!schedule.lastServiceAt ? (
+            confirmRemove ? (
+              <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--line)" }}>
+                <div style={{ fontWeight: 640, fontSize: 14 }}>Remove {schedule.serviceTypeName} from this unit?</div>
+                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  <div style={{ flex: 1 }}>
+                    <Button variant="danger" disabled={busy !== null} onClick={removeFromUnit}>
+                      {busy === "remove" ? "Removing…" : "Remove"}
+                    </Button>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <Button variant="secondary" disabled={busy !== null} onClick={() => setConfirmRemove(false)}>Keep</Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button" onClick={() => setConfirmRemove(true)}
+                style={{
+                  marginTop: 10, background: "none", border: "none", cursor: "pointer",
+                  color: "var(--bad)", fontSize: 13.5, fontWeight: 650, padding: "8px 2px", minHeight: 40,
+                }}
+              >
+                Remove from this unit
+              </button>
+            )
+          ) : null}
         </div>
       ) : null}
 

@@ -6,6 +6,7 @@ import { ZodError } from "zod";
 import { AuthError } from "@/lib/auth/session";
 import { TagOperationError } from "@/lib/nfc/service";
 import { IdempotencyConflict } from "@/lib/sync/idempotency";
+import { JobError } from "./job-error";
 
 export function ok<T>(body: T, status = 200) {
   return NextResponse.json(body, { status });
@@ -27,6 +28,7 @@ export function handleError(error: unknown) {
   }
   if (error instanceof IdempotencyConflict) return fail(409, error.message);
   if (error instanceof TagOperationError) return fail(400, error.message, { code: error.code });
+  if (error instanceof JobError) return fail(error.status, error.message);
   console.error("[api] unhandled error", error);
   return fail(500, "Something went wrong");
 }

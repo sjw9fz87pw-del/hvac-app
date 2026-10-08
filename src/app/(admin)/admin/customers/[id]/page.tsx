@@ -20,7 +20,7 @@ export default async function CustomerDetail({ params }: { params: Promise<{ id:
         where: { active: true },
         include: {
           _count: { select: { equipment: true } },
-          equipment: { where: { archivedAt: null }, select: { schedules: { select: { status: true } } } },
+          equipment: { where: { archivedAt: null }, select: { schedules: { where: { serviceType: { active: true } }, select: { status: true } } } },
         },
         orderBy: { name: "asc" },
       },

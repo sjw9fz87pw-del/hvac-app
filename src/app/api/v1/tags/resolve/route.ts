@@ -30,7 +30,7 @@ export const POST = route(async (request: NextRequest) => {
     where: { id: outcome.equipmentId },
     include: {
       area: true, location: true, photos: true,
-      schedules: { include: { serviceType: true } },
+      schedules: { where: { serviceType: { active: true } }, include: { serviceType: true } },
       tagAssignments: { where: { unassignedAt: null } },
       serviceRecords: {
         include: { serviceType: true, technician: true, photos: true },

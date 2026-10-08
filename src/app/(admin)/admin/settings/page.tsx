@@ -1,6 +1,7 @@
 import { requireActor } from "@/lib/auth/session";
 import { RequirementsEditor } from "./requirements";
 import { IntervalEditor, type IntervalRow } from "@/components/ui/interval-editor";
+import { AddJob } from "@/components/ui/add-job";
 import { EmailStatus } from "./email-status";
 import { emailConfigured, emailProvider } from "@/lib/email/send";
 import { prisma } from "@/lib/db/client";
@@ -13,13 +14,17 @@ export default async function SettingsPage() {
   const canEdit = actor.capabilities.has("settings.manage");
 
   const [serviceTypes, plans, vendors] = await Promise.all([
+    // Removed jobs with history are kept for their records, but are not work.
     prisma.serviceType.findMany({
-      where: { serviceCompanyId: actor.serviceCompanyId },
-      include: { checklistItems: { orderBy: { sortOrder: "asc" } } },
+      where: { serviceCompanyId: actor.serviceCompanyId, active: true },
+      include: {
+        checklistItems: { orderBy: { sortOrder: "asc" } },
+        _count: { select: { schedules: { where: { equipment: { archivedAt: null } } } } },
+      },
       orderBy: { name: "asc" },
     }),
     prisma.maintenancePlan.findMany({
-      where: { scope: { in: ["SYSTEM", "CUSTOMER", "LOCATION"] }, active: true },
+      where: { scope: { in: ["SYSTEM", "CUSTOMER", "LOCATION"] }, active: true, serviceType: { active: true } },
       include: {
         serviceType: { select: { name: true } },
         organization: { select: { name: true } },
@@ -43,16 +48,22 @@ export default async function SettingsPage() {
         Default intervals. Restaurants and individual units can override them.
       </Card>
       {canEdit ? (
-        <IntervalEditor
-          scope="SYSTEM"
-          rows={serviceTypes.map((t): IntervalRow => ({
-            serviceTypeId: t.id,
-            name: t.name,
-            effectiveDays: t.defaultIntervalDays,
-            overridden: false,
-            inheritedFrom: "SYSTEM",
-          }))}
-        />
+        <>
+          <IntervalEditor
+            scope="SYSTEM"
+            canRemove
+            rows={serviceTypes.map((t): IntervalRow => ({
+              serviceTypeId: t.id,
+              name: t.name,
+              effectiveDays: t.defaultIntervalDays,
+              overridden: false,
+              inheritedFrom: "SYSTEM",
+              unitCount: t._count.schedules,
+            }))}
+          />
+          {/* Defined here; put on units from each restaurant's page. */}
+          <AddJob jobs={[]} canCreate canAttach={false} />
+        </>
       ) : null}
 
       <SectionTitle>Completion requirements</SectionTitle>

@@ -5,6 +5,7 @@ import { requireCapability } from "@/lib/auth/session";
 import { canAccessAsset } from "@/lib/auth/scope";
 import { setIntervalOverride, setNextDue, setPaused } from "@/lib/maintenance/planning";
 import { ok, fail, route } from "@/lib/api/respond";
+import { detachJob } from "@/lib/api/jobs";
 
 const schema = z.object({
   /** Days between services for this one unit. Null clears the override. */
@@ -52,4 +53,11 @@ export const PATCH = route(async (request: NextRequest, context: { params: Promi
     select: { id: true, intervalDays: true, intervalSource: true, nextDueAt: true, status: true, paused: true },
   });
   return ok(fresh);
+});
+
+/** Take this job off this unit. Refused once it has been done here; pause it then. */
+export const DELETE = route(async (_request: NextRequest, context: { params: Promise<{ id: string }> }) => {
+  const actor = await requireCapability("schedule.manage");
+  const { id } = await context.params;
+  return ok(await detachJob(id, actor));
 });

@@ -8,6 +8,8 @@ import { VerifyEquipment } from "./verify";
 import { EditSchedule } from "./edit-schedule";
 import { EditCondition } from "./edit-condition";
 import { PairTag } from "./pair-tag";
+import { AddJob, type JobOption } from "@/components/ui/add-job";
+import { resolveInterval, type PlanScope } from "@/lib/maintenance/engine";
 import { RemoveUnit } from "./remove-unit";
 
 /** The internal view of an asset: passport, tag state, audit trail, verification. */
@@ -19,7 +21,7 @@ export default async function AdminEquipmentDetail({ params }: { params: Promise
     where: { id },
     include: {
       area: true, location: true, organization: true,
-      schedules: { include: { serviceType: true } },
+      schedules: { where: { serviceType: { active: true } }, include: { serviceType: true } },
       tagAssignments: { include: { tag: true }, orderBy: { assignedAt: "desc" } },
       serviceRecords: { include: { serviceType: true, technician: true }, orderBy: { performedAt: "desc" }, take: 20 },
       issues: { orderBy: { createdAt: "desc" }, take: 10 },
@@ -32,6 +34,31 @@ export default async function AdminEquipmentDetail({ params }: { params: Promise
     where: { serviceCompanyId: actor.serviceCompanyId, active: true },
     orderBy: { name: "asc" },
   });
+
+  // Jobs this unit does not have yet, each at the interval it would get here:
+  // the restaurant's or group's setting if there is one, else the company's.
+  const plansHere = await prisma.maintenancePlan.findMany({
+    where: {
+      active: true,
+      OR: [
+        { scope: "SYSTEM", category: equipment.category },
+        { scope: "CUSTOMER", organizationId: equipment.organizationId },
+        { scope: "LOCATION", locationId: equipment.locationId },
+      ],
+    },
+    select: { serviceTypeId: true, scope: true, intervalDays: true, active: true },
+  });
+  const onUnit = new Set(equipment.schedules.map((s) => s.serviceTypeId));
+  const addableJobs: JobOption[] = serviceTypes
+    .filter((type) => !onUnit.has(type.id))
+    .map((type) => ({
+      id: type.id,
+      name: type.name,
+      effectiveDays: resolveInterval(
+        plansHere.filter((p) => p.serviceTypeId === type.id).map((p) => ({ ...p, scope: p.scope as PlanScope })),
+        type.defaultIntervalDays,
+      ).intervalDays,
+    }));
 
   const audit = await prisma.auditEvent.findMany({
     where: { entityType: "Equipment", entityId: id },
@@ -130,7 +157,7 @@ export default async function AdminEquipmentDetail({ params }: { params: Promise
       <SectionTitle>Maintenance schedules</SectionTitle>
       {equipment.schedules.length === 0 ? (
         <Card style={{ color: "var(--ink-soft)", fontSize: 14 }}>
-          No maintenance schedule.
+          No jobs on this unit yet.
         </Card>
       ) : (
         equipment.schedules.map((schedule) => (
@@ -150,6 +177,14 @@ export default async function AdminEquipmentDetail({ params }: { params: Promise
           />
         ))
       )}
+      {!equipment.archivedAt ? (
+        <AddJob
+          jobs={addableJobs}
+          unitId={equipment.id}
+          canCreate={actor.capabilities.has("settings.manage")}
+          canAttach={actor.capabilities.has("schedule.manage")}
+        />
+      ) : null}
 
       <SectionTitle>Service history</SectionTitle>
       <List>

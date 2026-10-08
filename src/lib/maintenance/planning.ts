@@ -42,7 +42,7 @@ export async function recomputeSchedule(
     where: { id: scheduleId },
     include: {
       serviceType: { select: { id: true, defaultIntervalDays: true, category: true } },
-      equipment: { select: { id: true, organizationId: true, locationId: true, category: true, createdAt: true } },
+      equipment: { select: { id: true, organizationId: true, locationId: true, category: true } },
     },
   });
 
@@ -62,11 +62,13 @@ export async function recomputeSchedule(
 
   const resolved = resolveInterval(plans, schedule.serviceType.defaultIntervalDays);
 
-  // No service yet means it is due now, the same rule a new asset follows.
+  // Never serviced means due since the job was put on the unit — not since the
+  // unit was created. A job added today to a fridge inventoried months ago is
+  // due today, not overdue since the day the fridge was first entered.
   const anchor = schedule.lastServiceAt;
   const nextDueAt = anchor
     ? nextDueDate(anchor, resolved.intervalDays)
-    : startOfDay(schedule.equipment.createdAt);
+    : startOfDay(schedule.createdAt);
 
   await tx.maintenanceSchedule.update({
     where: { id: scheduleId },

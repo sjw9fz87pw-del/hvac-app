@@ -26,7 +26,7 @@ export default async function EquipmentPassport({ params }: { params: Promise<{ 
       area: true, location: true, organization: true,
       photos: { orderBy: { capturedAt: "asc" } },
       documents: true,
-      schedules: { include: { serviceType: true } },
+      schedules: { where: { serviceType: { active: true } }, include: { serviceType: true } },
       tagAssignments: { where: { unassignedAt: null } },
       serviceRecords: {
         include: { serviceType: true, technician: true, photos: true },

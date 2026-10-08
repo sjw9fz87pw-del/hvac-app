@@ -14,7 +14,7 @@ export default async function CompletePage() {
       organization: { select: { name: true } },
       equipment: {
         where: { archivedAt: null, status: { not: "ARCHIVED" } },
-        select: { schedules: { select: { nextDueAt: true, paused: true } } },
+        select: { schedules: { where: { serviceType: { active: true } }, select: { nextDueAt: true, paused: true } } },
       },
     },
     orderBy: { name: "asc" },

@@ -19,6 +19,7 @@ export default async function CompleteLocationPage({ params }: { params: Promise
         include: {
           area: { select: { name: true } },
           schedules: {
+            where: { serviceType: { active: true } },
             include: { serviceType: { include: { checklistItems: { orderBy: { sortOrder: "asc" } } } } },
           },
         },
