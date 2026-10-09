@@ -7,6 +7,8 @@ import { generateVisit } from "@/lib/maintenance/scheduling";
 import { recordAudit } from "@/lib/audit/log";
 import { notify } from "@/lib/notifications/notify";
 import { ok, fail, route } from "@/lib/api/respond";
+import { assignableTechnicians } from "@/lib/api/visits";
+import { formatDateTime } from "@/lib/time/format";
 
 export const GET = route(async (request: NextRequest) => {
   const actor = await requireCapability("visit.read");
@@ -68,6 +70,12 @@ export const POST = route(async (request: NextRequest) => {
   const input = createSchema.parse(await request.json());
   assertLocation(actor, input.locationId);
 
+  // Only the company's own field staff can be sent — the same rule as
+  // reassigning a visit later.
+  if (input.technicianId && !(await assignableTechnicians(actor.serviceCompanyId)).some((t) => t.id === input.technicianId)) {
+    return fail(409, "That person can't be assigned to visits.");
+  }
+
   const visit = await generateVisit({
     locationId: input.locationId,
     scheduledFor: new Date(input.scheduledFor),
@@ -83,7 +91,7 @@ export const POST = route(async (request: NextRequest) => {
       422,
       input.include === "all"
         ? "This restaurant has no active units to visit yet"
-        : "Nothing is due at this location within the selected window. Choose \u201cEverything here\u201d to book a visit anyway.",
+        : "Nothing is due at this location within the selected window. Choose All units to book a visit anyway.",
     );
   }
 
@@ -94,10 +102,11 @@ export const POST = route(async (request: NextRequest) => {
   });
 
   if (input.technicianId) {
+    const location = await prisma.restaurantLocation.findUnique({ where: { id: visit.locationId }, select: { timezone: true } });
     await notify({
       type: "VISIT_SCHEDULED",
       title: "New visit assigned",
-      body: `${visit.tasks.length} units on ${visit.scheduledFor.toDateString()}`,
+      body: `${visit.tasks.length} units · ${formatDateTime(visit.scheduledFor, location?.timezone)}`,
       link: `/tech/visits/${visit.id}`,
       dedupeKey: `visit:${visit.id}`,
       userIds: [input.technicianId],

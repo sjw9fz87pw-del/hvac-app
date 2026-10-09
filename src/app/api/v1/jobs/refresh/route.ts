@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { timingSafeEqual } from "node:crypto";
-import { refreshScheduleStatuses } from "@/lib/maintenance/scheduling";
+import { refreshScheduleStatuses, reconcileVisits } from "@/lib/maintenance/scheduling";
 import { notifyOverdueDigest } from "@/lib/notifications/notify";
 import { ok, fail, route } from "@/lib/api/respond";
 import { recordAudit } from "@/lib/audit/log";
@@ -30,6 +30,7 @@ export const POST = route(async (request: NextRequest) => {
   if (!authorized(request)) return fail(401, "Unauthorized");
 
   const started = Date.now();
+  const visitsSettled = await reconcileVisits();
   const statusesChanged = await refreshScheduleStatuses();
   const notificationsSent = await notifyOverdueDigest();
 
@@ -40,10 +41,11 @@ export const POST = route(async (request: NextRequest) => {
     action: "job.refreshed",
     entityType: "Job",
     entityId: "refresh",
-    detail: { statusesChanged, notificationsSent, durationMs: Date.now() - started },
+    detail: { visitsSettled, statusesChanged, notificationsSent, durationMs: Date.now() - started },
   });
 
   return ok({
+    visitsSettled,
     statusesChanged,
     notificationsSent,
     durationMs: Date.now() - started,

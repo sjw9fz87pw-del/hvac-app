@@ -2,6 +2,9 @@ import { requireActor } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
 import { Card, Stat, StatGrid, SectionTitle, EmptyState, Button, Pill } from "@/components/ui/primitives";
 import { SyncBanner } from "@/components/ui/sync-banner";
+import { dayBounds } from "@/lib/time/zone";
+import { companyTimezone } from "@/lib/time/company";
+import Link from "next/link";
 
 /**
  * Today.
@@ -12,12 +15,12 @@ import { SyncBanner } from "@/components/ui/sync-banner";
 export default async function TechToday() {
   const actor = await requireActor();
 
-  const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
-  const dayEnd = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 1);
+  const timeZone = await companyTimezone(actor.serviceCompanyId);
+  const { start: dayStart, end: dayEnd } = dayBounds(timeZone);
 
   const visits = await prisma.visit.findMany({
     where: {
-      technicianId: actor.userId,
+      OR: [{ technicianId: actor.userId }, { technicianId: null }],
       scheduledFor: { gte: dayStart, lt: dayEnd },
       status: { in: ["SCHEDULED", "IN_PROGRESS"] },
     },
@@ -42,7 +45,7 @@ export default async function TechToday() {
 
       <div style={{ marginBottom: 18 }}>
         <div style={{ fontSize: 13.5, color: "var(--ink-faint)", fontWeight: 600 }}>
-          {new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+          {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone })}
         </div>
         <h1 style={{ fontSize: 23, marginTop: 2 }}>Today</h1>
       </div>
@@ -67,7 +70,7 @@ export default async function TechToday() {
             const progress = visit.tasks.length > 0 ? done / visit.tasks.length : 0;
             return (
               <Card key={visit.id} style={{ padding: 0, overflow: "hidden" }}>
-                <a href={`/tech/visits/${visit.id}`} className="tap" style={{ display: "block", padding: 18 }}>
+                <Link href={`/tech/visits/${visit.id}`} className="tap" style={{ display: "block", padding: 18 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 18, fontWeight: 660 }}>{visit.location.name}</div>
@@ -89,7 +92,7 @@ export default async function TechToday() {
                       {done}/{visit.tasks.length} units
                     </div>
                   </div>
-                </a>
+                </Link>
               </Card>
             );
           })}

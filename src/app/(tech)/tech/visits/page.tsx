@@ -6,7 +6,15 @@ export default async function TechVisits() {
   const actor = await requireActor();
 
   const visits = await prisma.visit.findMany({
-    where: { technicianId: actor.userId, status: { in: ["SCHEDULED", "IN_PROGRESS", "COMPLETED"] } },
+    where: {
+      status: { in: ["SCHEDULED", "IN_PROGRESS", "COMPLETED"] },
+      // Yours, and any nobody has been given yet — so booked work can't sit
+      // unseen because no one was assigned. Done work is only your own.
+      OR: [
+        { technicianId: actor.userId },
+        { technicianId: null, status: { in: ["SCHEDULED", "IN_PROGRESS"] } },
+      ],
+    },
     include: {
       location: { select: { name: true, city: true, timezone: true } },
       organization: { select: { name: true } },
@@ -16,15 +24,17 @@ export default async function TechVisits() {
     take: 60,
   });
 
-  const upcoming = visits.filter((v) => v.status !== "COMPLETED");
+  // Soonest first: the next visit is the one that matters.
+  const upcoming = visits.filter((v) => v.status !== "COMPLETED")
+    .sort((a, b) => a.scheduledFor.getTime() - b.scheduledFor.getTime());
   const past = visits.filter((v) => v.status === "COMPLETED");
 
   return (
     <main className="rise">
-      <PageHeader title="Visits" subtitle="Your scheduled and completed restaurant visits" />
+      <PageHeader title="Visits" />
 
       {upcoming.length === 0 && past.length === 0 ? (
-        <EmptyState title="No visits assigned" body="Assigned visits appear here." />
+        <EmptyState title="No visits booked" body="Visits booked for you, or for anyone, appear here." />
       ) : null}
 
       {upcoming.length > 0 ? (
@@ -35,8 +45,8 @@ export default async function TechVisits() {
               <Row
                 href={`/tech/visits/${visit.id}`}
                 title={visit.location.name}
-                subtitle={`${visit.organization.name} · ${visit.tasks.length} units · ${formatDateTime(visit.scheduledFor, visit.location.timezone)}`}
-                right={<Pill tone={visit.status === "IN_PROGRESS" ? "warn" : "accent"}>{relativeDays(visit.scheduledFor)}</Pill>}
+                subtitle={`${formatDateTime(visit.scheduledFor, visit.location.timezone)} · ${visit.tasks.length} units${visit.technicianId ? "" : " · Not assigned"}`}
+                right={<Pill tone={visit.status === "IN_PROGRESS" ? "warn" : "accent"}>{visit.status === "IN_PROGRESS" ? "In progress" : relativeDays(visit.scheduledFor, { timeZone: visit.location.timezone })}</Pill>}
               />
             </div>
           ))}

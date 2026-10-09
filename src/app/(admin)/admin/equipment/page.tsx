@@ -2,7 +2,7 @@ import { requireCapability } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
 import { organizationScope } from "@/lib/auth/scope";
 import { scheduleStatus, urgencyRank } from "@/lib/maintenance/engine";
-import { PageHeader, List, Row, Divider, Pill, StatusPill, EmptyState, formatDate } from "@/components/ui/primitives";
+import { PageHeader, List, Row, Divider, Pill, StatusPill, EmptyState, formatDate, formatDay } from "@/components/ui/primitives";
 import { UnitPhoto } from "@/components/ui/unit-photo";
 
 /** Every asset across every tenant the caller can see, filterable by exception. */
@@ -83,7 +83,7 @@ export default async function AdminEquipment({ searchParams }: { searchParams: P
                   right={
                     <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                       {item.tagAssignments.length === 0 && item.status !== "ARCHIVED" ? <Pill tone="warn">No tag</Pill> : null}
-                      {next ? <span style={{ fontSize: 12.5, color: "var(--ink-faint)" }}>{formatDate(next)}</span> : null}
+                      {next ? <span style={{ fontSize: 12.5, color: "var(--ink-faint)" }}>{formatDay(next)}</span> : null}
                       <StatusPill status={item.status === "PENDING_SETUP" ? "PENDING_SETUP" : worst ?? "PAUSED"} />
                     </div>
                   }

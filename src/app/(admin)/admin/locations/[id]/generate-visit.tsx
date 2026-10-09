@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Button } from "@/components/ui/primitives";
+import { zonedInstant, zonedToday } from "@/lib/time/zone";
 
 const fieldStyle: React.CSSProperties = {
   padding: "11px 13px", borderRadius: 11, border: "1px solid var(--line)",
@@ -50,17 +51,29 @@ function Pill({ on, onClick, children }: { on: boolean; onClick: () => void; chi
  * coverage is a choice — what is due, or everything in the building — and
  * "nothing is due" never blocks a booking.
  */
-export function GenerateVisit({ locationId, dueCount, unitCount }: {
+export function GenerateVisit({ locationId, dueCount, unitCount, allBooked, timezone, technicians, defaultTechnicianId }: {
   locationId: string;
+  /** Units with due work that is not already on a booked visit. */
   dueCount: number;
+  /** Units with any work that is not already on a booked visit. */
   unitCount: number;
+  /** Every unit's work is on a booked visit, so there is nothing left to book. */
+  allBooked: boolean;
+  /** Times are the restaurant's, not the phone's. */
+  timezone: string;
+  /** Who can be sent. A visit nobody is assigned to shows on every technician's list. */
+  technicians: { id: string; name: string }[];
+  defaultTechnicianId: string | null;
 }) {
   const router = useRouter();
-  const [date, setDate] = useState(() => new Date(Date.now() + 86_400_000).toISOString().slice(0, 10));
+  // Tomorrow where the restaurant is — not tomorrow in UTC, which is already
+  // the day after by evening in New York.
+  const [date, setDate] = useState(() => zonedToday(timezone, 1));
   const [time, setTime] = useState("09:00");
   // Nothing due is the normal state between services, so default to the option
   // that can actually produce a visit rather than to a dead end.
   const [include, setInclude] = useState<"due" | "all">(dueCount > 0 ? "due" : "all");
+  const [technicianId, setTechnicianId] = useState(defaultTechnicianId ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,10 +82,8 @@ export function GenerateVisit({ locationId, dueCount, unitCount }: {
   async function generate() {
     setBusy(true);
     setError(null);
-    // Built from the local date and time, so the visit lands at the hour the
-    // person picked in their own timezone rather than in UTC.
-    const at = new Date(`${date}T${time}:00`);
-    if (Number.isNaN(at.getTime())) {
+    const at = zonedInstant(date, time, timezone);
+    if (!at) {
       setBusy(false);
       setError("That is not a valid date and time");
       return;
@@ -81,7 +92,7 @@ export function GenerateVisit({ locationId, dueCount, unitCount }: {
     const response = await fetch("/api/v1/visits", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ locationId, scheduledFor: at.toISOString(), horizonDays: 14, include }),
+      body: JSON.stringify({ locationId, scheduledFor: at.toISOString(), horizonDays: 14, include, technicianId: technicianId || null }),
     });
     setBusy(false);
     if (response.ok) { router.refresh(); return; }
@@ -94,9 +105,11 @@ export function GenerateVisit({ locationId, dueCount, unitCount }: {
       <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 2 }}>
         {covers > 0
           ? `${covers} unit${covers === 1 ? "" : "s"}`
-          : include === "due"
-            ? "Nothing is due. Choose All units to book a visit anyway."
-            : "No units at this restaurant yet."}
+          : allBooked
+            ? "Every unit here is already on a booked visit. Open it above to change the day or technician."
+            : include === "due"
+              ? "Nothing is due. Choose All units to book a visit anyway."
+              : "No units with work set up here yet."}
       </p>
 
       <div style={{ marginTop: 12 }}>
@@ -127,6 +140,19 @@ export function GenerateVisit({ locationId, dueCount, unitCount }: {
           <Pill key={slot} on={slot === time} onClick={() => setTime(slot)}>{slotLabel(slot)}</Pill>
         ))}
       </div>
+
+      {technicians.length > 0 ? (
+        <div style={{ marginTop: 14 }}>
+          <label style={labelStyle} htmlFor="visit-technician">Technician</label>
+          <select
+            id="visit-technician" value={technicianId} onChange={(e) => setTechnicianId(e.target.value)}
+            style={{ ...fieldStyle, width: "100%" }}
+          >
+            <option value="">Anyone (not assigned)</option>
+            {technicians.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+        </div>
+      ) : null}
 
       <div style={{ marginTop: 14, maxWidth: 200 }}>
         <Button onClick={generate} disabled={busy || covers === 0}>

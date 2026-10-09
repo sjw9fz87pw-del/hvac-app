@@ -71,7 +71,7 @@ export async function buildVisitReport(visitId: string): Promise<VisitReport | n
       issues.push({ id: issue.id, title: issue.title, severity: issue.severity, description: issue.description });
     }
 
-    const areaName = record.equipment.area?.name ?? "Unassigned";
+    const areaName = record.equipment.area?.name ?? "Other units";
     areaMap.set(areaName, [
       ...(areaMap.get(areaName) ?? []),
       {

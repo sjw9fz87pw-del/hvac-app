@@ -43,7 +43,7 @@ export const POST = route(async (request: NextRequest) => {
           { actorId: actor.userId, key: event.clientEventId, endpoint: "sync:SERVICE_COMPLETED", body: event.payload },
           async () => {
             const record = await completeService(
-              { ...event.payload, performedAt: new Date(event.payload.performedAt) },
+              { ...event.payload, performedAt: new Date(event.payload.performedAt), attachToOpenVisit: !event.payload.visitTaskId },
               actor,
             );
             return { status: 201, body: { id: record.id } };

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db/client";
 import { requireActor } from "@/lib/auth/session";
 import { canAccessAsset } from "@/lib/auth/scope";
 import { buildVisitReport } from "@/lib/reports/visit-report";
-import { Card, SectionTitle, Stat, StatGrid, Pill, formatDate } from "@/components/ui/primitives";
+import { Card, SectionTitle, Stat, StatGrid, Pill, formatDate, formatDay } from "@/components/ui/primitives";
 
 /**
  * The customer-facing visit report.
@@ -49,7 +49,7 @@ export default async function VisitReportPage({ params }: { params: Promise<{ id
                 </div>
                 <div style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 3 }}>
                   {item.completedChecklist.length} of {item.checklist.length} checks completed
-                  {item.nextDueAt ? ` · next due ${formatDate(item.nextDueAt)}` : ""}
+                  {item.nextDueAt ? ` · next due ${formatDay(item.nextDueAt)}` : ""}
                 </div>
 
                 {item.photos.length > 0 ? (

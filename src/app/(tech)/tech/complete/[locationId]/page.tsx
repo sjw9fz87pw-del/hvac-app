@@ -50,7 +50,7 @@ export default async function CompleteLocationPage({ params }: { params: Promise
         equipmentId: item.id,
         name: item.name,
         assetId: item.internalAssetId,
-        areaName: item.area?.name ?? "Unassigned",
+        areaName: item.area?.name ?? "Other units",
         serviceTypeId: serviceType.id,
         serviceTypeName: serviceType.name,
         checklist,

@@ -123,7 +123,7 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
         <>
           <SectionTitle>Tags</SectionTitle>
           {tags.length === 0 ? (
-            <EmptyState title="No tags yet" />
+            <EmptyState title="No tags yet" body="Tags show here once paired. Open Untagged units to pair one." />
           ) : (
             <List>
               {tags.map((tag, index) => (

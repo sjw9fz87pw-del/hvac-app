@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/db/client";
 import { requireCapability, AuthError } from "@/lib/auth/session";
+import { changeVisit } from "@/lib/api/visits";
 import { canAccessAsset } from "@/lib/auth/scope";
 import { ok, route } from "@/lib/api/respond";
 
@@ -53,7 +55,7 @@ export const GET = route(async (_request: NextRequest, ctx: { params: Promise<{ 
         id: t.equipment.id,
         name: t.equipment.name,
         internalAssetId: t.equipment.internalAssetId,
-        areaName: t.equipment.area?.name ?? "Unassigned",
+        areaName: t.equipment.area?.name ?? "Other units",
         areaOrder: t.equipment.area?.sortOrder ?? 999,
         model: t.equipment.model,
         photoBlobKey: t.equipment.photos[0]?.blobKey ?? null,
@@ -76,4 +78,22 @@ export const GET = route(async (_request: NextRequest, ctx: { params: Promise<{ 
       },
     })),
   });
+});
+
+const changeSchema = z.object({
+  scheduledFor: z.string().datetime().optional(),
+  technicianId: z.string().min(1).nullable().optional(),
+  cancel: z.literal(true).optional(),
+});
+
+/** Move, assign or cancel a visit that has not finished. */
+export const PATCH = route(async (request: NextRequest, ctx: { params: Promise<{ id: string }> }) => {
+  const actor = await requireCapability("visit.manage");
+  const { id } = await ctx.params;
+  const input = changeSchema.parse(await request.json());
+  return ok(await changeVisit(id, {
+    scheduledFor: input.scheduledFor ? new Date(input.scheduledFor) : undefined,
+    technicianId: input.technicianId,
+    cancel: input.cancel,
+  }, actor));
 });

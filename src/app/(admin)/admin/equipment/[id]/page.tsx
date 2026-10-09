@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db/client";
 import { requireCapability } from "@/lib/auth/session";
 import { canAccessAsset } from "@/lib/auth/scope";
-import { Card, SectionTitle, StatusPill, Pill, List, Row, Divider, Button, formatDate, formatDateTime } from "@/components/ui/primitives";
+import { Card, SectionTitle, StatusPill, Pill, List, Row, Divider, Button, formatDate, formatDateTime, formatDay } from "@/components/ui/primitives";
 import { auditLabel, humanize } from "@/components/ui/labels";
 import { VerifyEquipment } from "./verify";
 import { EditSchedule } from "./edit-schedule";
@@ -100,7 +100,7 @@ export default async function AdminEquipmentDetail({ params }: { params: Promise
           <Field label="Serial" value={equipment.serialNumber} />
           <Field label="Criticality" value={humanize(equipment.criticality)} />
           {equipment.filterSize ? <Field label="Filter" value={`${equipment.filterSize}${equipment.filterType ? ` · ${equipment.filterType}` : ""}`} /> : null}
-          {equipment.warrantyExpires ? <Field label="Warranty" value={`${equipment.warrantyProvider ?? ""} until ${formatDate(equipment.warrantyExpires)}`} /> : null}
+          {equipment.warrantyExpires ? <Field label="Warranty" value={`${equipment.warrantyProvider ?? ""} until ${formatDay(equipment.warrantyExpires)}`} /> : null}
         </Card>
 
         <Card>

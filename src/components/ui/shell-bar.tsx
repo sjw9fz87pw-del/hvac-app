@@ -58,7 +58,7 @@ export function ShellBar({
         <div style={{ flex: 1 }} />
 
         {crossShell ? (
-          <a href={crossShell.href} className="cross-shell">{crossShell.label}</a>
+          <Link href={crossShell.href} className="cross-shell">{crossShell.label}</Link>
         ) : null}
         {search ? <GlobalSearch compact /> : null}
       </div>

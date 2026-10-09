@@ -16,6 +16,7 @@ import { recordAudit } from "@/lib/audit/log";
 import { canAccessAsset } from "@/lib/auth/scope";
 import type { Actor } from "@/lib/auth/session";
 import { createScheduleFor } from "./equipment";
+import { settleVisit } from "@/lib/maintenance/scheduling";
 import { JobError } from "./job-error";
 
 export { JobError };
@@ -96,7 +97,7 @@ export async function createJob(
  * tasks would still sit on the calendar and send a technician to do nothing,
  * so it goes too — but only one that has not started and holds no records.
  */
-async function dropEmptyVisits(tx: Tx, visitIds: string[]) {
+export async function dropEmptyVisits(tx: Tx, visitIds: string[]) {
   if (visitIds.length === 0) return;
   await tx.visit.deleteMany({
     where: {
@@ -106,6 +107,8 @@ async function dropEmptyVisits(tx: Tx, visitIds: string[]) {
       serviceRecords: { none: {} },
     },
   });
+  // What remains may now have nothing left to do, which makes it complete.
+  for (const id of visitIds) await settleVisit(tx, id);
 }
 
 /** Take the not-yet-done work for a job off the calendar, returning the visits it touched. */

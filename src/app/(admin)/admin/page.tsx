@@ -1,6 +1,10 @@
 import { requireActor } from "@/lib/auth/session";
 import { commandCenter } from "@/lib/api/dashboards";
 import { Card, Stat, StatGrid, SectionTitle, List, Row, Divider, Pill, EmptyState, StatusPill } from "@/components/ui/primitives";
+import Link from "next/link";
+import { setupProgress } from "@/lib/api/setup-progress";
+import { SetupGuide } from "@/components/ui/setup-guide";
+import { companyTimezone } from "@/lib/time/company";
 
 /**
  * The internal command center.
@@ -12,7 +16,11 @@ import { Card, Stat, StatGrid, SectionTitle, List, Row, Divider, Pill, EmptyStat
  */
 export default async function CommandCenter() {
   const actor = await requireActor();
-  const data = await commandCenter(actor);
+  const [data, setup, timeZone] = await Promise.all([
+    commandCenter(actor),
+    actor.capabilities.has("settings.manage") ? setupProgress(actor) : null,
+    companyTimezone(actor.serviceCompanyId),
+  ]);
 
   const exceptions = [
     { label: "Overdue service", value: data.exceptions.overdueAssets, href: "/admin/equipment?status=OVERDUE", tone: "bad" as const },
@@ -30,10 +38,13 @@ export default async function CommandCenter() {
     <main className="rise">
       <div style={{ marginBottom: 20 }}>
         <div style={{ fontSize: 13.5, color: "var(--ink-faint)", fontWeight: 600 }}>
-          {new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+          {/* The company's today, not the server's: that is UTC, a day ahead every evening. */}
+          {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone })}
         </div>
         <h1 style={{ fontSize: 23, marginTop: 2 }}>Today</h1>
       </div>
+
+      {setup ? <SetupGuide steps={setup} /> : null}
 
       <StatGrid>
         <Stat label="Restaurants" value={data.today.restaurants.length} />
@@ -44,7 +55,7 @@ export default async function CommandCenter() {
 
       <SectionTitle>Today&rsquo;s restaurants</SectionTitle>
       {data.today.restaurants.length === 0 ? (
-        <EmptyState title="No visits today" />
+        <EmptyState title="No visits today" body="Book visits from a restaurant's page." />
       ) : (
         <List>
           {data.today.restaurants.map((restaurant, index) => (
@@ -53,7 +64,7 @@ export default async function CommandCenter() {
               <Row
                 href={`/admin/schedule/${restaurant.id}`}
                 title={restaurant.name}
-                subtitle={`${restaurant.organizationName} · ${restaurant.completed}/${restaurant.taskCount} units${restaurant.technician ? ` · ${restaurant.technician}` : " · unassigned"}`}
+                subtitle={`${restaurant.organizationName} · ${restaurant.completed}/${restaurant.taskCount} units${restaurant.technician ? ` · ${restaurant.technician}` : " · not assigned"}`}
                 right={<StatusPill status={restaurant.status} />}
               />
             </div>
@@ -73,13 +84,13 @@ export default async function CommandCenter() {
         <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))" }}>
           {needsAttention.map((item) => (
             <Card key={item.label} style={{ padding: 0 }}>
-              <a href={item.href} className="tap" style={{ display: "flex", alignItems: "center", gap: 12, padding: 16 }}>
+              <Link href={item.href} className="tap" style={{ display: "flex", alignItems: "center", gap: 12, padding: 16 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13.5, color: "var(--ink-soft)", fontWeight: 600 }}>{item.label}</div>
                   <div style={{ fontSize: 25, fontWeight: 680, letterSpacing: "-0.03em", color: `var(--${item.tone})` }}>{item.value}</div>
                 </div>
                 <span style={{ color: "var(--ink-faint)" }}>›</span>
-              </a>
+              </Link>
             </Card>
           ))}
         </div>

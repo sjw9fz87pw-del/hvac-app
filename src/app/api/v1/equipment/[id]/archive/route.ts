@@ -5,6 +5,7 @@ import { requireCapability, AuthError } from "@/lib/auth/session";
 import { canAccessAsset } from "@/lib/auth/scope";
 import { recordAudit } from "@/lib/audit/log";
 import { unpairTag } from "@/lib/nfc/service";
+import { settleVisit } from "@/lib/maintenance/scheduling";
 import { ok, route } from "@/lib/api/respond";
 
 const schema = z.object({
@@ -36,10 +37,17 @@ export const POST = route(async (request: NextRequest, ctx: { params: Promise<{ 
     // Pause schedules rather than delete them: the record of what was scheduled
     // is part of the asset's history.
     await tx.maintenanceSchedule.updateMany({ where: { equipmentId: id }, data: { paused: true, status: "PAUSED" } });
+    const touchedVisits = [...new Set(
+      (await tx.visitTask.findMany({
+        where: { equipmentId: id, status: { in: ["PENDING", "IN_PROGRESS"] } },
+        select: { visitId: true },
+      })).map((t) => t.visitId),
+    )];
     await tx.visitTask.updateMany({
       where: { equipmentId: id, status: { in: ["PENDING", "IN_PROGRESS"] } },
       data: { status: "SKIPPED", skipReason: "Equipment archived" },
     });
+    for (const visitId of touchedVisits) await settleVisit(tx, visitId, actor.userId);
 
     const result = await tx.equipment.update({
       where: { id },

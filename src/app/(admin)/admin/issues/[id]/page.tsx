@@ -5,6 +5,7 @@ import { canAccessAsset } from "@/lib/auth/scope";
 import { Card, SectionTitle, StatusPill, Pill, List, Row, Divider, formatDate, formatDateTime } from "@/components/ui/primitives";
 import { humanize } from "@/components/ui/labels";
 import { IssueActions } from "./actions";
+import Link from "next/link";
 
 export default async function IssueDetail({ params }: { params: Promise<{ id: string }> }) {
   const actor = await requireCapability("issue.read");
@@ -72,7 +73,7 @@ export default async function IssueDetail({ params }: { params: Promise<{ id: st
       <Card style={{ marginBottom: 16 }}>
         <div style={{ fontWeight: 640, marginBottom: 8 }}>Equipment context</div>
         <div style={{ fontSize: 14.5, display: "grid", gap: 4 }}>
-          <div><a href={`/admin/equipment/${issue.equipmentId}`} style={{ color: "var(--accent)", fontWeight: 600 }}>{issue.equipment.name}</a></div>
+          <div><Link href={`/admin/equipment/${issue.equipmentId}`} style={{ color: "var(--accent)", fontWeight: 600 }}>{issue.equipment.name}</Link></div>
           <div style={{ color: "var(--ink-soft)" }}>
             {[issue.equipment.manufacturer, issue.equipment.model].filter(Boolean).join(" ") || issue.equipment.equipmentType}
             {issue.equipment.serialNumber ? ` · S/N ${issue.equipment.serialNumber}` : ""} · {issue.equipment.internalAssetId}

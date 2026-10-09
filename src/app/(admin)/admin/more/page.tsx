@@ -5,6 +5,7 @@ import { PageHeader, Card, SectionTitle, Pill, titleCase } from "@/components/ui
 import { NavIcon, type IconName } from "@/components/ui/nav";
 import { SignOutButton } from "@/app/(customer)/account/sign-out";
 import { ChangePassword } from "@/components/ui/change-password";
+import Link from "next/link";
 
 /**
  * Everything that does not fit in the bottom bar, laid out to be scanned rather
@@ -60,7 +61,7 @@ export default async function MorePage() {
           <div style={{ flex: 1, fontSize: 14.5 }}>
             {openIssues} open issue{openIssues === 1 ? "" : "s"} waiting on triage
           </div>
-          <a href="/admin/issues" style={{ color: "var(--accent)", fontWeight: 650, fontSize: 14 }}>Review →</a>
+          <Link href="/admin/issues" style={{ color: "var(--accent)", fontWeight: 650, fontSize: 14 }}>Review →</Link>
         </Card>
       ) : null}
 
@@ -70,7 +71,7 @@ export default async function MorePage() {
           <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
             {section.items.map((item) => (
               <Card key={item.href} style={{ padding: 0 }}>
-                <a href={item.href} className="tap" style={{ display: "flex", alignItems: "center", gap: 13, padding: 16 }}>
+                <Link href={item.href} className="tap" style={{ display: "flex", alignItems: "center", gap: 13, padding: 16 }}>
                   <span
                     aria-hidden="true"
                     style={{
@@ -86,7 +87,7 @@ export default async function MorePage() {
                   </span>
                   {item.badge ? <Pill tone={item.badge.tone}>{item.badge.text}</Pill> : null}
                   <span style={{ color: "var(--ink-faint)", flexShrink: 0 }}>›</span>
-                </a>
+                </Link>
               </Card>
             ))}
           </div>

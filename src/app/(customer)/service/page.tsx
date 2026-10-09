@@ -1,7 +1,7 @@
 import { requireActor } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
 import { tenantWhere } from "@/lib/auth/scope";
-import { PageHeader, Card, SectionTitle, List, Row, Divider, StatusPill, EmptyState, Pill, formatDate, relativeDays } from "@/components/ui/primitives";
+import { PageHeader, Card, SectionTitle, List, Row, Divider, StatusPill, EmptyState, Pill, formatDate, formatDateTime, relativeDays } from "@/components/ui/primitives";
 
 /** Upcoming visits and completed visit reports. */
 export default async function ServicePage() {
@@ -11,13 +11,13 @@ export default async function ServicePage() {
   const [upcoming, completed] = await Promise.all([
     prisma.visit.findMany({
       where: { ...where, status: { in: ["SCHEDULED", "IN_PROGRESS"] }, scheduledFor: { gte: new Date(Date.now() - 86_400_000) } },
-      include: { location: { select: { name: true } }, tasks: { select: { id: true } } },
+      include: { location: { select: { name: true, timezone: true } }, tasks: { select: { id: true } } },
       orderBy: { scheduledFor: "asc" }, take: 10,
     }),
     prisma.visit.findMany({
       where: { ...where, status: "COMPLETED" },
       include: {
-        location: { select: { name: true } },
+        location: { select: { name: true, timezone: true } },
         serviceRecords: { select: { id: true, issuesFoundCount: true } },
       },
       orderBy: { completedAt: "desc" }, take: 20,
@@ -38,8 +38,8 @@ export default async function ServicePage() {
               {index > 0 ? <Divider /> : null}
               <Row
                 title={visit.location.name}
-                subtitle={`${visit.tasks.length} unit${visit.tasks.length === 1 ? "" : "s"} · ${formatDate(visit.scheduledFor)}`}
-                right={<Pill tone="accent">{relativeDays(visit.scheduledFor)}</Pill>}
+                subtitle={`${visit.tasks.length} unit${visit.tasks.length === 1 ? "" : "s"} · ${formatDateTime(visit.scheduledFor, visit.location.timezone)}`}
+                right={<Pill tone="accent">{relativeDays(visit.scheduledFor, { timeZone: visit.location.timezone })}</Pill>}
               />
             </div>
           ))}
@@ -56,7 +56,7 @@ export default async function ServicePage() {
               {index > 0 ? <Divider /> : null}
               <Row
                 href={`/service/${visit.id}`}
-                title={`${visit.location.name} — ${formatDate(visit.completedAt ?? visit.scheduledFor)}`}
+                title={`${visit.location.name} — ${formatDate(visit.completedAt ?? visit.scheduledFor, visit.location.timezone)}`}
                 subtitle={`${visit.serviceRecords.length} unit${visit.serviceRecords.length === 1 ? "" : "s"} serviced${
                   visit.serviceRecords.some((r) => r.issuesFoundCount > 0) ? " · issues noted" : ""
                 }`}

@@ -8,6 +8,7 @@ import { GenerateVisit } from "./generate-visit";
 import { ManageLocation } from "./manage-location";
 import { IntervalEditor, type IntervalRow } from "@/components/ui/interval-editor";
 import { AddJob } from "@/components/ui/add-job";
+import { assignableTechnicians } from "@/lib/api/visits";
 import { UnitList, type UnitRow } from "./unit-list";
 
 export default async function LocationDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -38,6 +39,8 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
   });
 
   if (!location || !canAccessLocation(actor, location.id, location.organizationId)) notFound();
+
+  const technicians = actor.capabilities.has("visit.manage") ? await assignableTechnicians(actor.serviceCompanyId) : [];
 
   // Numbered the way people count: Refrigerator 2 before Refrigerator 10.
   // The database sorts text, which puts 10 straight after 1.
@@ -74,10 +77,47 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
     };
   });
 
+  // Work already on a booked visit is covered, so it is not "schedule needed".
+  const booked = new Set(
+    (await prisma.visitTask.findMany({
+      where: {
+        status: { in: ["PENDING", "IN_PROGRESS"] },
+        visit: { locationId: location.id, status: { in: ["SCHEDULED", "IN_PROGRESS"] } },
+      },
+      select: { equipmentId: true, serviceTypeId: true },
+    })).map((t) => `${t.equipmentId}:${t.serviceTypeId}`),
+  );
   const withStatus = location.equipment.map((item) => {
-    const statuses = item.schedules.map((s) => scheduleStatus({ nextDueAt: s.nextDueAt, paused: s.paused }));
+    const statuses = item.schedules.map((s) => scheduleStatus({
+      nextDueAt: s.nextDueAt,
+      paused: s.paused,
+      hasScheduledVisit: booked.has(`${item.id}:${s.serviceTypeId}`),
+    }));
     return { item, status: statuses.sort((a, b) => urgencyRank(a) - urgencyRank(b))[0] ?? "PAUSED" };
   });
+
+  // What a new visit could still pick up: work not already on a booked one.
+  // Counting booked work too offered "Due · 2" right after booking those two.
+  const bookable = location.equipment.map((item) => {
+    const open = item.status === "ACTIVE" || item.status === "NEEDS_ATTENTION"
+      ? item.schedules.filter((s) => !s.paused && !booked.has(`${item.id}:${s.serviceTypeId}`))
+      : [];
+    return {
+      any: open.length > 0,
+      due: open.some((s) => scheduleStatus({ nextDueAt: s.nextDueAt, paused: false }) !== "UPCOMING"),
+    };
+  });
+  const booking = (
+    <GenerateVisit
+      locationId={location.id}
+      dueCount={bookable.filter((b) => b.due).length}
+      unitCount={bookable.filter((b) => b.any).length}
+      allBooked={booked.size > 0 && !bookable.some((b) => b.any)}
+      timezone={location.timezone}
+      technicians={technicians}
+      defaultTechnicianId={technicians.some((t) => t.id === actor.userId) ? actor.userId : null}
+    />
+  );
 
   const overdue = withStatus.filter((e) => e.status === "OVERDUE").length;
   const due = withStatus.filter((e) => e.status === "DUE" || e.status === "SCHEDULE_NEEDED").length;
@@ -120,25 +160,23 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
       ) : null}
 
       <SectionTitle>Upcoming visits</SectionTitle>
-      {location.visits.length === 0 ? (
-        <GenerateVisit locationId={location.id} dueCount={due + overdue} unitCount={location.equipment.length} />
-      ) : (
+      {location.visits.length === 0 ? booking : (
         <>
           <List>
             {location.visits.map((visit, index) => (
               <div key={visit.id}>
                 {index > 0 ? <Divider /> : null}
                 <Row
-                  href={`/tech/visits/${visit.id}`}
+                  href={`/admin/schedule/${visit.id}`}
                   title={formatDateTime(visit.scheduledFor, location.timezone)}
-                  subtitle={`${visit.tasks.length} units · ${visit.technician?.name ?? "Unassigned"}`}
+                  subtitle={`${visit.tasks.length} units · ${visit.technician?.name ?? "Not assigned"}`}
                   right={<StatusPill status={visit.status} />}
                 />
               </div>
             ))}
           </List>
           <div style={{ marginTop: 12 }}>
-            <GenerateVisit locationId={location.id} dueCount={due + overdue} unitCount={location.equipment.length} />
+            {booking}
           </div>
         </>
       )}

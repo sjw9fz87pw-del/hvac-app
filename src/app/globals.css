@@ -117,6 +117,25 @@ button, [role="button"], a.tap { min-height: 44px; }
   }
 }
 
+/* Navigation feedback: a bar while the next page loads, and placeholders in
+   the page's shape. Both hold still for people who ask for less motion. */
+.nav-progress {
+  position: fixed; top: 0; left: 0; right: 0; height: 2.5px; z-index: 100;
+  pointer-events: none; opacity: 0;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  transform: scaleX(0); transform-origin: left;
+  transition: opacity 200ms ease 120ms, transform 200ms ease;
+}
+.nav-progress.on { opacity: 1; transform: scaleX(0.85); transition: opacity 80ms ease, transform 6s cubic-bezier(0.1, 0.6, 0.2, 1); }
+.skeleton { background: var(--surface-2); border: 1px solid var(--line); }
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton { animation: skeleton-pulse 1.2s ease-in-out infinite; }
+  @keyframes skeleton-pulse {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
+  }
+}
+
 /*
  * Netlify appends a floating badge/toolbar iframe to the body, anchored bottom
  * right — which lands squarely on top of the bottom tab bar and blocks the last

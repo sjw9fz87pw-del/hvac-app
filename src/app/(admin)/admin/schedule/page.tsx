@@ -1,7 +1,9 @@
 import { requireCapability } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
 import { organizationScope } from "@/lib/auth/scope";
-import { PageHeader, SectionTitle, List, Row, Divider, Pill, StatusPill, EmptyState, Stat, StatGrid, formatDate, relativeDays } from "@/components/ui/primitives";
+import { Button, PageHeader, SectionTitle, List, Row, Divider, Pill, StatusPill, EmptyState, Stat, StatGrid, formatDate, formatDateTime, relativeDays, formatDay } from "@/components/ui/primitives";
+import { dayBounds } from "@/lib/time/zone";
+import { companyTimezone } from "@/lib/time/company";
 
 /** Scheduled work, overdue work, and visits that were never completed. */
 export default async function SchedulePage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
@@ -10,20 +12,20 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
   const scope = organizationScope(actor);
   const orgFilter = scope ? { organizationId: { in: scope.length ? scope : ["__none__"] } } : {};
 
-  const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
+  const { start: dayStart } = dayBounds(await companyTimezone(actor.serviceCompanyId));
 
   const [visits, missed, overdueSchedules, incomplete] = await Promise.all([
     prisma.visit.findMany({
       where: { ...orgFilter, status: { in: ["SCHEDULED", "IN_PROGRESS"] }, scheduledFor: { gte: dayStart } },
       include: {
-        location: { select: { name: true } }, organization: { select: { name: true } },
+        location: { select: { name: true, timezone: true } }, organization: { select: { name: true } },
         technician: { select: { name: true } }, tasks: { select: { status: true } },
       },
       orderBy: { scheduledFor: "asc" }, take: 50,
     }),
     prisma.visit.findMany({
       where: { ...orgFilter, status: { in: ["SCHEDULED", "IN_PROGRESS"] }, scheduledFor: { lt: dayStart } },
-      include: { location: { select: { name: true } }, technician: { select: { name: true } }, tasks: { select: { status: true } } },
+      include: { location: { select: { name: true, timezone: true } }, technician: { select: { name: true } }, tasks: { select: { status: true } } },
       orderBy: { scheduledFor: "asc" }, take: 30,
     }),
     prisma.maintenanceSchedule.findMany({
@@ -64,10 +66,10 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
                 <div key={visit.id}>
                   {index > 0 ? <Divider /> : null}
                   <Row
-                    href={`/tech/visits/${visit.id}`}
+                    href={`/admin/schedule/${visit.id}`}
                     title={visit.location.name}
-                    subtitle={`Scheduled ${formatDate(visit.scheduledFor)} · ${visit.tasks.filter((t) => t.status === "COMPLETED").length}/${visit.tasks.length} done · ${visit.technician?.name ?? "unassigned"}`}
-                    right={<Pill tone="bad">{relativeDays(visit.scheduledFor)}</Pill>}
+                    subtitle={`Scheduled ${formatDateTime(visit.scheduledFor, visit.location.timezone)} · ${visit.tasks.filter((t) => t.status === "COMPLETED").length}/${visit.tasks.length} done · ${visit.technician?.name ?? "not assigned"}`}
+                    right={<Pill tone="bad">{relativeDays(visit.scheduledFor, { timeZone: visit.location.timezone })}</Pill>}
                   />
                 </div>
               ))}
@@ -97,16 +99,17 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
 
       <SectionTitle>Upcoming visits</SectionTitle>
       {visits.length === 0 ? (
-        <EmptyState title="Nothing scheduled" body="Schedule visits from a restaurant's page." />
+        <EmptyState title="Nothing booked" body="Open a restaurant to book a visit and pick a technician."
+          action={<Button href="/admin/locations" variant="secondary">Choose a restaurant</Button>} />
       ) : (
         <List>
           {visits.map((visit, index) => (
             <div key={visit.id}>
               {index > 0 ? <Divider /> : null}
               <Row
-                href={`/tech/visits/${visit.id}`}
-                title={`${visit.location.name} — ${formatDate(visit.scheduledFor)}`}
-                subtitle={`${visit.organization.name} · ${visit.tasks.length} units · ${visit.technician?.name ?? "Unassigned"}`}
+                href={`/admin/schedule/${visit.id}`}
+                title={`${visit.location.name} · ${formatDateTime(visit.scheduledFor, visit.location.timezone)}`}
+                subtitle={`${visit.organization.name} · ${visit.tasks.length} units · ${visit.technician?.name ?? "Not assigned"}`}
                 right={<StatusPill status={visit.status} />}
               />
             </div>
@@ -125,8 +128,8 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
               <Row
                 href={`/admin/equipment/${schedule.equipment.id}`}
                 title={schedule.equipment.name}
-                subtitle={`${schedule.serviceType.name} · ${schedule.equipment.location.name} · due ${formatDate(schedule.nextDueAt)}`}
-                right={<Pill tone="bad">{relativeDays(schedule.nextDueAt)}</Pill>}
+                subtitle={`${schedule.serviceType.name} · ${schedule.equipment.location.name} · due ${formatDay(schedule.nextDueAt)}`}
+                right={<Pill tone="bad">{relativeDays(schedule.nextDueAt, { day: true })}</Pill>}
               />
             </div>
           ))}

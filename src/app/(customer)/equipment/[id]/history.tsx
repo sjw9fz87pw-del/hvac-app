@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card, Pill, formatDate } from "@/components/ui/primitives";
+import { Card, Pill, formatDate, formatDay } from "@/components/ui/primitives";
 import type { CustomerServiceRecordView } from "@/lib/api/serializers";
 
 /** Service history in chronological order, with before/after photos inline. */
@@ -68,7 +68,7 @@ export function ServiceHistory({ history }: { history: CustomerServiceRecordView
 
                 {record.nextDueAt ? (
                   <div style={{ marginTop: 12, fontSize: 13.5, color: "var(--ink-faint)" }}>
-                    Next service due {formatDate(record.nextDueAt)}
+                    Next service due {formatDay(record.nextDueAt)}
                   </div>
                 ) : null}
               </div>

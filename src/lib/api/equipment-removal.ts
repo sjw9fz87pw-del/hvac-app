@@ -16,6 +16,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/db/client";
 import { recordAudit } from "@/lib/audit/log";
+import { dropEmptyVisits } from "./jobs";
 
 export interface EquipmentBlockers {
   /** Human-readable reasons this unit cannot simply be deleted. */
@@ -83,6 +84,9 @@ export async function deleteEquipment(
 
     // Scheduled-but-unstarted work disappears with the unit; completed work
     // would have blocked the deletion before reaching here.
+    const touchedVisits = [...new Set(
+      (await tx.visitTask.findMany({ where: { equipmentId }, select: { visitId: true } })).map((t) => t.visitId),
+    )];
     await tx.visitTask.deleteMany({ where: { equipmentId } });
     await tx.subscriptionAsset.deleteMany({ where: { equipmentId } });
     await tx.aiExtraction.deleteMany({ where: { equipmentId } });
@@ -97,6 +101,7 @@ export async function deleteEquipment(
     await tx.equipment.updateMany({ where: { replacedByAssetId: equipmentId }, data: { replacedByAssetId: null } });
 
     await tx.equipment.delete({ where: { id: equipmentId } });
+    await dropEmptyVisits(tx, touchedVisits);
 
     await recordAudit(
       {

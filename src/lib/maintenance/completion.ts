@@ -14,6 +14,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/client";
 import { recordAudit } from "@/lib/audit/log";
 import { nextDueDate, scheduleStatus } from "./engine";
+import { settleVisit } from "./scheduling";
 import { notify } from "@/lib/notifications/notify";
 import type { Actor } from "@/lib/auth/session";
 import { AuthError } from "@/lib/auth/session";
@@ -38,6 +39,13 @@ export interface PhotoInput {
 
 export interface CompleteServiceInput {
   visitTaskId?: string | null;
+  /**
+   * With no task given, count this work towards the earliest open visit that
+   * was booked for it — so recording a whole restaurant at once also finishes
+   * the visit booked for that work, instead of leaving it to go "missed".
+   * Off for corrections, which must never complete a visit.
+   */
+  attachToOpenVisit?: boolean;
   equipmentId: string;
   serviceTypeId: string;
   performedAt: Date;
@@ -144,16 +152,33 @@ export async function completeService(input: CompleteServiceInput, actor: Actor)
   const nextDue = nextDueDate(input.performedAt, intervalDays);
 
   return prisma.$transaction(async (tx) => {
+    let visitTaskId = input.visitTaskId ?? null;
+    if (!visitTaskId && input.attachToOpenVisit) {
+      const open = await tx.visitTask.findFirst({
+        where: {
+          equipmentId: equipment.id,
+          serviceTypeId: serviceType.id,
+          status: { in: ["PENDING", "IN_PROGRESS"] },
+          serviceRecord: { is: null },
+          visit: { status: { in: ["SCHEDULED", "IN_PROGRESS"] } },
+        },
+        orderBy: { visit: { scheduledFor: "asc" } },
+        select: { id: true },
+      });
+      visitTaskId = open?.id ?? null;
+    }
+    const visitId = visitTaskId
+      ? (await tx.visitTask.findUnique({ where: { id: visitTaskId }, select: { visitId: true } }))?.visitId ?? null
+      : null;
+
     const record = await tx.serviceRecord.create({
       data: {
         organizationId: equipment.organizationId,
         locationId: equipment.locationId,
         equipmentId: equipment.id,
         serviceTypeId: serviceType.id,
-        visitTaskId: input.visitTaskId ?? null,
-        visitId: input.visitTaskId
-          ? (await tx.visitTask.findUnique({ where: { id: input.visitTaskId } }))?.visitId ?? null
-          : null,
+        visitTaskId,
+        visitId,
         technicianId: actor.userId,
         performedAt: input.performedAt,
         durationMinutes: input.durationMinutes ?? null,
@@ -214,11 +239,12 @@ export async function completeService(input: CompleteServiceInput, actor: Actor)
       },
     });
 
-    if (input.visitTaskId) {
+    if (visitTaskId) {
       await tx.visitTask.update({
-        where: { id: input.visitTaskId },
+        where: { id: visitTaskId },
         data: { status: "COMPLETED", completedAt: new Date() },
       });
+      if (visitId) await settleVisit(tx, visitId, actor.userId);
     }
 
     await recordAudit(
@@ -248,7 +274,7 @@ export async function supersedeService(
   if (!original) throw new AuthError(404, "Not found");
   if (!canAccessOrganization(actor, original.organizationId)) throw new AuthError(404, "Not found");
 
-  const replacement = await completeService({ ...input, visitTaskId: null }, actor);
+  const replacement = await completeService({ ...input, visitTaskId: null, attachToOpenVisit: false }, actor);
   await prisma.serviceRecord.update({
     where: { id: replacement.id },
     data: { supersedesId: originalId, supersededReason: reason },

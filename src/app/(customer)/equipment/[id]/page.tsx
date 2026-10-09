@@ -4,7 +4,7 @@ import { requireActor } from "@/lib/auth/session";
 import { canAccessAsset, canSeeInternalNotes } from "@/lib/auth/scope";
 import { toCustomerEquipment, toCustomerServiceRecord } from "@/lib/api/serializers";
 import {
-  Card, SectionTitle, StatusPill, Pill, Divider, formatDate, relativeDays,
+  Card, SectionTitle, StatusPill, Pill, Divider, formatDate, formatDay, relativeDays,
 } from "@/components/ui/equipment-bits";
 import { ReportProblem } from "./report-problem";
 import { ServiceHistory } from "./history";
@@ -77,8 +77,8 @@ export default async function EquipmentPassport({ params }: { params: Promise<{ 
         </Card>
         <Card style={{ padding: 15 }}>
           <div style={{ fontSize: 12.5, color: "var(--ink-faint)", fontWeight: 660, textTransform: "uppercase", letterSpacing: "0.04em" }}>Next service</div>
-          <div style={{ fontSize: 17, fontWeight: 660, marginTop: 5 }}>{formatDate(nextDue)}</div>
-          <div style={{ fontSize: 13.5, color: "var(--ink-soft)" }}>{nextDue ? relativeDays(nextDue) : "Not scheduled"}</div>
+          <div style={{ fontSize: 17, fontWeight: 660, marginTop: 5 }}>{formatDay(nextDue)}</div>
+          <div style={{ fontSize: 13.5, color: "var(--ink-soft)" }}>{nextDue ? relativeDays(nextDue, { day: true }) : "Not scheduled"}</div>
         </Card>
       </div>
 
@@ -102,7 +102,7 @@ export default async function EquipmentPassport({ params }: { params: Promise<{ 
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600 }}>{plan.serviceType}</div>
                     <div style={{ fontSize: 13.5, color: "var(--ink-soft)" }}>
-                      Every {plan.intervalDays} days · next {formatDate(plan.nextDueAt)}
+                      Every {plan.intervalDays} days · next {formatDay(plan.nextDueAt)}
                     </div>
                   </div>
                   <StatusPill status={plan.status} />
@@ -122,7 +122,7 @@ export default async function EquipmentPassport({ params }: { params: Promise<{ 
         <DetailRow label="Unit ID" value={view.internalAssetId} />
         <DetailRow label="Condition" value={view.condition} />
         {view.filter ? <DetailRow label="Filter" value={[view.filter.size, view.filter.type].filter(Boolean).join(" · ")} /> : null}
-        {view.warranty ? <DetailRow label="Warranty" value={`${view.warranty.provider ?? "—"}${view.warranty.expires ? ` until ${formatDate(view.warranty.expires)}` : ""}`} /> : null}
+        {view.warranty ? <DetailRow label="Warranty" value={`${view.warranty.provider ?? "—"}${view.warranty.expires ? ` until ${formatDay(view.warranty.expires)}` : ""}`} /> : null}
         <DetailRow label="Tag" value={view.hasTag ? "Paired" : "Not yet tagged"} />
       </Card>
 

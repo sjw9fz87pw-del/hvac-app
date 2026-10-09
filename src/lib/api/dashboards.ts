@@ -8,6 +8,8 @@ import { prisma } from "@/lib/db/client";
 import { maintenanceHealth } from "@/lib/maintenance/engine";
 import type { Actor } from "@/lib/auth/session";
 import { organizationScope } from "@/lib/auth/scope";
+import { dayBounds } from "@/lib/time/zone";
+import { companyTimezone } from "@/lib/time/company";
 
 const OPEN_ISSUE_STATUSES = ["OPEN", "TRIAGED", "ASSIGNED", "IN_PROGRESS"] as const;
 
@@ -62,7 +64,7 @@ export async function customerDashboard(
     else current++;
 
     const key = e.area?.id ?? "unassigned";
-    const entry = areaMap.get(key) ?? { id: key, name: e.area?.name ?? "Unassigned", assetCount: 0, overdue: 0, dueSoon: 0 };
+    const entry = areaMap.get(key) ?? { id: key, name: e.area?.name ?? "Other units", assetCount: 0, overdue: 0, dueSoon: 0 };
     entry.assetCount++;
     if (isOverdue) entry.overdue++;
     else if (isDue) entry.dueSoon++;
@@ -156,8 +158,7 @@ export async function commandCenter(actor: Actor, now = new Date()): Promise<Com
   const scope = organizationScope(actor);
   const orgFilter = scope ? { organizationId: { in: scope.length ? scope : ["__none__"] } } : {};
 
-  const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
-  const dayEnd = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 1);
+  const { start: dayStart, end: dayEnd } = dayBounds(await companyTimezone(actor.serviceCompanyId));
   const dayAgo = new Date(now.getTime() - 86_400_000);
 
   const [todayVisits, overdueAssets, missedVisits, customerIssues, assetsWithoutTags, awaitingVerification, failedPairings, incompleteTasks] =

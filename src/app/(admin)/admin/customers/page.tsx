@@ -24,7 +24,7 @@ export default async function CustomersPage() {
       <PageHeader title="Groups" subtitle={`${organizations.length} group${organizations.length === 1 ? "" : "s"} of restaurants`} />
 
       {organizations.length === 0 ? (
-        <EmptyState title="No groups yet" />
+        <EmptyState title="No groups yet" body="A group is made when you add its first restaurant." />
       ) : (
         <List>
           {organizations.map((organization, index) => (

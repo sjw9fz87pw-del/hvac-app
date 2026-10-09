@@ -20,7 +20,10 @@ export const POST = route(async (request: NextRequest) => {
     const outcome = await withIdempotency(
       { actorId: actor.userId, key: request.headers.get("idempotency-key"), endpoint: "POST /services", body },
       async () => {
-        const record = await completeService({ ...input, performedAt: new Date(input.performedAt) }, actor);
+        const record = await completeService(
+          { ...input, performedAt: new Date(input.performedAt), attachToOpenVisit: !input.visitTaskId },
+          actor,
+        );
         return {
           status: 201,
           body: {

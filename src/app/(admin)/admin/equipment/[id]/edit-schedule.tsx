@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Card, Pill, StatusPill, formatDate } from "@/components/ui/primitives";
+import { Button, Card, Pill, StatusPill, formatDate, formatDay } from "@/components/ui/primitives";
 
 export interface ScheduleRow {
   id: string;
@@ -80,7 +80,7 @@ export function EditSchedule({ schedule, canEdit }: { schedule: ScheduleRow; can
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontWeight: 650, fontSize: 15 }}>{schedule.serviceTypeName}</div>
           <div style={{ color: "var(--ink-soft)", fontSize: 13.5, marginTop: 3 }}>
-            Every {schedule.intervalDays} days · next {formatDate(schedule.nextDueAt)}
+            Every {schedule.intervalDays} days · next {formatDay(schedule.nextDueAt)}
           </div>
           <div style={{ color: "var(--ink-faint)", fontSize: 12.5, marginTop: 2 }}>
             {inherited ? `From the ${schedule.intervalSource.toLowerCase()} default` : "Set for this unit"}

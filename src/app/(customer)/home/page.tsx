@@ -7,6 +7,8 @@ import {
   EmptyState, Button, formatDate, relativeDays, StatusPill, formatDateTime
 } from "@/components/ui/primitives";
 import { LocationSwitcher } from "./switcher";
+import Link from "next/link";
+import { zonedParts } from "@/lib/time/zone";
 
 /**
  * The customer home screen. A restaurant owner should understand their whole
@@ -81,7 +83,7 @@ export default async function CustomerHome({ searchParams }: { searchParams: Pro
       {dashboard.nextVisit ? (
         <Card style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 14, borderColor: "var(--accent)" }}>
           <div style={{ width: 44, height: 44, borderRadius: 12, background: "var(--accent-soft)", color: "var(--accent)", display: "grid", placeItems: "center", fontWeight: 700, flexShrink: 0 }}>
-            {new Date(dashboard.nextVisit.scheduledFor).getDate()}
+            {Number(zonedParts(dashboard.nextVisit.scheduledFor, dashboard.nextVisit.timezone).date.slice(8))}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 640 }}>Next scheduled service</div>
@@ -89,13 +91,13 @@ export default async function CustomerHome({ searchParams }: { searchParams: Pro
               {formatDateTime(dashboard.nextVisit.scheduledFor, dashboard.nextVisit.timezone)} · {dashboard.nextVisit.taskCount} units · {dashboard.nextVisit.locationName}
             </div>
           </div>
-          <Pill tone="accent">{relativeDays(dashboard.nextVisit.scheduledFor)}</Pill>
+          <Pill tone="accent">{relativeDays(dashboard.nextVisit.scheduledFor, { timeZone: dashboard.nextVisit.timezone })}</Pill>
         </Card>
       ) : null}
 
       {dashboard.areas.length > 0 ? (
         <>
-          <SectionTitle action={<a href="/equipment" style={{ fontSize: 13.5, color: "var(--accent)", fontWeight: 600 }}>View all</a>}>
+          <SectionTitle action={<Link href="/equipment" style={{ fontSize: 13.5, color: "var(--accent)", fontWeight: 600 }}>View all</Link>}>
             By area
           </SectionTitle>
           <List>

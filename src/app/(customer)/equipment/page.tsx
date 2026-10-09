@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db/client";
 import { tenantWhere } from "@/lib/auth/scope";
 import { scheduleStatus, urgencyRank } from "@/lib/maintenance/engine";
 import {
-  PageHeader, List, Row, Divider, StatusPill, EmptyState, Button, Pill, photoThumb,
+  PageHeader, List, Row, Divider, StatusPill, EmptyState, Button, Pill, photoThumb, formatDay,
 } from "@/components/ui/equipment-bits";
 
 /** Equipment, grouped by area - the way someone walking the restaurant thinks about it. */
@@ -28,7 +28,7 @@ export default async function EquipmentPage({ searchParams }: { searchParams: Pr
 
   const groups = new Map<string, typeof equipment>();
   for (const item of equipment) {
-    const key = item.area?.name ?? "Unassigned";
+    const key = item.area?.name ?? "Other units";
     groups.set(key, [...(groups.get(key) ?? []), item]);
   }
 
@@ -73,7 +73,7 @@ export default async function EquipmentPage({ searchParams }: { searchParams: Pr
                       subtitle={
                         <span>
                           {[item.manufacturer, item.model].filter(Boolean).join(" ") || item.equipmentType}
-                          {next ? ` · next ${next.toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : ""}
+                          {next ? ` · next ${formatDay(next, { year: false })}` : ""}
                         </span>
                       }
                       right={<StatusPill status={status} />}

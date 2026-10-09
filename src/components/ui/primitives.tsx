@@ -9,6 +9,16 @@
  * the domain code underneath are untouched.
  */
 import type { CSSProperties, ReactNode } from "react";
+import Link from "next/link";
+
+/**
+ * In-app destinations go through the router, so a tap swaps the page and keeps
+ * the shell instead of reloading everything. Anything else — an API download,
+ * another app's link — stays a plain anchor.
+ */
+function isAppPath(href: string): boolean {
+  return href.startsWith("/") && !href.startsWith("//") && !href.startsWith("/api/");
+}
 
 type Tone = "neutral" | "good" | "warn" | "bad" | "info" | "accent";
 
@@ -162,7 +172,11 @@ export function Button({ children, variant = "primary", size = "md", type = "but
     width: "100%", maxWidth: "100%", ...style,
   };
 
-  if (href && !disabled) return <a href={href} className="tap" style={css}>{children}</a>;
+  if (href && !disabled) {
+    return isAppPath(href)
+      ? <Link href={href} className="tap" style={css}>{children}</Link>
+      : <a href={href} className="tap" style={css}>{children}</a>;
+  }
   return <button type={type} onClick={onClick} disabled={disabled} style={css}>{children}</button>;
 }
 
@@ -203,7 +217,12 @@ export function Row({ title, subtitle, right, href, leading }: {
       ) : null}
     </div>
   );
-  return href ? <a href={href} className="tap" style={{ display: "block" }}>{inner}</a> : inner;
+  if (!href) return inner;
+  // Lists can run to hundreds of rows; fetching each one ahead of a tap costs
+  // more than it saves, so rows load on tap.
+  return isAppPath(href)
+    ? <Link href={href} prefetch={false} className="tap" style={{ display: "block" }}>{inner}</Link>
+    : <a href={href} className="tap" style={{ display: "block" }}>{inner}</a>;
 }
 
 export function List({ children }: { children: ReactNode }) {
@@ -256,48 +275,7 @@ export function HealthRing({ score, band }: { score: number; band: string }) {
   );
 }
 
-export function formatDate(value: string | Date | null | undefined): string {
-  if (!value) return "—";
-  const date = typeof value === "string" ? new Date(value) : value;
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-}
-
-/**
- * Date plus time of day, for anything with an appointment attached.
- *
- * A visit at 07:00 and one at 17:00 are very different plans, so a screen that
- * shows only the date is asking someone to guess — or to ring and ask.
- *
- * The timezone must be passed in, and it is the restaurant's, not the
- * reader's. These strings are rendered on the server, where the local zone is
- * UTC — so a two o'clock visit silently displayed as six o'clock. It is also
- * the right answer regardless: a visit happens at the restaurant's wall clock,
- * whoever is looking and from wherever.
- */
-export function formatDateTime(
-  value: string | Date | null | undefined,
-  timeZone?: string,
-): string {
-  if (!value) return "—";
-  const date = typeof value === "string" ? new Date(value) : value;
-  const zone = timeZone ? { timeZone } : {};
-  return [
-    date.toLocaleDateString(undefined, { month: "short", day: "numeric", ...zone }),
-    date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", ...zone }),
-  ].join(" · ");
-}
-
-export function relativeDays(value: string | Date | null | undefined): string {
-  if (!value) return "—";
-  const date = typeof value === "string" ? new Date(value) : value;
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const target = new Date(date); target.setHours(0, 0, 0, 0);
-  const days = Math.round((target.getTime() - today.getTime()) / 86_400_000);
-  if (days === 0) return "Today";
-  if (days === 1) return "Tomorrow";
-  if (days === -1) return "Yesterday";
-  return days > 0 ? `in ${days} days` : `${Math.abs(days)} days ago`;
-}
+export { formatDate, formatDay, formatDateTime, relativeDays } from "@/lib/time/format";
 
 /**
  * A collapsible group — the units inside a restaurant's area, say. Built on

@@ -48,7 +48,7 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
       equipment={{
         id: task.equipment.id,
         name: task.equipment.name,
-        areaName: task.equipment.area?.name ?? "Unassigned",
+        areaName: task.equipment.area?.name ?? "Other units",
         model: task.equipment.model,
         internalAssetId: task.equipment.internalAssetId,
         photoBlobKey: task.equipment.photos[0]?.blobKey ?? null,
