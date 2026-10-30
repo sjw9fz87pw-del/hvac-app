@@ -1,10 +1,12 @@
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/db/client";
 import { requireCapability, AuthError } from "@/lib/auth/session";
 import { canAccessAsset, canSeeInternalNotes } from "@/lib/auth/scope";
 import { toCustomerEquipment, toCustomerServiceRecord } from "@/lib/api/serializers";
 import { ok, fail, route } from "@/lib/api/respond";
 import { equipmentDeletionCheck, deleteEquipment } from "@/lib/api/equipment-removal";
+import { updateEquipmentDetails } from "@/lib/api/equipment";
 
 /**
  * The Equipment Passport. Service history is loaded alongside the asset and is
@@ -93,4 +95,23 @@ export const DELETE = route(async (_request: NextRequest, ctx: { params: Promise
 
   const removed = await deleteEquipment(id, { userId: actor.userId });
   return ok({ deleted: true, name: removed.name, releasedTag: check.hasTag, cancelledTasks: check.pendingTasks });
+});
+
+const detailsSchema = z.object({
+  name: z.string().max(80).optional(),
+  areaId: z.string().min(1).nullable().optional(),
+  equipmentType: z.string().max(60).optional(),
+  manufacturer: z.string().max(80).nullable().optional(),
+  model: z.string().max(80).nullable().optional(),
+  serialNumber: z.string().max(80).nullable().optional(),
+  technicianNotes: z.string().max(2000).nullable().optional(),
+});
+
+/** Correct a unit's details: name, area, type, make, model, serial, internal notes. */
+export const PATCH = route(async (request: NextRequest, ctx: { params: Promise<{ id: string }> }) => {
+  const actor = await requireCapability("equipment.update");
+  const { id } = await ctx.params;
+  const input = detailsSchema.parse(await request.json());
+  const updated = await updateEquipmentDetails(id, input, actor);
+  return ok({ id: updated.id, name: updated.name });
 });

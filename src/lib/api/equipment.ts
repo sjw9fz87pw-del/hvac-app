@@ -11,7 +11,8 @@ import { notify } from "@/lib/notifications/notify";
 import { resolveInterval, nextDueDate, scheduleStatus, type PlanScope } from "@/lib/maintenance/engine";
 import type { Actor } from "@/lib/auth/session";
 import { AuthError } from "@/lib/auth/session";
-import { assertLocation } from "@/lib/auth/scope";
+import { assertLocation, canAccessAsset } from "@/lib/auth/scope";
+import { JobError } from "./job-error";
 import type { z } from "zod";
 import type { createEquipmentSchema } from "./validation";
 
@@ -184,5 +185,72 @@ export async function notifyCustomerAddedEquipment(equipmentId: string) {
     link: `/admin/equipment/${equipment.id}`,
     dedupeKey: `pending-setup:${equipment.id}`,
     internalRoles: ["OPERATIONS_ADMIN", "SERVICE_MANAGER"],
+  });
+}
+
+/** The details someone can correct on a unit after it is set up. */
+export interface EquipmentDetails {
+  name?: string;
+  /** Null takes the unit out of any area. */
+  areaId?: string | null;
+  equipmentType?: string;
+  manufacturer?: string | null;
+  model?: string | null;
+  serialNumber?: string | null;
+  /** Internal only: never shown to the restaurant side. */
+  technicianNotes?: string | null;
+}
+
+const DETAIL_FIELDS = ["name", "areaId", "equipmentType", "manufacturer", "model", "serialNumber", "technicianNotes"] as const;
+
+/**
+ * Correct a unit's details.
+ *
+ * Blank text clears a field rather than storing an empty string, so "not
+ * known" reads the same everywhere. An area has to belong to the unit's own
+ * restaurant. Only the fields that actually changed are written and audited,
+ * with what they were before.
+ */
+export async function updateEquipmentDetails(equipmentId: string, input: EquipmentDetails, actor: Actor) {
+  const unit = await prisma.equipment.findUnique({ where: { id: equipmentId } });
+  if (!unit || !canAccessAsset(actor, unit)) throw new AuthError(404, "Not found");
+
+  const clean = (v: string | null | undefined) => (v === undefined ? undefined : v === null ? null : v.trim() || null);
+  const next: Record<string, string | null | undefined> = {
+    name: input.name === undefined ? undefined : input.name.trim(),
+    areaId: input.areaId,
+    equipmentType: input.equipmentType === undefined ? undefined : input.equipmentType.trim(),
+    manufacturer: clean(input.manufacturer),
+    model: clean(input.model),
+    serialNumber: clean(input.serialNumber),
+    technicianNotes: clean(input.technicianNotes),
+  };
+  if (next.name === "") throw new JobError("A unit needs a name.", 422);
+  if (next.equipmentType === "") throw new JobError("A unit needs a type.", 422);
+  if (next.areaId) {
+    const area = await prisma.area.findUnique({ where: { id: next.areaId } });
+    if (!area || area.locationId !== unit.locationId) throw new JobError("That area is not at this restaurant.", 422);
+  }
+
+  const before: Record<string, unknown> = {};
+  const after: Record<string, unknown> = {};
+  for (const field of DETAIL_FIELDS) {
+    const value = next[field];
+    if (value === undefined || value === unit[field]) continue;
+    before[field] = unit[field];
+    after[field] = value;
+  }
+  if (Object.keys(after).length === 0) return unit;
+
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.equipment.update({ where: { id: equipmentId }, data: after });
+    await recordAudit(
+      {
+        action: "asset.updated", entityType: "Equipment", entityId: equipmentId,
+        actorId: actor.userId, organizationId: unit.organizationId, before, after,
+      },
+      tx,
+    );
+    return updated;
   });
 }

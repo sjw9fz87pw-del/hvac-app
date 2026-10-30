@@ -11,6 +11,9 @@ import { PairTag } from "./pair-tag";
 import { AddJob, type JobOption } from "@/components/ui/add-job";
 import { resolveInterval, type PlanScope } from "@/lib/maintenance/engine";
 import { RemoveUnit } from "./remove-unit";
+import { UnitPager } from "./unit-pager";
+import { EditDetails } from "./edit-details";
+import { UnitPhoto } from "@/components/ui/unit-photo";
 
 /** The internal view of an asset: passport, tag state, audit trail, verification. */
 export default async function AdminEquipmentDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -25,6 +28,7 @@ export default async function AdminEquipmentDetail({ params }: { params: Promise
       tagAssignments: { include: { tag: true }, orderBy: { assignedAt: "desc" } },
       serviceRecords: { include: { serviceType: true, technician: true }, orderBy: { performedAt: "desc" }, take: 20 },
       issues: { orderBy: { createdAt: "desc" }, take: 10 },
+      photos: { where: { kind: "IDENTIFICATION" }, orderBy: { capturedAt: "desc" }, take: 1 },
     },
   });
 
@@ -68,13 +72,47 @@ export default async function AdminEquipmentDetail({ params }: { params: Promise
 
   const currentTag = equipment.tagAssignments.find((a) => a.unassignedAt === null);
 
-  return (
-    <main className="rise">
+  // The other units in the same area, in the order the restaurant lists them,
+  // for moving straight to the next one.
+  const [siblings, areas] = await Promise.all([
+    prisma.equipment.findMany({
+      where: { locationId: equipment.locationId, areaId: equipment.areaId, archivedAt: null },
+      select: { id: true, name: true },
+    }),
+    prisma.area.findMany({ where: { locationId: equipment.locationId }, orderBy: { sortOrder: "asc" }, select: { id: true, name: true } }),
+  ]);
+  siblings.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
+  const position = siblings.findIndex((s) => s.id === equipment.id);
+  // "Kitchen Refrigerator 3" in the Kitchen is just "Refrigerator 3" in the bar,
+  // so the part that tells units apart is what fits.
+  const areaPrefix = equipment.area ? `${equipment.area.name} `.toLowerCase() : null;
+  const neighbour = (unit: { id: string; name: string } | undefined) =>
+    unit ? {
+      ...unit,
+      label: areaPrefix && unit.name.toLowerCase().startsWith(areaPrefix) && unit.name.length > areaPrefix.length
+        ? unit.name.slice(areaPrefix.length) : unit.name,
+    } : null;
+  const canEdit = actor.capabilities.has("equipment.update");
 
-      <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "12px 0 6px", flexWrap: "wrap" }}>
-        <h1 style={{ fontSize: 23 }}>{equipment.name}</h1>
-        <StatusPill status={equipment.status} />
-        {equipment.createdBySource === "CUSTOMER" ? <Pill tone="info">Customer-added</Pill> : null}
+  return (
+    <main className="rise" data-unit-page>
+      {position >= 0 && siblings.length > 1 ? (
+        <UnitPager
+          prev={neighbour(siblings[position - 1])}
+          next={neighbour(siblings[position + 1])}
+          position={position + 1}
+          total={siblings.length}
+          areaName={equipment.area?.name ?? "Other units"}
+        />
+      ) : null}
+
+      <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "12px 0 6px" }}>
+        <UnitPhoto equipmentId={equipment.id} blobKey={equipment.photos[0]?.blobKey ?? null} name={equipment.name} canEdit={canEdit} />
+        <div style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <h1 style={{ fontSize: 23 }}>{equipment.name}</h1>
+          <StatusPill status={equipment.status} />
+          {equipment.createdBySource === "CUSTOMER" ? <Pill tone="info">Customer-added</Pill> : null}
+        </div>
       </div>
       <div style={{ color: "var(--ink-soft)", fontSize: 14.5, marginBottom: 18 }}>
         {equipment.organization.name} · {equipment.location.name}
@@ -92,16 +130,25 @@ export default async function AdminEquipmentDetail({ params }: { params: Promise
       ) : null}
 
       <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
-        <Card>
-          <div style={{ fontWeight: 640, marginBottom: 10 }}>Details</div>
-          <Field label="Type" value={equipment.equipmentType} />
-          <Field label="Manufacturer" value={equipment.manufacturer} />
-          <Field label="Model" value={equipment.model} />
-          <Field label="Serial" value={equipment.serialNumber} />
-          <Field label="Criticality" value={humanize(equipment.criticality)} />
-          {equipment.filterSize ? <Field label="Filter" value={`${equipment.filterSize}${equipment.filterType ? ` · ${equipment.filterType}` : ""}`} /> : null}
-          {equipment.warrantyExpires ? <Field label="Warranty" value={`${equipment.warrantyProvider ?? ""} until ${formatDay(equipment.warrantyExpires)}`} /> : null}
-        </Card>
+        <EditDetails
+          equipmentId={equipment.id}
+          canEdit={canEdit}
+          areas={areas}
+          details={{
+            name: equipment.name,
+            areaId: equipment.areaId,
+            equipmentType: equipment.equipmentType,
+            manufacturer: equipment.manufacturer,
+            model: equipment.model,
+            serialNumber: equipment.serialNumber,
+            technicianNotes: equipment.technicianNotes,
+          }}
+          extra={[
+            { label: "Criticality", value: humanize(equipment.criticality) },
+            ...(equipment.filterSize ? [{ label: "Filter", value: `${equipment.filterSize}${equipment.filterType ? ` · ${equipment.filterType}` : ""}` }] : []),
+            ...(equipment.warrantyExpires ? [{ label: "Warranty", value: `${equipment.warrantyProvider ?? ""} until ${formatDay(equipment.warrantyExpires)}`.trim() }] : []),
+          ]}
+        />
 
         <Card>
           <div style={{ fontWeight: 640, marginBottom: 10 }}>NFC tag</div>
