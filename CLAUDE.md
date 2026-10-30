@@ -24,7 +24,9 @@ never put passwords, tokens or secret values in a note.
 
 - The app is on branch `claude/restaurant-maintenance-platform-dydlsy`. `main`
   holds only an early placeholder; never push it over the app branch.
-- Live site: https://clearline-equipment-care.netlify.app (health check at
-  `/api/v1/health`).
+- Live site: https://axios-equipment-care.netlify.app (health check at
+  `/api/v1/health`). The old address, clearline-equipment-care.netlify.app, is a
+  separate Netlify project that only forwards to it: NFC tags written before
+  the rename carry the old address, so never delete that project.
 - Start with `README.md` and `docs/ARCHITECTURE.md`. NFC tag work follows the
   `hvac-nfc-tags` skill.

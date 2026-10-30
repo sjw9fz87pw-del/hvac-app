@@ -1,6 +1,6 @@
 # Deployment
 
-**Live and fully configured: https://clearline-equipment-care.netlify.app**
+**Live and fully configured: https://axios-equipment-care.netlify.app**
 
 Readiness at a glance: `GET /api/v1/health` → `{"ready": true, "missing": []}`
 
@@ -10,7 +10,8 @@ Readiness at a glance: `GET /api/v1/health` → `{"ready": true, "missing": []}`
 
 | | |
 | --- | --- |
-| Netlify project | `clearline-equipment-care` (`4a7696fd-9a4b-480e-9c17-c718c2d1cfce`) |
+| Netlify project | `axios-equipment-care` (`4a7696fd-9a4b-480e-9c17-c718c2d1cfce`), renamed from `clearline-equipment-care` on 2026-10-30 |
+| Old address | `clearline-equipment-care`: a separate project that forwards every path to the new address, so tags, links and bookmarks made before the rename keep working. **Do not delete it.** |
 | Build | Passing, 0 dependency vulnerabilities |
 | Database | Provisioned and migrated (40 tables) |
 | Data | Seeded — 19 assets, 15 tags, 14 service records, 2 issues |

@@ -8,7 +8,7 @@ import WebKit
 /// The one thing the app adds is `window.webkit.messageHandlers.deskReader`,
 /// which the site's `desk-reader` TagWriter uses when it finds it.
 
-let defaultURL = URL(string: "https://clearline-equipment-care.netlify.app/admin/nfc")!
+let defaultURL = URL(string: "https://axios-equipment-care.netlify.app/admin/nfc")!
 
 /// Where the app opens. Override for a preview or a local build with
 /// `defaults write com.clearline.desk AppURL http://localhost:3000/admin/nfc`.

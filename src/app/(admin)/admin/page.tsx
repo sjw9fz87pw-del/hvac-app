@@ -2,8 +2,6 @@ import { requireActor } from "@/lib/auth/session";
 import { commandCenter } from "@/lib/api/dashboards";
 import { Card, Stat, StatGrid, SectionTitle, List, Row, Divider, Pill, EmptyState, StatusPill } from "@/components/ui/primitives";
 import Link from "next/link";
-import { setupProgress } from "@/lib/api/setup-progress";
-import { SetupGuide } from "@/components/ui/setup-guide";
 import { companyTimezone } from "@/lib/time/company";
 
 /**
@@ -16,9 +14,8 @@ import { companyTimezone } from "@/lib/time/company";
  */
 export default async function CommandCenter() {
   const actor = await requireActor();
-  const [data, setup, timeZone] = await Promise.all([
+  const [data, timeZone] = await Promise.all([
     commandCenter(actor),
-    actor.capabilities.has("settings.manage") ? setupProgress(actor) : null,
     companyTimezone(actor.serviceCompanyId),
   ]);
 
@@ -43,8 +40,6 @@ export default async function CommandCenter() {
         </div>
         <h1 style={{ fontSize: 23, marginTop: 2 }}>Today</h1>
       </div>
-
-      {setup ? <SetupGuide steps={setup} /> : null}
 
       <StatGrid>
         <Stat label="Restaurants" value={data.today.restaurants.length} />
