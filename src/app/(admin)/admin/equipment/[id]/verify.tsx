@@ -64,7 +64,7 @@ export function VerifyEquipment({ equipmentId, equipmentName, serviceTypes }: {
                 padding: "11px 13px", borderRadius: 11, fontSize: 14, fontWeight: 620, cursor: "pointer", minHeight: 44,
                 border: `1px solid ${intervalDays === days ? "transparent" : "var(--line)"}`,
                 background: intervalDays === days ? "var(--accent)" : "var(--surface-2)",
-                color: intervalDays === days ? "#1a0f04" : "var(--ink-soft)",
+                color: intervalDays === days ? "var(--on-accent)" : "var(--ink-soft)",
               }}
             >
               {days}d

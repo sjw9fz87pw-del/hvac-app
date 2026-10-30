@@ -209,7 +209,7 @@ export function ServiceTask({ task, equipment, serviceType, nextTask }: Props) {
                   width: 26, height: 26, borderRadius: 8, flexShrink: 0, display: "grid", placeItems: "center",
                   border: `2px solid ${checked[item.id] ? "var(--good)" : "var(--line)"}`,
                   background: checked[item.id] ? "var(--good)" : "transparent",
-                  color: "#1a0f04", fontSize: 15, fontWeight: 700,
+                  color: "var(--on-accent)", fontSize: 15, fontWeight: 700,
                 }}
               >
                 {checked[item.id] ? "✓" : ""}
@@ -305,7 +305,7 @@ function PhotoSlot({ kind, label, required, photos, onAdd }: {
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={taken[taken.length - 1].preview} alt={label} style={{ width: "100%", height: 128, objectFit: "cover" }} />
-          <span style={{ position: "absolute", bottom: 8, left: 8, background: "var(--good)", color: "#1a0f04", fontSize: 11.5, fontWeight: 700, padding: "3px 8px", borderRadius: 999 }}>
+          <span style={{ position: "absolute", bottom: 8, left: 8, background: "var(--good)", color: "var(--on-accent)", fontSize: 11.5, fontWeight: 700, padding: "3px 8px", borderRadius: 999 }}>
             {label} ✓
           </span>
         </>

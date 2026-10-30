@@ -118,7 +118,7 @@ export function EditSchedule({ schedule, canEdit }: { schedule: ScheduleRow; can
                     minHeight: 40, cursor: "pointer",
                     border: `1px solid ${on ? "transparent" : "var(--line)"}`,
                     background: on ? "var(--accent)" : "var(--surface-2)",
-                    color: on ? "#1a0f04" : "var(--ink-soft)",
+                    color: on ? "var(--on-accent)" : "var(--ink-soft)",
                   }}
                 >
                   {n === 365 ? "1 year" : n % 30 === 0 ? `${n / 30} month${n === 30 ? "" : "s"}` : `${n} days`}

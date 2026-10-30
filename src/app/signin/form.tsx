@@ -34,35 +34,61 @@ export function SignInForm({ next }: { next: string | null }) {
   };
 
   return (
-    <main className="page-scroll" style={{ height: "100%", display: "grid", placeItems: "center", padding: 20 }}>
-      <Card style={{ width: "100%", maxWidth: 400, padding: 28 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 10, background: "var(--accent)", display: "grid", placeItems: "center", color: "#1a0f04", fontWeight: 700 }}>E</div>
-          <div>
-            <div style={{ fontWeight: 680, letterSpacing: "-0.02em" }}>Equipment Care</div>
-            <div style={{ fontSize: 12.5, color: "var(--ink-faint)" }}>Preventive maintenance platform</div>
-          </div>
-        </div>
+    <main className="page-scroll signin-page">
+      <div className="signin-layout">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          className="signin-logo"
+          src="/brand/logo-full.svg"
+          alt="Axios Equipment Care. People. Equipment. A stronger tomorrow."
+          width={452} height={334}
+        />
 
-        <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
-          <label style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-soft)" }}>Email</span>
-            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} style={field} autoComplete="email" />
-          </label>
-          <label style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-soft)" }}>Password</span>
-            <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} style={field} autoComplete="current-password" />
-          </label>
+        <Card className="signin-card" style={{ padding: 26 }}>
+          <h1 style={{ fontSize: 21 }}>Sign in</h1>
+          <p style={{ color: "var(--ink-soft)", fontSize: 14, marginTop: 4, marginBottom: 18 }}>
+            Welcome back. Use the email you were invited with.
+          </p>
 
-          {error ? (
-            <div style={{ background: "var(--bad-soft)", color: "var(--bad)", padding: "10px 12px", borderRadius: 10, fontSize: 13.5 }}>{error}</div>
-          ) : null}
+          <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-soft)" }}>Email</span>
+              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} style={field} autoComplete="email" />
+            </label>
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-soft)" }}>Password</span>
+              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} style={field} autoComplete="current-password" />
+            </label>
 
-          <div style={{ marginTop: 4 }}>
-            <Button type="submit" size="lg" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</Button>
-          </div>
-        </form>
-      </Card>
+            {error ? (
+              <div style={{ background: "var(--bad-soft)", color: "var(--bad)", padding: "10px 12px", borderRadius: 10, fontSize: 13.5 }}>{error}</div>
+            ) : null}
+
+            <div style={{ marginTop: 4 }}>
+              <Button type="submit" size="lg" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</Button>
+            </div>
+          </form>
+        </Card>
+
+        {/* The tagline, said in full: what each of its three words stands for here. */}
+        <ul className="signin-points">
+          {PILLARS.map((pillar) => (
+            <li key={pillar.title}>
+              <span className="signin-dot" aria-hidden="true" />
+              <div>
+                <div className="signin-point-title">{pillar.title}</div>
+                <div className="signin-point-body">{pillar.body}</div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
     </main>
   );
 }
+
+const PILLARS = [
+  { title: "People", body: "Your team and your restaurants, each seeing exactly what they need." },
+  { title: "Equipment", body: "Every unit's record, schedule and proof of service in one place." },
+  { title: "A stronger tomorrow", body: "Maintenance done on time, before something breaks." },
+];

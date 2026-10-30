@@ -3,10 +3,9 @@
 /*
  * Design tokens.
  *
- * Dark-first and warm: a near-black ground with a single amber-to-orange accent
- * carrying every interactive and branded surface, hairline warm borders, and a
- * small set of status colours that stay semantic. Committed to one look on
- * purpose rather than half-supporting a light theme.
+ * Axios Equipment Care: the logo's colours on a light ground. Navy for text
+ * and the brand, the ring's blue for anything you act on, its green as the
+ * second brand colour, and a small set of status colours that stay semantic.
  */
 @theme {
   --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -14,34 +13,36 @@
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  /* Ground and surfaces: warm blacks, each step barely lighter than the last. */
-  --canvas: #0b0907;
-  --surface: #16110d;
-  --surface-2: #1e1711;
-  --line: #2b211a;
-  --line-strong: #3a2c21;
+  /* Ground and surfaces: a cool, faintly blue white, with white cards on it. */
+  --canvas: #f3f6f9;
+  --surface: #ffffff;
+  --surface-2: #eef2f6;
+  --line: #e0e6ed;
+  --line-strong: #cbd5e0;
 
-  /* Ink */
-  --ink: #f7f4f1;
-  --ink-soft: #a79c92;
-  --ink-faint: #6f6459;
+  /* Ink: the logo's navy, and two softer steps of it. */
+  --ink: #0b1f3f;
+  --ink-soft: #4b5a6e;
+  --ink-faint: #7f8b9c;
 
-  /* One accent, used for anything interactive, selected or branded. */
-  --accent: #ff8a1f;
-  --accent-2: #ffb443;
-  --accent-soft: rgba(255, 138, 31, 0.13);
-  --accent-line: rgba(255, 138, 31, 0.32);
+  /* The ring's blue carries everything interactive; its green is the second brand colour. */
+  --accent: #1667a0;
+  --accent-2: #6fae47;
+  --accent-soft: rgba(22, 103, 160, 0.09);
+  --accent-line: rgba(22, 103, 160, 0.28);
+  --on-accent: #ffffff;
+  --brand-navy: #0b1f3f;
 
   /* Status stays semantic: current, due, overdue, informational. */
-  --good: #35c78a;  --good-soft: rgba(53, 199, 138, 0.14);
-  --warn: #f0b429;  --warn-soft: rgba(240, 180, 41, 0.14);
-  --bad:  #ff5d55;  --bad-soft:  rgba(255, 93, 85, 0.14);
-  --info: #8b93ff;  --info-soft: rgba(139, 147, 255, 0.14);
+  --good: #2e8540;  --good-soft: rgba(46, 133, 64, 0.10);
+  --warn: #b36b00;  --warn-soft: rgba(214, 140, 0, 0.12);
+  --bad:  #c62828;  --bad-soft:  rgba(198, 40, 40, 0.09);
+  --info: #3b5bdb;  --info-soft: rgba(59, 91, 219, 0.10);
 
-  --shadow-card: 0 1px 0 rgb(255 255 255 / 0.02) inset, 0 8px 28px rgb(0 0 0 / 0.45);
-  --glow-accent: 0 0 0 1px var(--accent-line), 0 8px 30px rgba(255, 138, 31, 0.16);
+  --shadow-card: 0 1px 2px rgb(11 31 63 / 0.05), 0 4px 16px rgb(11 31 63 / 0.05);
+  --glow-accent: 0 0 0 1px var(--accent-line), 0 8px 24px rgba(22, 103, 160, 0.12);
 }
 
 * { box-sizing: border-box; }
@@ -77,10 +78,10 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 
-  /* A faint warm bloom off the top, so the near-black never reads as flat grey. */
+  /* A faint wash of the ring's blue and green off the top. */
   background-image:
-    radial-gradient(1100px 460px at 50% -180px, rgba(255, 138, 31, 0.10), transparent 70%),
-    radial-gradient(720px 320px at 100% 0, rgba(255, 138, 31, 0.05), transparent 65%);
+    radial-gradient(1100px 460px at 50% -180px, rgba(22, 103, 160, 0.07), transparent 70%),
+    radial-gradient(720px 320px at 100% 0, rgba(111, 174, 71, 0.07), transparent 65%);
   background-attachment: fixed;
 }
 
@@ -89,7 +90,7 @@ p { margin: 0; }
 button, input, select, textarea { font: inherit; color: inherit; }
 a { color: inherit; text-decoration: none; }
 
-input, select, textarea { color-scheme: dark; }
+input, select, textarea { color-scheme: light; }
 input::placeholder, textarea::placeholder { color: var(--ink-faint); }
 
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
@@ -196,17 +197,7 @@ button, [role="button"], a.tap { min-height: 44px; }
   letter-spacing: -0.015em;
   color: var(--ink);
 }
-.brand-mark {
-  width: 24px;
-  height: 24px;
-  border-radius: 7px;
-  display: grid;
-  place-items: center;
-  background: var(--accent);
-  color: #1a0f04;
-  font-weight: 800;
-  font-size: 12.5px;
-}
+.brand img { display: block; height: 30px; width: auto; }
 .back-button {
   display: inline-flex;
   align-items: center;
@@ -243,6 +234,35 @@ button, [role="button"], a.tap { min-height: 44px; }
   color: var(--accent);
   font-weight: 600;
   font-size: 13.5px;
+}
+
+/* Sign in: the full logo and tagline, the form, and what the tagline means.
+   Stacked on a phone; logo and points beside the form on a wide screen. */
+.signin-page { height: 100%; padding: 28px 18px calc(28px + env(safe-area-inset-bottom)); }
+.signin-layout {
+  max-width: 420px; margin: 0 auto; min-height: 100%;
+  display: grid; align-content: center; gap: 22px;
+  grid-template-areas: "logo" "form" "points";
+}
+.signin-logo { grid-area: logo; display: block; width: min(82%, 300px); height: auto; margin: 0 auto; }
+.signin-card { grid-area: form; }
+.signin-points { grid-area: points; list-style: none; margin: 0; padding: 0 4px; display: grid; gap: 14px; }
+.signin-points li { display: flex; gap: 12px; align-items: flex-start; }
+.signin-dot {
+  width: 10px; height: 10px; border-radius: 999px; margin-top: 6px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+}
+.signin-point-title { font-weight: 700; font-size: 14.5px; color: var(--ink); }
+.signin-point-body { font-size: 13.5px; color: var(--ink-soft); line-height: 1.45; }
+@media (min-width: 900px) {
+  .signin-layout {
+    max-width: 960px; column-gap: 72px; row-gap: 28px;
+    grid-template-columns: 1fr 400px;
+    grid-template-areas: "logo form" "points form";
+    align-items: center;
+  }
+  .signin-logo { width: 380px; margin: 0; align-self: end; }
+  .signin-points { align-self: start; max-width: 420px; }
 }
 
 /* Page body inside the scroller. */

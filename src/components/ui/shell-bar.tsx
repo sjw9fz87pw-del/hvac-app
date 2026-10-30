@@ -42,9 +42,9 @@ export function ShellBar({
     <header className="top-bar">
       <div className="top-bar-inner">
         {atRoot ? (
-          <Link href={home} className="brand">
-            <span className="brand-mark" aria-hidden="true">E</span>
-            <span>Equipment Care</span>
+          <Link href={home} className="brand" aria-label="Axios Equipment Care, home">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/logo-horizontal.svg" alt="Axios Equipment Care" width={233} height={30} />
           </Link>
         ) : (
           <button onClick={goBack} className="back-button" aria-label="Go back">

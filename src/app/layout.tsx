@@ -4,8 +4,10 @@ import "./globals.css";
 import { NavProgress } from "@/components/ui/nav-progress";
 
 export const metadata: Metadata = {
-  title: "Equipment Care",
-  description: "Preventive maintenance, equipment records and proof of service for restaurants.",
+  title: "Axios Equipment Care",
+  description: "People. Equipment. A stronger tomorrow. Preventive maintenance, equipment records and proof of service for restaurants.",
+  applicationName: "Axios Equipment Care",
+  appleWebApp: { title: "Axios" },
 };
 
 export const viewport: Viewport = {
@@ -14,10 +16,8 @@ export const viewport: Viewport = {
   viewportFit: "cover",
   // The keyboard shrinks the content instead of sliding a fixed layout around.
   interactiveWidget: "resizes-content",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f7f9" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b0d10" },
-  ],
+  // The app is light whatever the phone's setting, so the browser bars match it.
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

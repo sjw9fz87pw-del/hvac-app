@@ -258,7 +258,7 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
                 padding: "9px 14px", borderRadius: 999, fontSize: 14, fontWeight: 600, cursor: "pointer", minHeight: 42,
                 border: `1px solid ${areaId === area.id ? "transparent" : "var(--line)"}`,
                 background: areaId === area.id ? "var(--accent)" : "var(--surface-2)",
-                color: areaId === area.id ? "#1a0f04" : "var(--ink-soft)",
+                color: areaId === area.id ? "var(--on-accent)" : "var(--ink-soft)",
               }}
             >
               {area.name}
@@ -303,7 +303,7 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
                 padding: "9px 13px", borderRadius: 999, fontSize: 13.5, fontWeight: 600, cursor: "pointer", minHeight: 40,
                 border: `1px solid ${type.label === item.label ? "transparent" : "var(--line)"}`,
                 background: type.label === item.label ? "var(--accent)" : "var(--surface-2)",
-                color: type.label === item.label ? "#1a0f04" : "var(--ink-soft)",
+                color: type.label === item.label ? "var(--on-accent)" : "var(--ink-soft)",
               }}
             >
               {item.label}
@@ -333,7 +333,7 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
                 flex: 1, padding: "11px 4px", borderRadius: 11, fontSize: 14, fontWeight: 620, cursor: "pointer", minHeight: 44,
                 border: `1px solid ${intervalDays === days ? "transparent" : "var(--line)"}`,
                 background: intervalDays === days ? "var(--accent)" : "var(--surface-2)",
-                color: intervalDays === days ? "#1a0f04" : "var(--ink-soft)",
+                color: intervalDays === days ? "var(--on-accent)" : "var(--ink-soft)",
               }}
             >
               {days}d
@@ -357,7 +357,7 @@ export function RapidInventory({ locations, selectedLocationId, existingCount, s
               width: 26, height: 26, borderRadius: 8, flexShrink: 0, display: "grid", placeItems: "center",
               border: `2px solid ${lockTags && canLock ? "var(--good)" : "var(--line)"}`,
               background: lockTags && canLock ? "var(--good)" : "transparent",
-              color: "#1a0f04", fontSize: 15, fontWeight: 700,
+              color: "var(--on-accent)", fontSize: 15, fontWeight: 700,
             }}
           >
             {lockTags && canLock ? "✓" : ""}

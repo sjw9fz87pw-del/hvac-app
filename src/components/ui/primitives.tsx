@@ -1,9 +1,10 @@
 /**
  * The design system.
  *
- * Dark, warm, amber-accented. Rounded cards on hairline borders, tiny
- * wide-tracked uppercase kickers, chips led by a colour dot, and a single
- * gradient accent for anything the user acts on.
+ * Axios Equipment Care: the logo's navy, blue and green on a light ground.
+ * Rounded white cards on hairline borders, tiny wide-tracked uppercase
+ * kickers, chips led by a colour dot, and the brand blue for anything the
+ * user acts on.
  *
  * Every export keeps the signature it had before the restyle — the screens and
  * the domain code underneath are untouched.
@@ -147,15 +148,15 @@ export function Button({ children, variant = "primary", size = "md", type = "but
   style?: CSSProperties;
 }) {
   const palette: Record<string, CSSProperties> = {
-    // Amber-to-gold gradient with near-black text: the one loud element per screen.
+    // The brand blue with white text: the one loud element per screen.
     primary: {
       background: "var(--accent)",
-      color: "#1a0f04",
+      color: "var(--on-accent)",
       border: "1px solid transparent",
     },
     secondary: { background: "var(--surface-2)", color: "var(--ink)", border: "1px solid var(--line-strong)" },
     ghost: { background: "transparent", color: "var(--ink-soft)", border: "1px solid transparent" },
-    danger: { background: "var(--bad-soft)", color: "var(--bad)", border: "1px solid rgba(255,93,85,0.3)" },
+    danger: { background: "var(--bad-soft)", color: "var(--bad)", border: "1px solid rgba(198,40,40,0.25)" },
   };
 
   const sizing = {

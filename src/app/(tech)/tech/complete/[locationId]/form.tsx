@@ -198,7 +198,7 @@ export function CompleteLocationForm({ locationId, locationName, units, technici
                       display: "grid", placeItems: "center",
                       background: on ? "var(--accent)" : "transparent",
                       border: `2px solid ${on ? "var(--accent)" : "var(--line)"}`,
-                      color: "#1a0f04", fontSize: 14, fontWeight: 800,
+                      color: "var(--on-accent)", fontSize: 14, fontWeight: 800,
                     }}>{on ? "✓" : ""}</span>
                     <span style={{ flex: 1, minWidth: 0 }}>
                       <span style={{ display: "block", fontWeight: 640, fontSize: 14.5 }}>{unit.name}</span>

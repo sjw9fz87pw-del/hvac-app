@@ -1,4 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="16" fill="#ff8a1f"/>
-  <text x="32" y="44" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="34" font-weight="800" fill="#1a0f04">E</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="22.0 -15.0 386 386" role="img" aria-label="Axios Equipment Care"><title>Axios Equipment Care</title><rect x="22.0" y="-15.0" width="386" height="386" rx="84.9" fill="#ffffff"/><defs>
+  <linearGradient id="mga" x1="68" y1="310" x2="356" y2="70" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#0b4f86"/><stop offset="0.45" stop-color="#1667a0"/>
+    <stop offset="0.72" stop-color="#2f8f95"/><stop offset="1" stop-color="#8cc043"/></linearGradient>
+  <linearGradient id="mgb" x1="96" y1="80" x2="300" y2="96" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#1a6aa3"/><stop offset="1" stop-color="#2b86b5"/></linearGradient>
+  <linearGradient id="mgc" x1="112" y1="290" x2="330" y2="290" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#86bd46"/><stop offset="0.5" stop-color="#3f9a7c"/>
+    <stop offset="1" stop-color="#145f99"/></linearGradient>
+</defs><path d="M166.00 318.00 A149.31 149.31 0 1 1 356.00 124.00 A143.63 143.63 0 1 0 166.00 318.00Z" fill="url(#mga)"/><path d="M96.00 100.00 A174.04 174.04 0 0 1 300.00 98.00 A228.57 228.57 0 0 0 96.00 100.00Z" fill="url(#mgb)"/><path d="M112.00 262.00 A126.96 126.96 0 0 0 330.00 254.00 A150.20 150.20 0 0 1 112.00 262.00Z" fill="url(#mgc)"/><path d="M-2.36 0 49.73 -118H82.6L134.86 0H100.13L59.34 -101.65H72.49L31.69 0ZM26.13 -22.93 34.73 -47.54H92.38L100.97 -22.93Z" transform="translate(150.36 236.53)" fill="#0b1f3f"/></svg>

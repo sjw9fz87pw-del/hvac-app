@@ -321,7 +321,7 @@ export function RestaurantList({ groups, loose, canGroup }: {
             position: "fixed", left: ghost.x, top: ghost.y, transform: "translate(-50%, -140%)",
             pointerEvents: "none", zIndex: 90,
             padding: "10px 16px", borderRadius: 999,
-            background: "var(--accent)", color: "#1a0f04",
+            background: "var(--accent)", color: "var(--on-accent)",
             fontWeight: 700, fontSize: 14, boxShadow: "0 10px 26px rgba(0,0,0,.4)",
           }}
         >

@@ -23,7 +23,7 @@ export function IntervalPicker({ value, onChange }: { value: string; onChange: (
                 minHeight: 38, cursor: "pointer",
                 border: `1px solid ${on ? "transparent" : "var(--line)"}`,
                 background: on ? "var(--accent)" : "var(--surface-2)",
-                color: on ? "#1a0f04" : "var(--ink-soft)",
+                color: on ? "var(--on-accent)" : "var(--ink-soft)",
               }}
             >
               {presetLabel(n)}

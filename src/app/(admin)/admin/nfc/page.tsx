@@ -92,7 +92,7 @@ export default async function NfcConsole({ searchParams }: { searchParams: Promi
               padding: "8px 14px", borderRadius: 999, fontSize: 13.5, fontWeight: 600,
               border: `1px solid ${filter === option.key ? "transparent" : "var(--line)"}`,
               background: filter === option.key ? "var(--accent)" : "var(--surface-2)",
-              color: filter === option.key ? "#1a0f04" : "var(--ink-soft)",
+              color: filter === option.key ? "var(--on-accent)" : "var(--ink-soft)",
             }}
           >
             {option.label}

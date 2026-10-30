@@ -95,7 +95,7 @@ export function AppBar({ title, right }: { title: string; right?: React.ReactNod
             style={{
               width: 26, height: 26, borderRadius: 8, flexShrink: 0, display: "grid", placeItems: "center",
               background: "var(--accent)",
-              color: "#1a0f04", fontWeight: 800, fontSize: 13,
+              color: "var(--on-accent)", fontWeight: 800, fontSize: 13,
             }}
           >
             E

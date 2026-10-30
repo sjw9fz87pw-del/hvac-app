@@ -22,7 +22,7 @@ export default function ErrorBoundary({ reset }: { error: Error; reset: () => vo
           </button>
           <a
             href="/"
-            style={{ padding: "11px 18px", borderRadius: 12, background: "var(--accent)", color: "#1a0f04", fontWeight: 600, display: "inline-flex", alignItems: "center" }}
+            style={{ padding: "11px 18px", borderRadius: 12, background: "var(--accent)", color: "var(--on-accent)", fontWeight: 600, display: "inline-flex", alignItems: "center" }}
           >
             Go home
           </a>

@@ -168,7 +168,7 @@ export function UnitList({ units, canEdit, canRemove }: { units: UnitRow[]; canE
                     display: "grid", placeItems: "center", fontSize: 15, fontWeight: 800,
                     background: on ? "var(--accent)" : "transparent",
                     border: `2px solid ${on ? "var(--accent)" : "var(--line)"}`,
-                    color: "#1a0f04",
+                    color: "var(--on-accent)",
                   }}>{on ? "✓" : ""}</span>
                 ) : (
                   <UnitPhoto

@@ -46,7 +46,7 @@ export function SetupGuide({ steps }: { steps: SetupStep[] }) {
                     width: 26, height: 26, borderRadius: 99, flexShrink: 0,
                     display: "grid", placeItems: "center", fontSize: 12.5, fontWeight: 750,
                     background: isNext ? "var(--accent)" : "var(--surface-2)",
-                    color: isNext ? "#1a0f04" : "var(--ink-faint)",
+                    color: isNext ? "var(--on-accent)" : "var(--ink-faint)",
                     border: isNext ? "1px solid transparent" : "1px solid var(--line)",
                   }}
                 >

@@ -99,7 +99,7 @@ export async function installInitialData(
   await wipe(prisma);
 
   const company = await prisma.serviceCompany.create({
-    data: { name: "Clearline Equipment Care", slug: "clearline" },
+    data: { name: "Axios Equipment Care", slug: "clearline" },
   });
 
   // ------------------------------------------------------------ service types

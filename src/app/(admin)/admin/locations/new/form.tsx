@@ -156,7 +156,7 @@ export function AddRestaurantForm({ organizations, defaultGroupId, canCreateGrou
                       minHeight: 40, cursor: "pointer",
                       border: `1px solid ${on ? "transparent" : "var(--line)"}`,
                       background: on ? "var(--accent)" : "var(--surface-2)",
-                      color: on ? "#1a0f04" : "var(--ink-soft)",
+                      color: on ? "var(--on-accent)" : "var(--ink-soft)",
                     }}
                   >
                     {area}

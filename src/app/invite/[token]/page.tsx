@@ -21,7 +21,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
       valid={valid}
       firstName={valid ? (user!.name.split(" ")[0] ?? null) : null}
       email={valid ? user!.email : null}
-      companyName={valid ? "Equipment Care" : null}
+      companyName={valid ? "Axios Equipment Care" : null}
     />
   );
 }

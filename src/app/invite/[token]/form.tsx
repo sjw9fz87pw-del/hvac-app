@@ -85,11 +85,12 @@ export function AcceptInviteForm({ token, valid, firstName, email, companyName }
     <main className="page-scroll" style={shell}>
       <div style={{ width: "100%", maxWidth: 400 }}>
         <div style={{ textAlign: "center", marginBottom: 22 }}>
-          <div style={{
-            width: 54, height: 54, borderRadius: 16, margin: "0 auto 14px",
-            display: "grid", placeItems: "center", fontSize: 24, fontWeight: 800,
-            background: "var(--accent)", color: "#1a0f04",
-          }}>E</div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/brand/logo-full.svg" alt="Axios Equipment Care. People. Equipment. A stronger tomorrow."
+            width={452} height={334}
+            style={{ display: "block", width: "min(78%, 290px)", height: "auto", margin: "0 auto 22px" }}
+          />
           <h1 style={{ fontSize: 23 }}>Welcome{firstName ? `, ${firstName}` : ""}</h1>
           <p style={{ color: "var(--ink-soft)", fontSize: 14.5, marginTop: 6 }}>
             Choose a password for {companyName}

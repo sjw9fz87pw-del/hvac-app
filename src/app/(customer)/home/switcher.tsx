@@ -32,7 +32,7 @@ function Chip({ children, active, href }: { children: React.ReactNode; active: b
         padding: "9px 15px", borderRadius: 999, whiteSpace: "nowrap", fontSize: 14, fontWeight: 600, flexShrink: 0,
         border: `1px solid ${active ? "transparent" : "var(--line)"}`,
         background: active ? "var(--accent)" : "var(--surface-2)",
-        color: active ? "#1a0f04" : "var(--ink-soft)",
+        color: active ? "var(--on-accent)" : "var(--ink-soft)",
       }}
     >
       {children}

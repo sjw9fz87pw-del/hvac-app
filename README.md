@@ -1,4 +1,6 @@
-# Equipment Care
+# Axios Equipment Care
+
+*People. Equipment. A stronger tomorrow.*
 
 The operating system for recurring restaurant equipment preventive care:
 physical service + NFC identity + permanent equipment records + preventive
