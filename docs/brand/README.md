@@ -12,7 +12,7 @@ loaded at runtime.
 |---|---|
 | `public/brand/logo-full.svg` | Sign-in and invitation pages (with the tagline) |
 | `public/brand/logo.svg` | The logo without the tagline |
-| `public/brand/logo-horizontal.svg` | The top bar on each main tab |
+| `public/brand/logo-horizontal.svg` | The top bar on each main tab: the ring around AXIOS, the name across |
 | `public/brand/logo-mark.svg` | The ring and "A" on their own |
 | `src/app/icon.svg`, `src/app/apple-icon.png` | Browser tab and home-screen icon |
 

@@ -197,7 +197,7 @@ button, [role="button"], a.tap { min-height: 44px; }
   letter-spacing: -0.015em;
   color: var(--ink);
 }
-.brand img { display: block; height: 30px; width: auto; }
+.brand img { display: block; height: 40px; width: auto; }
 .back-button {
   display: inline-flex;
   align-items: center;

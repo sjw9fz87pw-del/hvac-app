@@ -121,21 +121,22 @@ open(f"{out}/wordmark.svg", "w").write(svg((0, -66, 324, 112),
     f'<path d="{axios}" fill="{NAVY}"/><path d="{eq}" transform="translate(1 44)" fill="{GRAY}"/>', "Axios Equipment Care"))
 print("ok")
 
-# One-line lockup for the app's top bar: mark, then AXIOS and EQUIPMENT CARE on one baseline.
+# One-line logo for the app's top bar: the ring hugging AXIOS, the rest of
+# the name running on to the right. (An earlier version put the ring-and-A
+# mark before AXIOS, which read as a doubled A.)
 mdefs, mbody = mark()
 MX, MY, MW, MH = 56, 26, 318, 304
-cy = MY + MH / 2
-ax_cap, eq_cap = 122, 76
+hdefs, harcs = ring("h")
+ax_cap = 98
 ax_d, ax_w = text_path(F[800], "AXIOS", ax_cap / cap(F[800]), 0.01)
-eq_d, eq_w = text_path(F[700], "EQUIPMENT CARE", eq_cap / cap(F[700]), 0.09)
-base = cy + ax_cap / 2
-x_ax = MX + MW + 46
-x_eq = x_ax + ax_w + 52
-total_w = x_eq + eq_w - MX + 8
-open(f"{out}/logo-horizontal.svg", "w").write(svg((MX, MY, total_w, MH),
-    mdefs + mbody +
-    f'<path d="{ax_d}" transform="translate({x_ax:.2f} {base:.2f})" fill="{NAVY}"/>'
-    f'<path d="{eq_d}" transform="translate({x_eq:.2f} {base:.2f})" fill="{GRAY}"/>',
+eq_d, eq_w = text_path(F[700], "EQUIPMENT CARE", 52 / cap(F[700]), 0.10)
+base = 190 + ax_cap / 2
+x_ax = 116
+x_eq = x_ax + ax_w + 36
+open(f"{out}/logo-horizontal.svg", "w").write(svg((56, 26, x_eq + eq_w + 6 - 56, 304),
+    hdefs + harcs +
+    f'<path d="{ax_d}" transform="translate({x_ax} {base:.1f})" fill="{NAVY}"/>'
+    f'<path d="{eq_d}" transform="translate({x_eq:.1f} {base:.1f})" fill="{GRAY}"/>',
     "Axios Equipment Care"))
 
 # App icon: the mark on a white rounded square.

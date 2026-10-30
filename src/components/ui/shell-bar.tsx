@@ -44,7 +44,7 @@ export function ShellBar({
         {atRoot ? (
           <Link href={home} className="brand" aria-label="Axios Equipment Care, home">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/logo-horizontal.svg" alt="Axios Equipment Care" width={233} height={30} />
+            <img src="/brand/logo-horizontal.svg" alt="Axios Equipment Care" width={183} height={40} />
           </Link>
         ) : (
           <button onClick={goBack} className="back-button" aria-label="Go back">
