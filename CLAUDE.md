@@ -28,5 +28,9 @@ never put passwords, tokens or secret values in a note.
   `/api/v1/health`). The old address, clearline-equipment-care.netlify.app, is a
   separate Netlify project that only forwards to it: NFC tags written before
   the rename carry the old address, so never delete that project.
+- Before any deploy, pull the notes and read `Equipment Care/Technical/Deploying.md`.
+  The owner also works with Codex, which has published from code that was not
+  on GitHub. If the live deploy came from code this branch does not have,
+  deploying over it removes that work from the site: combine first, or ask.
 - Start with `README.md` and `docs/ARCHITECTURE.md`. NFC tag work follows the
   `hvac-nfc-tags` skill.
