@@ -136,7 +136,12 @@ export async function customerDashboard(
 
 export interface CommandCenter {
   today: {
-    restaurants: { id: string; name: string; organizationName: string; taskCount: number; completed: number; technician: string | null; status: string }[];
+    restaurants: {
+      id: string; name: string; organizationName: string; taskCount: number; completed: number;
+      technician: string | null; status: string;
+      /** When it is booked for, read on the restaurant's own clock. */
+      scheduledFor: string; timezone: string;
+    }[];
     equipmentScheduled: number;
     servicesCompleted: number;
     servicesRemaining: number;
@@ -152,6 +157,10 @@ export interface CommandCenter {
     incompleteProof: number;
     technicianExceptions: { technicianId: string; technicianName: string; issue: string }[];
   };
+  /** The next few visits after today. */
+  upcoming: { id: string; locationName: string; scheduledFor: string; timezone: string; taskCount: number; technician: string | null }[];
+  /** Every active unit once, at its worst status across its jobs. */
+  fleet: { units: number; overdue: number; dueSoon: number; current: number; notSetUp: number };
 }
 
 export async function commandCenter(actor: Actor, now = new Date()): Promise<CommandCenter> {
@@ -161,12 +170,12 @@ export async function commandCenter(actor: Actor, now = new Date()): Promise<Com
   const { start: dayStart, end: dayEnd } = dayBounds(await companyTimezone(actor.serviceCompanyId));
   const dayAgo = new Date(now.getTime() - 86_400_000);
 
-  const [todayVisits, overdueAssets, missedVisits, customerIssues, assetsWithoutTags, awaitingVerification, failedPairings, incompleteTasks] =
+  const [todayVisits, overdueAssets, missedVisits, customerIssues, assetsWithoutTags, awaitingVerification, failedPairings, incompleteTasks, upcoming, fleetUnits] =
     await Promise.all([
       prisma.visit.findMany({
         where: { ...orgFilter, scheduledFor: { gte: dayStart, lt: dayEnd } },
         include: {
-          location: { select: { id: true, name: true } },
+          location: { select: { id: true, name: true, timezone: true } },
           organization: { select: { name: true } },
           technician: { select: { id: true, name: true } },
           tasks: { select: { status: true } },
@@ -199,6 +208,20 @@ export async function commandCenter(actor: Actor, now = new Date()): Promise<Com
         include: { visit: { include: { technician: { select: { id: true, name: true } } } }, equipment: { select: { name: true } } },
         take: 20,
       }),
+      prisma.visit.findMany({
+        where: { ...orgFilter, status: { in: ["SCHEDULED", "IN_PROGRESS"] }, scheduledFor: { gte: dayEnd } },
+        include: {
+          location: { select: { name: true, timezone: true } },
+          technician: { select: { name: true } },
+          tasks: { select: { id: true } },
+        },
+        orderBy: { scheduledFor: "asc" },
+        take: 4,
+      }),
+      prisma.equipment.findMany({
+        where: { ...orgFilter, archivedAt: null, status: { not: "ARCHIVED" } },
+        select: { schedules: { where: { paused: false, serviceType: { active: true } }, select: { status: true } } },
+      }),
     ]);
 
   const technicianExceptions = incompleteTasks
@@ -219,6 +242,8 @@ export async function commandCenter(actor: Actor, now = new Date()): Promise<Com
         completed: v.tasks.filter((t) => t.status === "COMPLETED").length,
         technician: v.technician?.name ?? null,
         status: v.status,
+        scheduledFor: v.scheduledFor.toISOString(),
+        timezone: v.location.timezone,
       })),
       equipmentScheduled: allTasks.length,
       servicesCompleted: allTasks.filter((t) => t.status === "COMPLETED").length,
@@ -231,5 +256,30 @@ export async function commandCenter(actor: Actor, now = new Date()): Promise<Com
       failedTagPairings: failedPairings, incompleteProof: incompleteTasks.length,
       technicianExceptions,
     },
+    upcoming: upcoming.map((v) => ({
+      id: v.id,
+      locationName: v.location.name,
+      scheduledFor: v.scheduledFor.toISOString(),
+      timezone: v.location.timezone,
+      taskCount: v.tasks.length,
+      technician: v.technician?.name ?? null,
+    })),
+    fleet: fleetSummary(fleetUnits.map((u) => u.schedules.map((s) => s.status))),
   };
+}
+
+/**
+ * Units by status, each counted once at its worst: a unit with one job
+ * overdue is overdue, however many others are fine. A unit with no job set up
+ * is counted apart, since nothing will ever fall due on it.
+ */
+export function fleetSummary(units: string[][]): CommandCenter["fleet"] {
+  const fleet = { units: units.length, overdue: 0, dueSoon: 0, current: 0, notSetUp: 0 };
+  for (const statuses of units) {
+    if (statuses.length === 0) fleet.notSetUp++;
+    else if (statuses.includes("OVERDUE")) fleet.overdue++;
+    else if (statuses.includes("DUE") || statuses.includes("SCHEDULE_NEEDED")) fleet.dueSoon++;
+    else fleet.current++;
+  }
+  return fleet;
 }
