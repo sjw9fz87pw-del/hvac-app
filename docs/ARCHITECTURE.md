@@ -188,6 +188,14 @@ disagree.
 Visits are **generated** from what is due (`generateVisit`), grouped by area so the
 technician walks the restaurant once. Nobody hand-picks assets.
 
+The office **Schedule** tab (`src/app/(admin)/admin/schedule/`) is a calendar
+over the same data: a week or month of visits, each day's unbooked due work, and
+the picked day as an hour grid. Visits open in a sheet over the calendar to be
+moved, reassigned or cancelled (`PATCH /api/v1/visits/[id]`), and a free hour
+books one (`POST /api/v1/visits`) through the same `BookVisitForm` a restaurant's
+page uses. Day arithmetic is on plain `YYYY-MM-DD` strings (`src/lib/time/calendar.ts`),
+never on instants, so a clock change cannot move a day.
+
 ---
 
 ## Offline

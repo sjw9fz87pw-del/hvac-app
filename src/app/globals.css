@@ -323,3 +323,221 @@ button, [role="button"], a.tap { min-height: 44px; }
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
 }
+
+/* ── Schedule ─────────────────────────────────────────────────────────────
+   A calendar: the week (or month) across the top, the picked day below as
+   hours with each visit drawn at its time. On a wide screen the week view
+   draws all seven days side by side. */
+.sched-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+
+.segmented {
+  display: inline-flex; padding: 3px; gap: 2px; border-radius: 11px;
+  background: var(--surface-2); border: 1px solid var(--line);
+}
+.segmented a {
+  display: inline-flex; align-items: center; min-height: 34px; padding: 0 14px; border-radius: 8px;
+  font-size: 13.5px; font-weight: 640; color: var(--ink-soft);
+}
+.segmented a[aria-current="page"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(11 31 63 / 0.12); }
+
+.sched-alerts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.sched-alert {
+  flex: 1 1 128px; display: flex; align-items: center; gap: 10px; min-height: 54px; padding: 8px 12px;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow-card);
+  text-align: left; cursor: pointer; color: var(--ink);
+}
+.sched-alert:active { background: var(--surface-2); }
+.sched-alert-count { font-size: 21px; font-weight: 750; font-variant-numeric: tabular-nums; line-height: 1; }
+.sched-alert-label { font-size: 12.5px; font-weight: 620; color: var(--ink-soft); line-height: 1.25; }
+.sched-alert.bad { border-color: rgba(198, 40, 40, 0.22); }
+.sched-alert.bad .sched-alert-count { color: var(--bad); }
+.sched-alert.warn { border-color: rgba(214, 140, 0, 0.28); }
+.sched-alert.warn .sched-alert-count { color: var(--warn); }
+
+.sched-cal {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card); padding: 8px 8px 10px; overflow: hidden;
+}
+.sched-cal-nav { display: flex; align-items: center; gap: 2px; margin-bottom: 6px; }
+.sched-cal-title { font-weight: 700; font-size: 16px; padding: 0 4px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sched-cal-nav .sched-today { margin-left: auto; }
+.sched-nav-btn { flex-shrink: 0; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 10px; color: var(--accent); }
+.sched-nav-btn:active { background: var(--accent-soft); }
+.sched-today {
+  flex-shrink: 0; display: inline-flex; align-items: center; height: 34px; padding: 0 13px; border-radius: 9px;
+  border: 1px solid var(--line-strong); font-weight: 640; font-size: 13.5px; color: var(--ink);
+}
+.sched-today:active { background: var(--surface-2); }
+
+.sched-week, .sched-month { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.sched-week { gap: 2px; }
+.sched-day, .sched-mday {
+  display: grid; justify-items: center; align-content: start; gap: 4px; padding: 5px 0 6px;
+  border: none; border-radius: 12px; background: none; color: var(--ink); cursor: pointer; font: inherit;
+}
+.sched-day:active, .sched-mday:active { background: var(--surface-2); }
+.sched-day-name { font-size: 11px; font-weight: 650; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; }
+.sched-day-num {
+  width: 34px; height: 34px; display: grid; place-items: center; border-radius: 999px;
+  font-size: 15.5px; font-weight: 650; font-variant-numeric: tabular-nums;
+}
+.sched-mday .sched-day-num { width: 32px; height: 32px; font-size: 14.5px; }
+.is-past .sched-day-num { color: var(--ink-faint); }
+.is-today .sched-day-num { color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent-line); }
+.is-selected .sched-day-num { background: var(--accent); color: var(--on-accent); box-shadow: none; }
+.sched-mday.is-outside > * { opacity: 0.42; }
+.sched-month-head {
+  text-align: center; padding: 2px 0 4px;
+  font-size: 11px; font-weight: 650; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em;
+}
+
+.sched-dots { display: flex; align-items: center; justify-content: center; gap: 3px; height: 6px; }
+.sched-dot { display: inline-block; width: 6px; height: 6px; border-radius: 999px; background: var(--accent); }
+.sched-dot.due { background: var(--warn); }
+.sched-dot.missed { background: var(--bad); }
+.sched-dot.done { background: var(--good); }
+.sched-legend {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; margin-top: 8px; padding-top: 8px;
+  border-top: 1px solid var(--line); font-size: 11.5px; color: var(--ink-faint); font-weight: 600;
+}
+.sched-legend span { display: inline-flex; align-items: center; gap: 5px; }
+
+.sched-chips { display: none; }
+
+.sched-dayhead { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin: 20px 0 10px; }
+.sched-dayhead h2 { font-size: 18px; line-height: 1.2; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.sched-today-tag {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 3px 8px;
+}
+.sched-daymeta { font-size: 13.5px; color: var(--ink-soft); margin-top: 3px; }
+.sched-hint { font-size: 13px; color: var(--ink-faint); margin: -2px 0 8px; }
+
+.sched-due {
+  background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--warn);
+  border-radius: var(--radius-card); box-shadow: var(--shadow-card); padding: 10px 14px 4px; margin-bottom: 12px;
+}
+.sched-due-title { font-size: 12px; font-weight: 700; color: var(--warn); text-transform: uppercase; letter-spacing: 0.05em; }
+.sched-due-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+.sched-due-row + .sched-due-row { border-top: 1px solid var(--line); }
+.sched-due-name { font-weight: 620; font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sched-due-meta { font-size: 12.5px; color: var(--ink-soft); }
+
+/* The day as hours. */
+.tl {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card); overflow: hidden;
+}
+.tl-cols { display: grid; grid-template-columns: 52px repeat(var(--tl-days), minmax(0, 1fr)); }
+.tl-body { position: relative; }
+.tl-heads { border-bottom: 1px solid var(--line); }
+.tl-head {
+  display: grid; justify-items: center; gap: 2px; padding: 8px 0; border: none; border-left: 1px solid var(--line);
+  background: none; cursor: pointer; color: var(--ink); font: inherit;
+}
+.tl-head-name { font-size: 11px; font-weight: 650; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; }
+.tl-head-num { font-size: 17px; font-weight: 680; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 999px; }
+.tl-head-due { font-size: 11px; font-weight: 650; color: var(--warn); min-height: 14px; }
+.tl-head.is-today .tl-head-num { color: var(--accent); }
+.tl-head.is-selected .tl-head-num { background: var(--accent); color: var(--on-accent); }
+.tl-gutter { position: relative; }
+.tl-hour-label {
+  position: absolute; right: 8px; transform: translateY(-50%);
+  font-size: 11px; font-weight: 600; color: var(--ink-faint); white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.tl-hour-line { position: absolute; right: 0; height: 1px; background: var(--line); pointer-events: none; }
+.tl-day { position: relative; border-left: 1px solid var(--line); }
+.tl-day.is-selected { background: color-mix(in srgb, var(--accent) 3%, transparent); }
+.tl-slot { position: absolute; left: 0; right: 0; border: none; background: none; cursor: pointer; padding: 0; }
+/* A phone keeps :hover after a tap, which would leave an hour lit up. */
+@media (hover: hover) { .tl-slot:hover { background: var(--accent-soft); } }
+.tl-slot:active { background: var(--accent-soft); }
+.tl-visit {
+  position: absolute; z-index: 2; display: flex; flex-direction: column; align-items: stretch; gap: 1px;
+  padding: 4px 8px; border: none; border-left: 3px solid var(--accent); border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface)); color: var(--ink);
+  text-align: left; overflow: hidden; cursor: pointer; font: inherit;
+  box-shadow: 0 1px 2px rgb(11 31 63 / 0.08);
+}
+.tl-visit:active { filter: brightness(0.96); }
+.tl-visit > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tl-visit-time { font-size: 11.5px; font-weight: 680; color: var(--accent); font-variant-numeric: tabular-nums; }
+.tl-visit-name { font-size: 13.5px; font-weight: 680; line-height: 1.25; }
+.tl-visit-meta { font-size: 12px; color: var(--ink-soft); }
+.tl-visit.is-IN_PROGRESS { border-left-color: var(--warn); background: color-mix(in srgb, var(--warn) 13%, var(--surface)); }
+.tl-visit.is-IN_PROGRESS .tl-visit-time { color: var(--warn); }
+.tl-visit.is-COMPLETED { border-left-color: var(--good); background: color-mix(in srgb, var(--good) 11%, var(--surface)); }
+.tl-visit.is-COMPLETED .tl-visit-time { color: var(--good); }
+.tl-visit.is-MISSED { border-left-color: var(--bad); background: color-mix(in srgb, var(--bad) 10%, var(--surface)); }
+.tl-visit.is-MISSED .tl-visit-time { color: var(--bad); }
+.tl-now { position: absolute; left: 0; right: 0; height: 2px; background: var(--bad); z-index: 3; pointer-events: none; }
+.tl-now::before { content: ""; position: absolute; left: -4px; top: -3px; width: 8px; height: 8px; border-radius: 999px; background: var(--bad); }
+
+.sched-desk-only { display: none; }
+@media (min-width: 900px) {
+  .sched-phone-only { display: none; }
+  .sched-desk-only { display: block; margin-top: 4px; }
+  /* The week's own columns name the days; the strip above would say it twice. */
+  .sched-cal.is-week .sched-week { display: none; }
+  .sched-alert { flex: 0 1 300px; }
+  .sched-mday {
+    justify-items: stretch; min-height: 100px; padding: 6px; border-radius: 0; border-top: 1px solid var(--line);
+  }
+  .sched-mday .sched-day-num { justify-self: start; }
+  .sched-mday .sched-dots { display: none; }
+  .sched-chips { display: grid; gap: 2px; min-width: 0; }
+  .sched-chip, .sched-chip-more, .sched-chip-due {
+    font-size: 11.5px; font-weight: 600; padding: 2px 6px; border-radius: 6px; text-align: left;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sched-chip { background: var(--accent-soft); color: var(--accent); }
+  .sched-chip.is-COMPLETED { background: var(--good-soft); color: var(--good); }
+  .sched-chip.is-MISSED { background: var(--bad-soft); color: var(--bad); }
+  .sched-chip.is-IN_PROGRESS { background: var(--warn-soft); color: var(--warn); }
+  .sched-chip-more { color: var(--ink-soft); }
+  .sched-chip-due { color: var(--warn); }
+}
+
+/* A panel over the page: up from the bottom on a phone, a dialog on a wide screen. */
+.sheet-root { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; }
+.sheet-backdrop { position: absolute; inset: 0; background: rgb(11 31 63 / 0.4); }
+.sheet {
+  position: relative; display: flex; flex-direction: column; width: 100%; max-width: 560px;
+  max-height: min(90dvh, 780px); background: var(--surface); border-radius: 18px 18px 0 0;
+  box-shadow: 0 -10px 40px rgb(11 31 63 / 0.2); outline: none; padding-bottom: env(safe-area-inset-bottom);
+}
+.sheet-head { flex-shrink: 0; padding: 6px 12px 10px 16px; border-bottom: 1px solid var(--line); touch-action: none; }
+.sheet-grip { width: 38px; height: 5px; border-radius: 999px; background: var(--line-strong); margin: 2px auto 8px; }
+.sheet-head-row { display: flex; align-items: flex-start; gap: 8px; }
+.sheet-titles { flex: 1; min-width: 0; padding-top: 6px; }
+.sheet-title { font-size: 17px; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+.sheet-subtitle { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
+.sheet-close {
+  flex-shrink: 0; width: 36px; height: 36px; display: grid; place-items: center; border: none; border-radius: 999px;
+  background: var(--surface-2); color: var(--ink-soft); cursor: pointer;
+}
+.sheet-back {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 1px; height: 36px; padding: 0 6px 0 0;
+  border: none; background: none; color: var(--accent); font-weight: 640; font-size: 14.5px; cursor: pointer;
+}
+.sheet-body { overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 14px 16px 22px; }
+.sheet-row { display: block; width: 100%; padding: 0; border: none; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+@media (min-width: 700px) {
+  .sheet-root { align-items: center; padding: 24px; }
+  .sheet { border-radius: 18px; padding-bottom: 0; }
+  .sheet-grip { display: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sheet-backdrop { animation: sheet-fade 180ms ease-out both; }
+  .sheet { animation: sheet-up 260ms cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+  @keyframes sheet-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes sheet-up { from { transform: translateY(40px); opacity: 0.6; } to { transform: none; opacity: 1; } }
+}
+
+/* A short confirmation above the tab bar. */
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom)); z-index: 70;
+  max-width: calc(100% - 32px); padding: 10px 16px; border-radius: 12px;
+  background: var(--brand-navy); color: #fff; font-size: 14px; font-weight: 600;
+  box-shadow: 0 8px 24px rgb(11 31 63 / 0.25); pointer-events: none;
+}
