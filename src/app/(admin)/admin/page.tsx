@@ -1,7 +1,7 @@
 import { requireActor } from "@/lib/auth/session";
 import { commandCenter } from "@/lib/api/dashboards";
 import { Card, Stat, StatGrid, SectionTitle, List, Row, Divider, Pill, EmptyState, StatusPill } from "@/components/ui/primitives";
-import Link from "next/link";
+import { TapLink } from "@/components/ui/tap-link";
 import { companyTimezone } from "@/lib/time/company";
 
 /**
@@ -79,13 +79,13 @@ export default async function CommandCenter() {
         <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))" }}>
           {needsAttention.map((item) => (
             <Card key={item.label} style={{ padding: 0 }}>
-              <Link href={item.href} className="tap" style={{ display: "flex", alignItems: "center", gap: 12, padding: 16 }}>
+              <TapLink href={item.href} className="tap" style={{ display: "flex", alignItems: "center", gap: 12, padding: 16 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13.5, color: "var(--ink-soft)", fontWeight: 600 }}>{item.label}</div>
                   <div style={{ fontSize: 25, fontWeight: 680, letterSpacing: "-0.03em", color: `var(--${item.tone})` }}>{item.value}</div>
                 </div>
                 <span style={{ color: "var(--ink-faint)" }}>›</span>
-              </Link>
+              </TapLink>
             </Card>
           ))}
         </div>

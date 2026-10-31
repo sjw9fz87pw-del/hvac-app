@@ -6,7 +6,7 @@ import { requireActor } from "@/lib/auth/session";
 import { canAccessAsset } from "@/lib/auth/scope";
 import { Card, Pill, Button, StatusPill, formatDateTime } from "@/components/ui/primitives";
 import { photoThumb } from "@/components/ui/equipment-bits";
-import Link from "next/link";
+import { TapLink } from "@/components/ui/tap-link";
 
 /**
  * A visit: tasks grouped by area so the restaurant is walked once, with the
@@ -18,7 +18,10 @@ import Link from "next/link";
 export async function VisitView({ id, manage = false }: { id: string; manage?: boolean }) {
   const actor = await requireActor();
 
-  const visit = await prisma.visit.findUnique({
+  // The list of who can be sent is fetched alongside the visit, not after it,
+  // whenever the person could be managing it.
+  const mayManage = manage && actor.capabilities.has("visit.manage");
+  const [visit, assignable] = await Promise.all([prisma.visit.findUnique({
     where: { id },
     include: {
       location: true,
@@ -38,13 +41,12 @@ export async function VisitView({ id, manage = false }: { id: string; manage?: b
         orderBy: { sortOrder: "asc" },
       },
     },
-  });
+  }), mayManage ? assignableTechnicians(actor.serviceCompanyId) : Promise.resolve([])]);
 
   if (!visit || !canAccessAsset(actor, visit)) notFound();
 
-  const canManage = manage && actor.capabilities.has("visit.manage")
-    && visit.status !== "COMPLETED" && visit.status !== "CANCELLED";
-  const technicians = canManage ? await assignableTechnicians(actor.serviceCompanyId) : [];
+  const canManage = mayManage && visit.status !== "COMPLETED" && visit.status !== "CANCELLED";
+  const technicians = canManage ? assignable : [];
 
   const groups = new Map<string, typeof visit.tasks>();
   for (const task of visit.tasks) {
@@ -133,7 +135,7 @@ export async function VisitView({ id, manage = false }: { id: string; manage?: b
           <div style={{ display: "grid", gap: 8 }}>
             {tasks.map((task) => (
               <Card key={task.id} style={{ padding: 0, opacity: task.status === "COMPLETED" ? 0.62 : 1 }}>
-                <Link href={`/tech/task/${task.id}`} className="tap" style={{ display: "flex", alignItems: "center", gap: 12, padding: 14 }}>
+                <TapLink href={`/tech/task/${task.id}`} className="tap" style={{ display: "flex", alignItems: "center", gap: 12, padding: 14 }}>
                   {photoThumb(task.equipment.photos[0]?.blobKey ?? null, task.equipment.name)}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 620 }}>{task.equipment.name}</div>
@@ -143,7 +145,7 @@ export async function VisitView({ id, manage = false }: { id: string; manage?: b
                   </div>
                   {task.equipment.tagAssignments.length === 0 ? <Pill tone="warn">No tag</Pill> : null}
                   <StatusPill status={task.status} />
-                </Link>
+                </TapLink>
               </Card>
             ))}
           </div>

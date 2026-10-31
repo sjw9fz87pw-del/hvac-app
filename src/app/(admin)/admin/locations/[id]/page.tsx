@@ -15,7 +15,11 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
   const actor = await requireCapability("org.read");
   const { id } = await params;
 
-  const location = await prisma.restaurantLocation.findUnique({
+  // Everything the page needs is keyed on the restaurant's id, so it is all
+  // fetched at once rather than one query after another. Nothing is shown
+  // until the access check below has passed.
+  const [location, technicians, serviceTypes, locationPlans, orgPlans, bookedTasks] = await Promise.all([
+  prisma.restaurantLocation.findUnique({
     where: { id },
     include: {
       organization: { select: { id: true, name: true } },
@@ -36,11 +40,34 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
         orderBy: { scheduledFor: "asc" }, take: 5,
       },
     },
-  });
+  }),
+  actor.capabilities.has("visit.manage") ? assignableTechnicians(actor.serviceCompanyId) : Promise.resolve([]),
+  // What each job's cadence is here, and whether that was decided at this
+  // restaurant or inherited from the level above.
+  prisma.serviceType.findMany({
+    where: { serviceCompanyId: actor.serviceCompanyId, active: true },
+    select: { id: true, name: true, defaultIntervalDays: true },
+    orderBy: { name: "asc" },
+  }),
+  prisma.maintenancePlan.findMany({
+    where: { scope: "LOCATION", locationId: id, active: true },
+    select: { serviceTypeId: true, intervalDays: true },
+  }),
+  prisma.maintenancePlan.findMany({
+    where: { scope: "CUSTOMER", organization: { locations: { some: { id } } }, active: true },
+    select: { serviceTypeId: true, intervalDays: true },
+  }),
+  // Work already on a booked visit is covered, so it is not "schedule needed".
+  prisma.visitTask.findMany({
+    where: {
+      status: { in: ["PENDING", "IN_PROGRESS"] },
+      visit: { locationId: id, status: { in: ["SCHEDULED", "IN_PROGRESS"] } },
+    },
+    select: { equipmentId: true, serviceTypeId: true },
+  }),
+  ]);
 
   if (!location || !canAccessLocation(actor, location.id, location.organizationId)) notFound();
-
-  const technicians = actor.capabilities.has("visit.manage") ? await assignableTechnicians(actor.serviceCompanyId) : [];
 
   // Numbered the way people count: Refrigerator 2 before Refrigerator 10.
   // The database sorts text, which puts 10 straight after 1.
@@ -49,21 +76,6 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
     a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }),
   );
 
-  // What each job's cadence is here, and whether that was decided at this
-  // restaurant or inherited from the level above.
-  const serviceTypes = await prisma.serviceType.findMany({
-    where: { serviceCompanyId: actor.serviceCompanyId, active: true },
-    select: { id: true, name: true, defaultIntervalDays: true },
-    orderBy: { name: "asc" },
-  });
-  const locationPlans = await prisma.maintenancePlan.findMany({
-    where: { scope: "LOCATION", locationId: location.id, active: true },
-    select: { serviceTypeId: true, intervalDays: true },
-  });
-  const orgPlans = await prisma.maintenancePlan.findMany({
-    where: { scope: "CUSTOMER", organizationId: location.organizationId, active: true },
-    select: { serviceTypeId: true, intervalDays: true },
-  });
   const intervalRows: IntervalRow[] = serviceTypes.map((type) => {
     const here = locationPlans.find((p) => p.serviceTypeId === type.id);
     const group = orgPlans.find((p) => p.serviceTypeId === type.id);
@@ -77,16 +89,7 @@ export default async function LocationDetail({ params }: { params: Promise<{ id:
     };
   });
 
-  // Work already on a booked visit is covered, so it is not "schedule needed".
-  const booked = new Set(
-    (await prisma.visitTask.findMany({
-      where: {
-        status: { in: ["PENDING", "IN_PROGRESS"] },
-        visit: { locationId: location.id, status: { in: ["SCHEDULED", "IN_PROGRESS"] } },
-      },
-      select: { equipmentId: true, serviceTypeId: true },
-    })).map((t) => `${t.equipmentId}:${t.serviceTypeId}`),
-  );
+  const booked = new Set(bookedTasks.map((t) => `${t.equipmentId}:${t.serviceTypeId}`));
   const withStatus = location.equipment.map((item) => {
     const statuses = item.schedules.map((s) => scheduleStatus({
       nextDueAt: s.nextDueAt,

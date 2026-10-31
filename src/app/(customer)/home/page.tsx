@@ -7,7 +7,7 @@ import {
   EmptyState, Button, formatDate, relativeDays, StatusPill, formatDateTime
 } from "@/components/ui/primitives";
 import { LocationSwitcher } from "./switcher";
-import Link from "next/link";
+import { TapLink } from "@/components/ui/tap-link";
 import { zonedParts } from "@/lib/time/zone";
 
 /**
@@ -97,7 +97,7 @@ export default async function CustomerHome({ searchParams }: { searchParams: Pro
 
       {dashboard.areas.length > 0 ? (
         <>
-          <SectionTitle action={<Link href="/equipment" style={{ fontSize: 13.5, color: "var(--accent)", fontWeight: 600 }}>View all</Link>}>
+          <SectionTitle action={<TapLink href="/equipment" style={{ fontSize: 13.5, color: "var(--accent)", fontWeight: 600 }}>View all</TapLink>}>
             By area
           </SectionTitle>
           <List>

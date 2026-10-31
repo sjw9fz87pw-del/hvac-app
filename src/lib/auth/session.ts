@@ -7,6 +7,7 @@
  * client sends contributes to it. A client-supplied organization id can only
  * ever *narrow* a query within that derived scope (see `lib/auth/scope.ts`).
  */
+import { cache } from "react";
 import { createHash, randomBytes } from "node:crypto";
 import { cookies, headers } from "next/headers";
 import { prisma } from "@/lib/db/client";
@@ -93,11 +94,16 @@ export async function actorFromToken(token: string | undefined | null): Promise<
   };
 }
 
-/** The current Actor from the request cookie, or null when signed out. */
-export async function currentActor(): Promise<Actor | null> {
+/**
+ * The current Actor from the request cookie, or null when signed out.
+ *
+ * Cached for the length of one request: the shell around a page and the page
+ * itself both ask, and each asking used to be its own database round trip.
+ */
+export const currentActor = cache(async (): Promise<Actor | null> => {
   const store = await cookies();
   return actorFromToken(store.get(SESSION_COOKIE)?.value);
-}
+});
 
 export class AuthError extends Error {
   constructor(public status: 401 | 403 | 404, message: string) {

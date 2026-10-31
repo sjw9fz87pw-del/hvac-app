@@ -11,7 +11,8 @@ import { PairTag } from "./pair-tag";
 import { AddJob, type JobOption } from "@/components/ui/add-job";
 import { resolveInterval, type PlanScope } from "@/lib/maintenance/engine";
 import { RemoveUnit } from "./remove-unit";
-import { UnitPager } from "./unit-pager";
+import { UnitPager } from "@/components/ui/unit-pager";
+import { unitNeighbours } from "@/lib/units/neighbours";
 import { EditDetails } from "./edit-details";
 import { UnitPhoto } from "@/components/ui/unit-photo";
 
@@ -34,24 +35,39 @@ export default async function AdminEquipmentDetail({ params }: { params: Promise
 
   if (!equipment || !canAccessAsset(actor, equipment)) notFound();
 
-  const serviceTypes = await prisma.serviceType.findMany({
-    where: { serviceCompanyId: actor.serviceCompanyId, active: true },
-    orderBy: { name: "asc" },
-  });
+  // Everything else depends only on the unit, so it is fetched at once rather
+  // than one query after another: each round trip is time on every tap.
+  const [serviceTypes, plansHere, audit, siblings, areas] = await Promise.all([
+    prisma.serviceType.findMany({
+      where: { serviceCompanyId: actor.serviceCompanyId, active: true },
+      orderBy: { name: "asc" },
+    }),
+    // Jobs this unit does not have yet, each at the interval it would get here:
+    // the restaurant's or group's setting if there is one, else the company's.
+    prisma.maintenancePlan.findMany({
+      where: {
+        active: true,
+        OR: [
+          { scope: "SYSTEM", category: equipment.category },
+          { scope: "CUSTOMER", organizationId: equipment.organizationId },
+          { scope: "LOCATION", locationId: equipment.locationId },
+        ],
+      },
+      select: { serviceTypeId: true, scope: true, intervalDays: true, active: true },
+    }),
+    prisma.auditEvent.findMany({
+      where: { entityType: "Equipment", entityId: id },
+      orderBy: { createdAt: "desc" },
+      take: 25,
+    }),
+    // The other units in the same area, for moving straight to the next one.
+    prisma.equipment.findMany({
+      where: { locationId: equipment.locationId, areaId: equipment.areaId, archivedAt: null },
+      select: { id: true, name: true },
+    }),
+    prisma.area.findMany({ where: { locationId: equipment.locationId }, orderBy: { sortOrder: "asc" }, select: { id: true, name: true } }),
+  ]);
 
-  // Jobs this unit does not have yet, each at the interval it would get here:
-  // the restaurant's or group's setting if there is one, else the company's.
-  const plansHere = await prisma.maintenancePlan.findMany({
-    where: {
-      active: true,
-      OR: [
-        { scope: "SYSTEM", category: equipment.category },
-        { scope: "CUSTOMER", organizationId: equipment.organizationId },
-        { scope: "LOCATION", locationId: equipment.locationId },
-      ],
-    },
-    select: { serviceTypeId: true, scope: true, intervalDays: true, active: true },
-  });
   const onUnit = new Set(equipment.schedules.map((s) => s.serviceTypeId));
   const addableJobs: JobOption[] = serviceTypes
     .filter((type) => !onUnit.has(type.id))
@@ -64,46 +80,14 @@ export default async function AdminEquipmentDetail({ params }: { params: Promise
       ).intervalDays,
     }));
 
-  const audit = await prisma.auditEvent.findMany({
-    where: { entityType: "Equipment", entityId: id },
-    orderBy: { createdAt: "desc" },
-    take: 25,
-  });
-
   const currentTag = equipment.tagAssignments.find((a) => a.unassignedAt === null);
-
-  // The other units in the same area, in the order the restaurant lists them,
-  // for moving straight to the next one.
-  const [siblings, areas] = await Promise.all([
-    prisma.equipment.findMany({
-      where: { locationId: equipment.locationId, areaId: equipment.areaId, archivedAt: null },
-      select: { id: true, name: true },
-    }),
-    prisma.area.findMany({ where: { locationId: equipment.locationId }, orderBy: { sortOrder: "asc" }, select: { id: true, name: true } }),
-  ]);
-  siblings.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
-  const position = siblings.findIndex((s) => s.id === equipment.id);
-  // "Kitchen Refrigerator 3" in the Kitchen is just "Refrigerator 3" in the bar,
-  // so the part that tells units apart is what fits.
-  const areaPrefix = equipment.area ? `${equipment.area.name} `.toLowerCase() : null;
-  const neighbour = (unit: { id: string; name: string } | undefined) =>
-    unit ? {
-      ...unit,
-      label: areaPrefix && unit.name.toLowerCase().startsWith(areaPrefix) && unit.name.length > areaPrefix.length
-        ? unit.name.slice(areaPrefix.length) : unit.name,
-    } : null;
+  const neighbours = unitNeighbours(siblings, equipment.id, equipment.area?.name ?? null);
   const canEdit = actor.capabilities.has("equipment.update");
 
   return (
     <main className="rise" data-unit-page>
-      {position >= 0 && siblings.length > 1 ? (
-        <UnitPager
-          prev={neighbour(siblings[position - 1])}
-          next={neighbour(siblings[position + 1])}
-          position={position + 1}
-          total={siblings.length}
-          areaName={equipment.area?.name ?? "Other units"}
-        />
+      {neighbours ? (
+        <UnitPager {...neighbours} basePath="/admin/equipment" areaName={equipment.area?.name ?? "Other units"} />
       ) : null}
 
       <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "12px 0 6px" }}>

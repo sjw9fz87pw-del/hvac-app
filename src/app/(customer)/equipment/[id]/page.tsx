@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db/client";
 import { requireActor } from "@/lib/auth/session";
-import { canAccessAsset, canSeeInternalNotes } from "@/lib/auth/scope";
+import { canAccessAsset, canSeeInternalNotes, tenantWhere } from "@/lib/auth/scope";
+import { UnitPager } from "@/components/ui/unit-pager";
+import { conditionCopy } from "@/components/ui/condition";
+import { unitNeighbours } from "@/lib/units/neighbours";
 import { toCustomerEquipment, toCustomerServiceRecord } from "@/lib/api/serializers";
 import {
   Card, SectionTitle, StatusPill, Pill, Divider, formatDate, formatDay, relativeDays,
@@ -38,6 +41,14 @@ export default async function EquipmentPassport({ params }: { params: Promise<{ 
 
   if (!record || !canAccessAsset(actor, record)) notFound();
 
+  // The other units in the same area that this person can see, for moving
+  // straight to the next one.
+  const siblings = await prisma.equipment.findMany({
+    where: { ...tenantWhere(actor, { locationId: record.locationId }), areaId: record.areaId, archivedAt: null },
+    select: { id: true, name: true },
+  });
+  const neighbours = unitNeighbours(siblings, record.id, record.area?.name ?? null);
+
   const view = toCustomerEquipment(record);
   const history = record.serviceRecords.map(toCustomerServiceRecord);
   const nextDue = view.maintenance.map((m) => m.nextDueAt).sort()[0] ?? null;
@@ -45,7 +56,10 @@ export default async function EquipmentPassport({ params }: { params: Promise<{ 
   const worst = view.maintenance.find((m) => m.status === "OVERDUE") ?? view.maintenance.find((m) => m.status === "DUE") ?? view.maintenance[0];
 
   return (
-    <main className="rise">
+    <main className="rise" data-unit-page>
+      {neighbours ? (
+        <UnitPager {...neighbours} basePath="/equipment" areaName={record.area?.name ?? "Other units"} />
+      ) : null}
 
       <div style={{ marginTop: 12, marginBottom: 4 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -120,7 +134,7 @@ export default async function EquipmentPassport({ params }: { params: Promise<{ 
         <DetailRow label="Model" value={view.model} />
         <DetailRow label="Serial number" value={view.serialNumber} />
         <DetailRow label="Unit ID" value={view.internalAssetId} />
-        <DetailRow label="Condition" value={view.condition} />
+        <DetailRow label="Condition" value={conditionCopy(view.condition).label} />
         {view.filter ? <DetailRow label="Filter" value={[view.filter.size, view.filter.type].filter(Boolean).join(" · ")} /> : null}
         {view.warranty ? <DetailRow label="Warranty" value={`${view.warranty.provider ?? "—"}${view.warranty.expires ? ` until ${formatDay(view.warranty.expires)}` : ""}`} /> : null}
         <DetailRow label="Tag" value={view.hasTag ? "Paired" : "Not yet tagged"} />

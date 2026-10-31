@@ -78,5 +78,17 @@ export function NavProgress() {
     return () => clearTimeout(stop);
   }, [loading]);
 
+  // A safety net, measured rather than guessed: now and then the router had
+  // the next page in hand but did not show it until something else on screen
+  // redrew, which was this bar's 12-second timer above. So while a tap is
+  // loading, the bar redraws itself a few times a second; a stuck page then
+  // shows within a quarter of a second instead of twelve.
+  const [, nudge] = useState(0);
+  useEffect(() => {
+    if (!loading) return;
+    const tick = setInterval(() => nudge((n) => n + 1), 250);
+    return () => clearInterval(tick);
+  }, [loading]);
+
   return <div className={loading ? "nav-progress on" : "nav-progress"} aria-hidden="true" />;
 }

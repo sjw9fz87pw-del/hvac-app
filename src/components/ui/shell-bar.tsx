@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { TapLink } from "./tap-link";
 import { usePathname, useRouter } from "next/navigation";
 import { GlobalSearch } from "./global-search";
 
@@ -42,10 +42,10 @@ export function ShellBar({
     <header className="top-bar">
       <div className="top-bar-inner">
         {atRoot ? (
-          <Link href={home} className="brand" aria-label="Axios Equipment Care, home">
+          <TapLink href={home} className="brand" aria-label="Axios Equipment Care, home">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/brand/logo-horizontal.svg" alt="Axios Equipment Care" width={183} height={40} />
-          </Link>
+          </TapLink>
         ) : (
           <button onClick={goBack} className="back-button" aria-label="Go back">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -58,7 +58,7 @@ export function ShellBar({
         <div style={{ flex: 1 }} />
 
         {crossShell ? (
-          <Link href={crossShell.href} className="cross-shell">{crossShell.label}</Link>
+          <TapLink href={crossShell.href} className="cross-shell">{crossShell.label}</TapLink>
         ) : null}
         {search ? <GlobalSearch compact /> : null}
       </div>

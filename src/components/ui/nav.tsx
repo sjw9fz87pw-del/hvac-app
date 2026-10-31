@@ -59,6 +59,8 @@ export function TabBar({ items }: { items: NavItem[] }) {
             <Link
               key={item.href}
               href={item.href}
+              // Fetched ahead in full, so switching tabs does not wait on the server.
+              prefetch
               style={{
                 display: "grid", justifyItems: "center", gap: 3, padding: "8px 4px 6px",
                 color: active ? "var(--accent)" : "var(--ink-faint)",
@@ -72,40 +74,6 @@ export function TabBar({ items }: { items: NavItem[] }) {
         })}
       </div>
     </nav>
-  );
-}
-
-/**
- * A slim identity strip. Navigation lives in the bottom tab bar on every shell,
- * so this only carries the mark and whatever the page puts beside it.
- */
-export function AppBar({ title, right }: { title: string; right?: React.ReactNode }) {
-  return (
-    <header
-      style={{
-        position: "sticky", top: 0, zIndex: 30,
-        background: "color-mix(in srgb, var(--surface) 88%, transparent)",
-        backdropFilter: "blur(18px)", borderBottom: "1px solid var(--line)",
-      }}
-    >
-      <div style={{ maxWidth: 1240, margin: "0 auto", padding: "10px 20px", display: "flex", alignItems: "center", gap: 12 }}>
-        <Link href="/admin" style={{ display: "flex", alignItems: "center", gap: 9, whiteSpace: "nowrap" }}>
-          <span
-            aria-hidden="true"
-            style={{
-              width: 26, height: 26, borderRadius: 8, flexShrink: 0, display: "grid", placeItems: "center",
-              background: "var(--accent)",
-              color: "var(--on-accent)", fontWeight: 800, fontSize: 13,
-            }}
-          >
-            E
-          </span>
-          <span style={{ fontWeight: 750, letterSpacing: "-0.02em" }}>{title}</span>
-        </Link>
-        <div style={{ flex: 1 }} />
-        {right}
-      </div>
-    </header>
   );
 }
 

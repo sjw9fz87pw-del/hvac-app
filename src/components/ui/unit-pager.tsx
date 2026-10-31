@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import Link from "next/link";
+import { TapLink } from "./tap-link";
 import { useRouter } from "next/navigation";
 
 /** `label` is the name without the area in front: "Refrigerator 3", not "Kitchen Refrigerator 3". */
@@ -21,7 +21,9 @@ const EDGE = 24;
  * Each move replaces the page in history rather than adding to it, so Back
  * still means "back to the restaurant", however many units were visited.
  */
-export function UnitPager({ prev, next, position, total, areaName }: {
+export function UnitPager({ prev, next, position, total, areaName, basePath }: {
+  /** Where a unit's page lives on this side of the app: "/admin/equipment" or "/equipment". */
+  basePath: string;
   prev: Neighbour | null;
   next: Neighbour | null;
   position: number;
@@ -40,9 +42,9 @@ export function UnitPager({ prev, next, position, total, areaName }: {
     if (page && (direction === "next" || direction === "prev")) {
       page.classList.add(direction === "next" ? "unit-enter-next" : "unit-enter-prev");
     }
-    if (prev) router.prefetch(`/admin/equipment/${prev.id}`);
-    if (next) router.prefetch(`/admin/equipment/${next.id}`);
-  }, [prev, next, router]);
+    if (prev) router.prefetch(`${basePath}/${prev.id}`);
+    if (next) router.prefetch(`${basePath}/${next.id}`);
+  }, [prev, next, router, basePath]);
 
   useEffect(() => {
     const page = document.querySelector<HTMLElement>("main[data-unit-page]");
@@ -62,8 +64,11 @@ export function UnitPager({ prev, next, position, total, areaName }: {
     function blocked(target: EventTarget | null): boolean {
       for (let el = target as HTMLElement | null; el && el !== page; el = el.parentElement) {
         if (el.matches("input, textarea, select, [contenteditable], [data-no-swipe]")) return true;
+        const style = getComputedStyle(el);
         // A sheet or dialog floating over the page owns its own gestures.
-        if (getComputedStyle(el).position === "fixed") return true;
+        if (style.position === "fixed") return true;
+        // So does anything that scrolls sideways itself, like a row of photos.
+        if ((style.overflowX === "auto" || style.overflowX === "scroll") && el.scrollWidth > el.clientWidth + 1) return true;
       }
       return false;
     }
@@ -142,10 +147,10 @@ export function UnitPager({ prev, next, position, total, areaName }: {
   return (
     <nav className="unit-pager" aria-label={`Units in ${areaName}`}>
       {prev ? (
-        <Link ref={prevLink} href={`/admin/equipment/${prev.id}`} replace onClick={remember("prev")} className="unit-pager-link" aria-label={`Previous: ${prev.name}`}>
+        <TapLink ref={prevLink} href={`${basePath}/${prev.id}`} replace onClick={remember("prev")} className="unit-pager-link" aria-label={`Previous: ${prev.name}`}>
           <Chevron flip />
           <span className="unit-pager-name">{prev.label}</span>
-        </Link>
+        </TapLink>
       ) : <span className="unit-pager-link is-empty" />}
 
       <span className="unit-pager-count">
@@ -154,10 +159,10 @@ export function UnitPager({ prev, next, position, total, areaName }: {
       </span>
 
       {next ? (
-        <Link ref={nextLink} href={`/admin/equipment/${next.id}`} replace onClick={remember("next")} className="unit-pager-link is-next" aria-label={`Next: ${next.name}`}>
+        <TapLink ref={nextLink} href={`${basePath}/${next.id}`} replace onClick={remember("next")} className="unit-pager-link is-next" aria-label={`Next: ${next.name}`}>
           <span className="unit-pager-name">{next.label}</span>
           <Chevron />
-        </Link>
+        </TapLink>
       ) : <span className="unit-pager-link is-empty" />}
     </nav>
   );

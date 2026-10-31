@@ -4,7 +4,7 @@ import { Card, Stat, StatGrid, SectionTitle, EmptyState, Button, Pill } from "@/
 import { SyncBanner } from "@/components/ui/sync-banner";
 import { dayBounds } from "@/lib/time/zone";
 import { companyTimezone } from "@/lib/time/company";
-import Link from "next/link";
+import { TapLink } from "@/components/ui/tap-link";
 
 /**
  * Today.
@@ -18,7 +18,7 @@ export default async function TechToday() {
   const timeZone = await companyTimezone(actor.serviceCompanyId);
   const { start: dayStart, end: dayEnd } = dayBounds(timeZone);
 
-  const visits = await prisma.visit.findMany({
+  const [visits, upcoming] = await Promise.all([prisma.visit.findMany({
     where: {
       OR: [{ technicianId: actor.userId }, { technicianId: null }],
       scheduledFor: { gte: dayStart, lt: dayEnd },
@@ -30,14 +30,12 @@ export default async function TechToday() {
       tasks: { select: { status: true } },
     },
     orderBy: { scheduledFor: "asc" },
-  });
+  }), prisma.visit.count({
+    where: { technicianId: actor.userId, scheduledFor: { gte: dayEnd }, status: "SCHEDULED" },
+  })]);
 
   const allTasks = visits.flatMap((v) => v.tasks);
   const completed = allTasks.filter((t) => t.status === "COMPLETED").length;
-
-  const upcoming = await prisma.visit.count({
-    where: { technicianId: actor.userId, scheduledFor: { gte: dayEnd }, status: "SCHEDULED" },
-  });
 
   return (
     <main className="rise">
@@ -70,7 +68,7 @@ export default async function TechToday() {
             const progress = visit.tasks.length > 0 ? done / visit.tasks.length : 0;
             return (
               <Card key={visit.id} style={{ padding: 0, overflow: "hidden" }}>
-                <Link href={`/tech/visits/${visit.id}`} className="tap" style={{ display: "block", padding: 18 }}>
+                <TapLink href={`/tech/visits/${visit.id}`} className="tap" style={{ display: "block", padding: 18 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 18, fontWeight: 660 }}>{visit.location.name}</div>
@@ -92,7 +90,7 @@ export default async function TechToday() {
                       {done}/{visit.tasks.length} units
                     </div>
                   </div>
-                </Link>
+                </TapLink>
               </Card>
             );
           })}

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { TapLink } from "@/components/ui/tap-link";
 
 /**
  * Multi-location groups switch context here; a single-location customer never sees it.
@@ -24,9 +24,9 @@ export function LocationSwitcher({ locations, selected }: {
 
 function Chip({ children, active, href }: { children: React.ReactNode; active: boolean; href: string }) {
   return (
-    <Link
+    <TapLink
       href={href}
-      prefetch={false}
+     
       aria-current={active ? "page" : undefined}
       style={{
         padding: "9px 15px", borderRadius: 999, whiteSpace: "nowrap", fontSize: 14, fontWeight: 600, flexShrink: 0,
@@ -36,6 +36,6 @@ function Chip({ children, active, href }: { children: React.ReactNode; active: b
       }}
     >
       {children}
-    </Link>
+    </TapLink>
   );
 }

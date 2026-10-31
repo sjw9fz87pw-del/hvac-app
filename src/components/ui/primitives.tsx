@@ -10,7 +10,7 @@
  * the domain code underneath are untouched.
  */
 import type { CSSProperties, ReactNode } from "react";
-import Link from "next/link";
+import { TapLink } from "./tap-link";
 
 /**
  * In-app destinations go through the router, so a tap swaps the page and keeps
@@ -175,7 +175,7 @@ export function Button({ children, variant = "primary", size = "md", type = "but
 
   if (href && !disabled) {
     return isAppPath(href)
-      ? <Link href={href} className="tap" style={css}>{children}</Link>
+      ? <TapLink href={href} className="tap" style={css}>{children}</TapLink>
       : <a href={href} className="tap" style={css}>{children}</a>;
   }
   return <button type={type} onClick={onClick} disabled={disabled} style={css}>{children}</button>;
@@ -220,9 +220,9 @@ export function Row({ title, subtitle, right, href, leading }: {
   );
   if (!href) return inner;
   // Lists can run to hundreds of rows; fetching each one ahead of a tap costs
-  // more than it saves, so rows load on tap.
+  // more than it saves, so rows start loading the moment they are touched.
   return isAppPath(href)
-    ? <Link href={href} prefetch={false} className="tap" style={{ display: "block" }}>{inner}</Link>
+    ? <TapLink href={href} className="tap" style={{ display: "block" }}>{inner}</TapLink>
     : <a href={href} className="tap" style={{ display: "block" }}>{inner}</a>;
 }
 
