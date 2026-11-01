@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { requireActor } from "@/lib/auth/session";
 import { commandCenter } from "@/lib/api/dashboards";
-import { StatusPill } from "@/components/ui/primitives";
 import { TapLink } from "@/components/ui/tap-link";
 import { companyTimezone } from "@/lib/time/company";
 import { zonedParts } from "@/lib/time/zone";
@@ -76,7 +75,9 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 /**
  * The office dashboard: today's work at a glance, what needs someone to step
- * in, what is coming up, and how the equipment stands overall.
+ * in, what is coming up, and how the equipment stands overall. Today's
+ * visits themselves are one tap away on the schedule; listing them here as
+ * well read as the same thing twice.
  *
  * Exceptions are surfaced rather than buried — an asset without a tag or a
  * service closed without proof is a problem you should not have to go
@@ -170,32 +171,6 @@ export default async function CommandCenter() {
               Open the schedule <Icon name="chevron" size={16} />
             </TapLink>
           </section>
-
-          <Section title="Today's visits" className="dash-o4" action={{ label: "Schedule", href: "/admin/schedule" }}>
-            {today.restaurants.length === 0 ? (
-              <div className="dash-empty">Nothing booked for today.</div>
-            ) : (
-              <div className="dash-card dash-rows">
-                {today.restaurants.map((visit) => {
-                  const share = visit.taskCount > 0 ? visit.completed / visit.taskCount : 0;
-                  return (
-                    <TapLink key={visit.id} href={`/admin/schedule/${visit.id}`} className="dash-row tap">
-                      <div className="dash-time">{clockLabel(minutesOf(zonedParts(visit.scheduledFor, visit.timezone).time))}</div>
-                      <div className="dash-row-main">
-                        <div className="dash-row-title">{visit.name}</div>
-                        <div className="dash-row-sub">{visit.organizationName} · {visit.technician ?? "Not assigned"}</div>
-                        <div className="dash-progress">
-                          <span className="dash-progress-track"><span style={{ width: `${share * 100}%` }} /></span>
-                          <span className="dash-progress-label">{visit.completed} of {visit.taskCount}</span>
-                        </div>
-                      </div>
-                      <StatusPill status={visit.status} />
-                    </TapLink>
-                  );
-                })}
-              </div>
-            )}
-          </Section>
 
           <Section title="Coming up" className="dash-o5" action={{ label: "See all", href: "/admin/schedule" }}>
             {data.upcoming.length === 0 ? (

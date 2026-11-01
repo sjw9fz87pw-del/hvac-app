@@ -552,7 +552,7 @@ button, [role="button"], a.tap { min-height: 44px; }
 .dash-cols { display: flex; flex-direction: column; gap: 20px; }
 .dash-col { display: contents; }
 .dash-o1 { order: 1; } .dash-o2 { order: 2; } .dash-o3 { order: 3; }
-.dash-o4 { order: 4; } .dash-o5 { order: 5; } .dash-o6 { order: 6; }
+.dash-o5 { order: 5; } .dash-o6 { order: 6; }
 @media (min-width: 960px) {
   .dash-cols { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 24px; align-items: start; }
   .dash-col { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
@@ -632,11 +632,6 @@ button, [role="button"], a.tap { min-height: 44px; }
   font-size: 14px; color: var(--ink-soft);
 }
 
-.dash-time { width: 64px; flex-shrink: 0; font-size: 13px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
-.dash-progress { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
-.dash-progress-track { flex: 1; max-width: 200px; height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
-.dash-progress-track > span { display: block; height: 100%; border-radius: 999px; background: var(--accent-2); }
-.dash-progress-label { font-size: 11.5px; font-weight: 600; color: var(--ink-faint); white-space: nowrap; }
 .dash-date {
   width: 46px; height: 50px; flex-shrink: 0; display: grid; place-content: center; text-align: center; line-height: 1.05;
   border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2);
