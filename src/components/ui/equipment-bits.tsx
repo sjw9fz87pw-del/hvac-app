@@ -2,13 +2,14 @@
 export * from "./primitives";
 
 export function photoThumb(blobKey: string | null, alt: string) {
-  const size = 44;
+  // The same size as the office's unit rows, big enough to tell units apart.
+  const size = 56;
   if (!blobKey) {
     return (
       <div
         aria-hidden="true"
         style={{
-          width: size, height: size, borderRadius: 10, background: "var(--canvas)",
+          width: size, height: size, borderRadius: 12, background: "var(--canvas)",
           border: "1px solid var(--line)", display: "grid", placeItems: "center",
           color: "var(--ink-faint)", fontSize: 16, flexShrink: 0,
         }}
@@ -22,7 +23,7 @@ export function photoThumb(blobKey: string | null, alt: string) {
     <img
       src={`/api/v1/photos/${encodeURIComponent(blobKey)}`}
       alt={alt}
-      style={{ width: size, height: size, borderRadius: 10, objectFit: "cover", border: "1px solid var(--line)", flexShrink: 0 }}
+      style={{ width: size, height: size, borderRadius: 12, objectFit: "cover", border: "1px solid var(--line)", flexShrink: 0 }}
     />
   );
 }

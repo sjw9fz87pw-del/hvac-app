@@ -90,8 +90,8 @@ export default async function AdminEquipmentDetail({ params }: { params: Promise
         <UnitPager {...neighbours} basePath="/admin/equipment" areaName={equipment.area?.name ?? "Other units"} />
       ) : null}
 
-      <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "12px 0 6px" }}>
-        <UnitPhoto equipmentId={equipment.id} blobKey={equipment.photos[0]?.blobKey ?? null} name={equipment.name} canEdit={canEdit} />
+      <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "12px 0 6px" }}>
+        <UnitPhoto equipmentId={equipment.id} blobKey={equipment.photos[0]?.blobKey ?? null} name={equipment.name} canEdit={canEdit} size={96} />
         <div style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <h1 style={{ fontSize: 23 }}>{equipment.name}</h1>
           <StatusPill status={equipment.status} />

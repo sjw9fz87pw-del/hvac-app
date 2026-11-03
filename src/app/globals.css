@@ -653,3 +653,29 @@ button, [role="button"], a.tap { min-height: 44px; }
 .dash-fleet .is-due { background: var(--warn); }
 .dash-fleet .is-current { background: var(--good); }
 .dash-fleet .is-none { background: var(--line-strong); }
+
+/* A unit's photo, large: tap a thumbnail to see it; Retake is the only way
+   to the camera once a unit has a photo. */
+.unit-photo:active { transform: scale(0.97); }
+.photo-viewer {
+  position: fixed; inset: 0; z-index: 80; display: flex; flex-direction: column;
+  background: rgb(6 14 28 / 0.94); color: #fff;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+}
+.photo-viewer-top { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 18px; }
+.photo-viewer-name { flex: 1; min-width: 0; font-weight: 650; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.photo-viewer-close {
+  width: 44px; height: 44px; flex-shrink: 0; display: grid; place-items: center; border: none; border-radius: 999px;
+  background: rgb(255 255 255 / 0.12); color: #fff; cursor: pointer;
+}
+.photo-viewer-stage { flex: 1; min-height: 0; display: grid; place-items: center; padding: 8px 12px; }
+.photo-viewer-stage img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 12px; }
+.photo-viewer-actions { display: flex; justify-content: center; padding: 12px 16px 18px; }
+.photo-viewer-actions button {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 22px; border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.28); background: rgb(255 255 255 / 0.1); color: #fff;
+  font-size: 15px; font-weight: 650; cursor: pointer;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .photo-viewer { animation: sheet-fade 160ms ease-out both; }
+}
